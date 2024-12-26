@@ -3,6 +3,7 @@
 The Slicer Tutorial Maker is an extension to 3D Slicer to streamline the creation of 3D Slicer tutorials in multiple languages. The sections below provide a user guide to the tool.
 
 [Documentação em Português](https://github.com/SlicerLatinAmerica/SlicerTutorialMaker/blob/main/README_pt-br.md)
+[Documentación en Español](https://github.com/SlicerLatinAmerica/SlicerTutorialMaker/blob/main/README_esp.md)
 
 
 ### Installation
