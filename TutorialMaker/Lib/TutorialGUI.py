@@ -280,6 +280,7 @@ class TutorialGUI(qt.QMainWindow):
         # Read the data from the file
         with open(filepath, "r", encoding='utf-8') as file:
             data = json.load(file)
+            file.close()
         self.load_all_images(data, directory_path)
         
     def delete_screen(self):
@@ -508,7 +509,7 @@ class TutorialGUI(qt.QMainWindow):
                             joinedJson = json.loads(fileT.read())
                             fileT.close()
 
-                        joinedImage = qt.QImage(path_image)
+                        joinedImage = qt.QImage(path_image).copy()
                     else:
                         with open(path_meta, 'r', encoding='utf-8') as fileP:
                             fileOp = fileP.read()
@@ -518,7 +519,7 @@ class TutorialGUI(qt.QMainWindow):
                             fileP.close()
 
                         painter = qt.QPainter(joinedImage)
-                        windowImage = qt.QImage(path_image)
+                        windowImage = qt.QImage(path_image).copy()
                         painter.drawImage(qt.QRect(windowJson["position"][0], windowJson["position"][1], windowImage.width(), windowImage.height()), windowImage)
                         painter.end()
                 except FileNotFoundError:
@@ -674,9 +675,7 @@ class TutorialGUI(qt.QMainWindow):
             self.end = event.pos()   
         elif self.clck.isChecked():
             self.select_annt = "click"
-            self.end = event.pos()   
-        else:
-            print("No select annotation")  
+            self.end = event.pos()
 
         if self.select_annt != False:
             if self.scroll_move == False:
@@ -714,7 +713,6 @@ class TutorialGUI(qt.QMainWindow):
 
     def keyPressEvent(self, event):
         if event.key() == qt.Qt.Key_Escape:
-            #print("ESC")
             self.select_annt = False
             for action, icons in self.icons.items():
                 action.setChecked(False)  
@@ -1635,8 +1633,9 @@ class TutorialGUI(qt.QMainWindow):
             }
 
         output_file_path = os.path.join(self.dir_path, '..', 'Outputs/Annotations', self.output_name + '.json')
-        with open(output_file_path, 'w', encoding='utf-8') as archivo:
-            json.dump(data, archivo, indent=4)
+        with open(output_file_path, 'w', encoding='utf-8') as jsonFile:
+            json.dump(data, jsonFile, indent=4)
+            jsonFile.close()
 
 
         # Create MD and HTML file
