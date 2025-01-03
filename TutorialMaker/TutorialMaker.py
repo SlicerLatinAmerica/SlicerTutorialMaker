@@ -68,7 +68,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.__selectedTutorial = None
         self.isDebug = False
         
-        print("Version Date: 12/19/2024")
+        print("Version Date: 03/01/2025")
         
         #PROTOTYPE FOR PLAYBACK
 
@@ -142,7 +142,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         """
         # Do not react to parameter node changes (GUI wlil be updated when the user enters into the module)
         #self.removeObserver(self._parameterNode, vtk.vtkCommand.ModifiedEvent, self.updateGUIFromParameterNode)
-        print('goodbye, world!')
+        pass
     
     def initializeParameterNode(self):
         """
@@ -219,7 +219,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         """
         Initialize parameter node with default settings.
         """
-        print("World!")
+        pass
         
     def exitTutorialEditor(self):
         self.tutorialEditor.exit()

@@ -7,14 +7,7 @@ from slicer.i18n import tr as _
 
 class markdownHTMLCreator:
     def __init__(self) -> None:
-        self.ensure_pdfkit_installed()
         pass
-
-    def ensure_pdfkit_installed(self):
-        try:
-            import pdfkit
-        except ImportError:
-            slicer.util.pip_install('pdfkit')
             
     def show_installing_message(self, message):
         msgBox = qt.QMessageBox()
@@ -231,7 +224,6 @@ class markdownHTMLCreator:
         # Define the path of the HTML file
         path = path.replace('_WithoutStyle', '')
         output_html_file = path + ".html"
-       # print(output_html_file)
         # Write the Markdown content with the styles in a HTML file
         with open(output_html_file, 'w', encoding='utf-8') as html_file:
             html_file.write(html_content)
@@ -253,9 +245,6 @@ class markdownHTMLCreator:
     
     def onCreatePDFReportButton(self, html_file_path, path, tutorialName):
         
-        print(html_file_path)
-        print(path)
-        print(tutorialName)
         slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
 
         
@@ -285,18 +274,14 @@ class markdownHTMLCreator:
         doc.setPageSize(qt.QSizeF(printer.paperRect().size()))
 
         for index, page in enumerate(pages):
-            cursor.insertHtml(page)  # Insertar el contenido HTML de la página
-            print(index)
+            cursor.insertHtml(page)  
         if index < len(pages) - 1:
-            cursor.insertText("\f")  # Insertar el salto de página (form feed)
+            cursor.insertText("\f")  
 
         doc.print(printer)
-        print(f"PDF generado exitosamente en: {output_pdf_file}")
-
     
     def create_pdf(self, path, ListotalImages):
         output_pdf_file = path + ".pdf"
-        print(path)
         metadata = self.getMetadata(path)
         i = len(ListotalImages) -1
 
@@ -347,7 +332,6 @@ class markdownHTMLCreator:
                             num_page = num,
                             is_first_title= False,
                             is_white_page=True)
-                    print("Hola")
                         
             else:
                 numString = str(num + 1)
@@ -363,18 +347,12 @@ class markdownHTMLCreator:
                         num_page = num,
                         is_SS_page = True)
                 
-                
-    
         doc.setPageSize(qt.QSizeF(printer.pageRect().size()))
-
-     
         doc.print_(printer)
 
-        print(f"PDF generado: {output_pdf_file}")
 
 
     def add_page_divided(self, cursor, title, image_path,text,footer, page_height, num_page, is_first_title=False,is_white_page=False, is_SS_page=False):
-        print(num_page)
         section_heights_SS = [0.05, 0.05, 0.2, 0.2, 0.2, 0.1, 0.1] 
         calculated_heights = [int(h * page_height) for h in section_heights_SS]
         center_format = qt.QTextBlockFormat()
@@ -390,7 +368,6 @@ class markdownHTMLCreator:
         black_image_path = os.path.join(os.path.dirname(slicer.util.modulePath("TutorialMaker")),"Resources", "NewSlide","white.png")
 
         if is_first_title:
-            print("Title")
             section_heights_white = [0.06, 0.15, 0.3, 0.1] 
             calculated_heights_white = [int(h * page_height) for h in section_heights_white]
             
@@ -415,7 +392,6 @@ class markdownHTMLCreator:
             doc = cursor.document()
             layout = doc.documentLayout()
             current_pos = layout.blockBoundingRect(current_block).bottom()
-            print(current_pos)
 
             cursor.insertBlock()
             for _ in range(int(calculated_heights_white[0] / 20)):
@@ -459,8 +435,6 @@ class markdownHTMLCreator:
                     footer_y = current_pos + 400
                 else:
                     footer_y = 545
-                print(current_pos)
-                print(footer_y)
                 footer_block_format = qt.QTextBlockFormat()
                 footer_block_format.setAlignment(qt.Qt.AlignCenter)
 
@@ -491,7 +465,6 @@ class markdownHTMLCreator:
             
          
             remaining_space = page_height - current_pos
-            #print(remaining_space)
             lines_needed = int(remaining_space / 20)  
             
     
@@ -500,7 +473,6 @@ class markdownHTMLCreator:
                 cursor.insertText("\n")
 
         if is_white_page:
-            print("White")
             section_heights_white = [0.05, 0.07, 0.29, 0.05] 
             calculated_heights_white = [int(h * page_height-10) for h in section_heights_white]
             
@@ -525,7 +497,6 @@ class markdownHTMLCreator:
             doc = cursor.document()
             layout = doc.documentLayout()
             current_pos = layout.blockBoundingRect(current_block).bottom()
-            print(current_pos)
 
             cursor.insertBlock()
             for _ in range(int(calculated_heights_white[0] / 20)):
@@ -561,12 +532,8 @@ class markdownHTMLCreator:
             doc = cursor.document()
             layout = doc.documentLayout()
             current_pos2 = layout.blockBoundingRect(current_block).bottom()
-            print(current_pos2)
             if footer_image_path:
                 
-                #footer_y = current_pos + 430
-                print(current_pos)
-                #print(footer_y)
                 footer_block_format = qt.QTextBlockFormat()
                 footer_block_format.setAlignment(qt.Qt.AlignCenter)
 
@@ -597,13 +564,10 @@ class markdownHTMLCreator:
             
          
             remaining_space = page_height - current_pos
-            #print(remaining_space)
             lines_needed = int(remaining_space / 20)  
             
     
             cursor.insertBlock()
-            #for _ in range(max(0, lines_needed)):
-             #   cursor.insertText("\n")
             current_height = current_pos
             while current_height < 590:
                 cursor.insertText("\n")
@@ -611,8 +575,6 @@ class markdownHTMLCreator:
 
         if is_SS_page:
             #Header
-   
-            
             if header_image_path:
                 header_image_format = qt.QTextImageFormat()
                 header_image_format.setName(header_image_path)
@@ -650,7 +612,6 @@ class markdownHTMLCreator:
             doc = cursor.document()
             layout = doc.documentLayout()
             current_pos = layout.blockBoundingRect(current_block).bottom()
-            #print(current_pos)
 
             # Sección 7: Texto Principal
             text_format = qt.QTextCharFormat()
@@ -660,16 +621,12 @@ class markdownHTMLCreator:
 
            
             if footer_image_path:
-                #print(current_pos)
                 footer_y = current_pos + 60
                 current_block = cursor.block()
                 doc = cursor.document()
-                
-        
+                        
                 layout = doc.documentLayout()
                 current_pos = layout.blockBoundingRect(current_block).bottom()
-              #  print(current_pos)
-               # print(footer_y)
 
                 footer_block_format = qt.QTextBlockFormat()
                 footer_block_format.setAlignment(qt.Qt.AlignCenter)
