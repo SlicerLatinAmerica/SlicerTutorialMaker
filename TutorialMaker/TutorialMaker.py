@@ -66,7 +66,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._updatingGUIFromParameterNode = False
         self.__tableSize = 0
         self.__selectedTutorial = None
-        self.isDebug = False
+        self.isDebug = slicer.app.settings().value("Developer/DeveloperMode")
         
         print("Version Date: 03/01/2025")
         
@@ -107,7 +107,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         #Static Tutorial Handlers
         self.ui.pushButtonAnnotate.connect('clicked(bool)', self.annotateButton)
-        if not self.isDebug:
+        if self.isDebug != True:
             self.ui.CollapsibleButtonTutorialMaking.setVisible(0)
             self.ui.pushButtonNewTutorial.setVisible(0)
             self.ui.pushButtonTestPainter.connect('clicked(bool)', self.testPainterButton)
