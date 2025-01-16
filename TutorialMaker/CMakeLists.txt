@@ -12,9 +12,7 @@ set(MODULE_PYTHON_SCRIPTS
   Lib/tmLabel.py 
   Lib/TutorialEditor.py 
   Lib/TutorialGUI.py 
-  Lib/utils.py 
-  Testing/fourMin_tutorial.py
-  Testing/welcome_tutorial.py 
+  Lib/utils.py
   )
 
 set(MODULE_PYTHON_RESOURCES
