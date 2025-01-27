@@ -112,6 +112,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.pushButtonNewTutorial.setVisible(0)
             self.ui.pushButtonTestPainter.connect('clicked(bool)', self.testPainterButton)
             self.ui.pushButtonTestPainter.setVisible(0)
+            self.logic.loadTutorialsFromRepos()
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -313,7 +314,12 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
         #Screencapture test
         #Then run all the tutorials
         tutorials_failed = 0
-        test_tutorials = os.listdir(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/")
+        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        # Check if testing folder exists
+        if not os.path.exists(testingFolder):
+            os.makedirs(testingFolder)
+        
+        test_tutorials = os.listdir()
         for unit_tutorials in test_tutorials:
             try:
                 if(not (".py" in unit_tutorials)):

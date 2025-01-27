@@ -6,7 +6,14 @@ project(TutorialMaker)
 # Extension meta-information
 set(EXTENSION_HOMEPAGE "https://github.com/SlicerLatinAmerica/SlicerTutorialMaker")
 set(EXTENSION_CATEGORY "Developer Tools")
-set(EXTENSION_CONTRIBUTORS "Douglas Goncalves (USP), Enrique Hernandez (UAEM), Joao Januario (USP), Lucas Silva (USP), Paulo Pereira (USP), Victor Montano (UAEM)")
+set(EXTENSION_CONTRIBUTORS "Douglas Gonçalves (Universidade de São Paulo), Enrique Hernández (Universidad Autónoma del Estado de México),
+                                    João Januário (Universidade de São Paulo), Lucas Silva (Universidade de São Paulo),
+                                    Paulo Pereira (Universidade de São Paulo), Victor Montaño (Universidad Autónoma del Estado de México),
+                                    Paulo Eduardo de Barros Veiga (Universidade de São Paulo), Valeria Gomez-Valdes (Universidad Autónoma del Estado de México),
+                                    Monserrat Rıos-Hernandez (Universidad Autónoma del Estado de México), Fatou Bintou N’Diaye (University Cheikh Anta Diop),
+                                    Mohamed Alalli Bilal (University Cheikh Anta Diop), Steve Pieper (Isomics Inc.),
+                                    Adriana Vilchis-Gonzalez (Universidad Autónoma del Estado de México), Luiz Otavio Murta Junior (Universidade de São Paulo),
+                                    Andras Lasso (Queen’s University), Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)")
 set(EXTENSION_DESCRIPTION "Tools for creating tutorials for 3D Slicer that can be automatically translated to multiple languages.")
 set(EXTENSION_ICONURL "https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/TutorialMaker.png")
 set(EXTENSION_SCREENSHOTURLS "https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/DOCS/annotations.png https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/DOCS/annotations2.png https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/DOCS/GUIdeveloped.png https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/DOCS/pdf.png")
