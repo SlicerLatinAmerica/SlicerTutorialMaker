@@ -112,6 +112,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.pushButtonNewTutorial.setVisible(0)
             self.ui.pushButtonTestPainter.connect('clicked(bool)', self.testPainterButton)
             self.ui.pushButtonTestPainter.setVisible(0)
+            self.logic.loadTutorialsFromRepos()
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
