@@ -85,6 +85,12 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         uiWidget = slicer.util.loadUI(self.resourcePath('UI/TutorialMaker.ui'))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
+        
+        # Verify if Testing folder exists
+        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        # Check if testing folder exists
+        if not os.path.exists(testingFolder):
+            os.makedirs(testingFolder)
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
@@ -319,7 +325,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
         if not os.path.exists(testingFolder):
             os.makedirs(testingFolder)
         
-        test_tutorials = os.listdir()
+        test_tutorials = os.listdir(testingFolder)
         for unit_tutorials in test_tutorials:
             try:
                 if(not (".py" in unit_tutorials)):
