@@ -228,13 +228,15 @@ class markdownHTMLCreator:
         with open(output_html_file, 'w', encoding='utf-8') as html_file:
             html_file.write(html_content)
 
+        print("Message")  
         message = _("HTML file '{tutorialName}' has been generated. Would you like to open it?".format(tutorialName=tutorialName))
         confirm = qt.QMessageBox.question(slicer.util.mainWindow(), _("HTML Generated"), message,
                                            qt.QMessageBox.Yes | qt.QMessageBox.No)
         if confirm == qt.QMessageBox.Yes:
             webbrowser.open("file://" + output_html_file)
-        #self.onCreatePDFReportButton(output_html_file, path, tutorialName)   
-        self.create_pdf(path, ListTotalImages) 
+        #self.onCreatePDFReportButton(output_html_file, path, tutorialName) 
+        print("Star PDF on")  
+        #  self.create_pdf(path, ListTotalImages) 
         #self.html_to_pdf(path, output_html_file, tutorialName)
 
     def getMetadata(self,path):
@@ -281,6 +283,7 @@ class markdownHTMLCreator:
         doc.print(printer)
     
     def create_pdf(self, path, ListotalImages):
+        print("Star PDF")
         output_pdf_file = path + ".pdf"
         metadata = self.getMetadata(path)
         i = len(ListotalImages) -1
