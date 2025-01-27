@@ -314,7 +314,12 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
         #Screencapture test
         #Then run all the tutorials
         tutorials_failed = 0
-        test_tutorials = os.listdir(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/")
+        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        # Check if testing folder exists
+        if not os.path.exists(testingFolder):
+            os.makedirs(testingFolder)
+        
+        test_tutorials = os.listdir()
         for unit_tutorials in test_tutorials:
             try:
                 if(not (".py" in unit_tutorials)):
