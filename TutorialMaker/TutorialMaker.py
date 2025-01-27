@@ -319,7 +319,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
         if not os.path.exists(testingFolder):
             os.makedirs(testingFolder)
         
-        test_tutorials = os.listdir()
+        test_tutorials = os.listdir(testingFolder)
         for unit_tutorials in test_tutorials:
             try:
                 if(not (".py" in unit_tutorials)):
