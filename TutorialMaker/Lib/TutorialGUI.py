@@ -500,6 +500,7 @@ class TutorialGUI(qt.QMainWindow):
             
             # Load files 
             for m_data in step:
+                exception_occurred = False
                 path_image = directory_path+"/"+m_data["window"]
                 path_meta = directory_path+"/"+m_data["metadata"]
                 List_totalImages.append(k)
@@ -546,7 +547,7 @@ class TutorialGUI(qt.QMainWindow):
                 
             last_wdg = self.find_bottom_right_widget(joinedJson)
             if not last_wdg:
-                   pass
+                pass
             else:
                 widget_x, widget_y = last_wdg['position']
                 widget_width, widget_height = last_wdg['size']
@@ -569,7 +570,7 @@ class TutorialGUI(qt.QMainWindow):
 
             self.gridLayout.addWidget(label)
             self.labels.append(label)
-            self.images_list.append(joinedImage)
+            self.images_list.append(path_image)
             self.metadata_list.append(joinedJson)
             self.annotations.append(new_annotation)
             self.annotations_json.append(new_annotation_json)
@@ -578,6 +579,7 @@ class TutorialGUI(qt.QMainWindow):
 
             if exception_occurred:
                 break
+        
         self.add_first_page()
         self.firts_screen()
 
@@ -1650,6 +1652,6 @@ class TutorialGUI(qt.QMainWindow):
         # Create MD and HTML file
         tutorialName = self.output_name
         AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName+".json",ListPositionWhite, List_totalImages)   
-        markdown_creator = markdownHTMLCreator()
-
-        html_content = markdown_creator.markdown_to_html((os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+ tutorialName), List_totalImages, tutorialName)
+        markdown_creator = markdownHTMLCreator()  
+        html_content = markdown_creator.markdown_to_html((os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName), List_totalImages, tutorialName)
+        
