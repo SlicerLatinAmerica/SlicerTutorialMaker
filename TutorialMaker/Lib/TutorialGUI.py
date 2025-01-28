@@ -501,7 +501,6 @@ class TutorialGUI(qt.QMainWindow):
             # Load files 
             for m_data in step:
                 path_image = directory_path+"/"+m_data["window"]
-                print("path_image: ",path_image)
                 path_meta = directory_path+"/"+m_data["metadata"]
                 List_totalImages.append(k)
                 try:
@@ -1651,7 +1650,6 @@ class TutorialGUI(qt.QMainWindow):
         # Create MD and HTML file
         tutorialName = self.output_name
         AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName+".json",ListPositionWhite, List_totalImages)   
-        markdown_creator = markdownHTMLCreator()  
-        print("MD_created")
+        markdown_creator = markdownHTMLCreator()
+
         html_content = markdown_creator.markdown_to_html((os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+ tutorialName), List_totalImages, tutorialName)
-        print("Finish")
