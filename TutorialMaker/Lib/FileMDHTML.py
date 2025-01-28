@@ -233,7 +233,8 @@ class markdownHTMLCreator:
                                            qt.QMessageBox.Yes | qt.QMessageBox.No)
         if confirm == qt.QMessageBox.Yes:
             webbrowser.open("file://" + output_html_file)
-        #self.onCreatePDFReportButton(output_html_file, path, tutorialName)   
+        #self.onCreatePDFReportButton(output_html_file, path, tutorialName) 
+         
         self.create_pdf(path, ListTotalImages) 
         #self.html_to_pdf(path, output_html_file, tutorialName)
 
@@ -332,7 +333,7 @@ class markdownHTMLCreator:
                             num_page = num,
                             is_first_title= False,
                             is_white_page=True)
-                        
+                    
             else:
                 numString = str(num + 1)
                 totalSteps = str(len(metadata) )
@@ -353,6 +354,7 @@ class markdownHTMLCreator:
 
 
     def add_page_divided(self, cursor, title, image_path,text,footer, page_height, num_page, is_first_title=False,is_white_page=False, is_SS_page=False):
+        sistemaop = os.name
         section_heights_SS = [0.05, 0.05, 0.2, 0.2, 0.2, 0.1, 0.1] 
         calculated_heights = [int(h * page_height) for h in section_heights_SS]
         center_format = qt.QTextBlockFormat()
@@ -396,7 +398,7 @@ class markdownHTMLCreator:
             cursor.insertBlock()
             for _ in range(int(calculated_heights_white[0] / 20)):
                 cursor.insertText("\n")
-            #title
+
             title_format = qt.QTextCharFormat()
             title_format.setFont(qt.QFont("Times", 16, qt.QFont.Bold))
             if is_white_page == False:
@@ -438,9 +440,14 @@ class markdownHTMLCreator:
                 footer_block_format = qt.QTextBlockFormat()
                 footer_block_format.setAlignment(qt.Qt.AlignCenter)
 
-                cursor.movePosition(qt.QTextCursor.Start)
-                while cursor.block().layout().position().y() < footer_y:
-                    cursor.movePosition(qt.QTextCursor.NextBlock)
+                
+                if sistemaop!="posix":
+                    cursor.movePosition(qt.QTextCursor.Start)
+                    while cursor.block().layout().position().y() < footer_y:
+                        cursor.movePosition(qt.QTextCursor.NextBlock)
+                else: 
+                    while cursor.block().layout().position().y() < footer_y:
+                        cursor.insertText("\n")
 
                 
                 footer_image_format = qt.QTextImageFormat()
@@ -501,7 +508,7 @@ class markdownHTMLCreator:
             cursor.insertBlock()
             for _ in range(int(calculated_heights_white[0] / 20)):
                 cursor.insertText("\n")
-            #title
+
             title_format = qt.QTextCharFormat()
             title_format.setFont(qt.QFont("Times", 16, qt.QFont.Bold))
             
@@ -513,7 +520,7 @@ class markdownHTMLCreator:
             for _ in range(int(calculated_heights_white[1] / 20)):
                 cursor.insertText("\n")
 
-            # Text
+            #Text
             authors_format = qt.QTextCharFormat()
             authors_format.setFont(qt.QFont("Times", 12))
             cursor.insertBlock(center_format)  
@@ -537,10 +544,9 @@ class markdownHTMLCreator:
                 footer_block_format = qt.QTextBlockFormat()
                 footer_block_format.setAlignment(qt.Qt.AlignCenter)
 
-                #cursor.movePosition(qt.QTextCursor.Start)
-                #while cursor.block().layout().position().y() < footer_y:
-                #    cursor.movePosition(qt.QTextCursor.NextBlock)
-
+                tab = ((int(cursor.block().layout().position().y()/580)+1)*580)
+                while cursor.block().layout().position().y() < tab:
+                    cursor.insertText("\n")
                 
                 footer_image_format = qt.QTextImageFormat()
                 footer_image_format.setName(footer_image_path)
@@ -597,7 +603,7 @@ class markdownHTMLCreator:
             cursor.insertBlock(center_format)
             cursor.insertText(title + "\n", title_format)
 
-            # Secciones 3-6: Imagen
+            # Secciones 3-6: Imagen
             if image_path:
             
                 image_format = qt.QTextImageFormat()
@@ -613,11 +619,14 @@ class markdownHTMLCreator:
             layout = doc.documentLayout()
             current_pos = layout.blockBoundingRect(current_block).bottom()
 
-            # Sección 7: Texto Principal
+            # Sección 7: Texto Principal
             text_format = qt.QTextCharFormat()
             text_format.setFont(qt.QFont("Times", 12))
             cursor.insertBlock(left_format)
             cursor.insertText(text + "\n\n", text_format)
+
+            if sistemaop=="posix":
+                cursor.insertText("\n\n")
 
            
             if footer_image_path:
@@ -647,9 +656,11 @@ class markdownHTMLCreator:
         
             current_block = cursor.block()
             doc = cursor.document()
-            
     
             layout = doc.documentLayout()
             current_pos = layout.blockBoundingRect(current_block).bottom()
+
+            if sistemaop=="posix":
+                cursor.insertText("\n\n\n\n")
            
 

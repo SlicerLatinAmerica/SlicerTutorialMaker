@@ -58,7 +58,7 @@ class GitTools:
         endpoint = f"https://api.github.com/repos/{repo}/contents{path}"
         contents = requests.get(endpoint).json()
         if not isinstance(contents, list) or not isinstance(contents[0], dict):
-            if contents.has_key('message'):
+            if 'message' in contents:
                 raise Exception(_("Message from {endpoint}: {message}".format(endpoint=endpoint, message=contents['message'])))
             raise Exception(_("Malformed Response from {endpoint}".format(endpoint=endpoint)))
         

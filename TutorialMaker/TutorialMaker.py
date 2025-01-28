@@ -68,7 +68,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.__selectedTutorial = None
         self.isDebug = slicer.app.settings().value("Developer/DeveloperMode")
         
-        print("Version Date: 03/01/2025")
+        print("Version Date: 01/28/2025-07:45PM")
         
         #PROTOTYPE FOR PLAYBACK
 
@@ -86,12 +86,8 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
         
-        # Verify if Testing folder exists
-        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
-        # Check if testing folder exists
-        if not os.path.exists(testingFolder):
-            os.makedirs(testingFolder)
-
+        #Verify if the folders to manipulate the tutorials are created
+        utils.util.verifyOutputFolders(self)
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = TutorialMakerLogic()
@@ -122,12 +118,9 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
-
+        
         #Update GUI
         self.populateTutorialList()
-
-        #Verify if the folders to manipulate the tutorials are created
-        utils.util.verifyOutputFolders(self)
 
     def cleanup(self):
         self.logic.exitTutorialEditor()
@@ -191,7 +184,6 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.populateTutorialList()
         pass
 
-    
     def populateTutorialList(self):
         loadedTutorials = self.logic.loadTutorials()
         listWidget = self.ui.listWidgetTutorials
@@ -280,7 +272,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
                     if TutorialFile.endswith(".py"):
                         try:
                             pyRaw = files.getRaw(f"Tutorials/{TutorialRoot}/{TutorialFile}")
-                            fd = open(f"{modulePath}/Testing/{TutorialFile}", "w")
+                            fd = open(f"{modulePath}/Testing/{TutorialFile}", "w", encoding='utf-8')
                             fd.write(pyRaw)
                             fd.close()
                         except Exception as e:
@@ -321,10 +313,6 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
         #Then run all the tutorials
         tutorials_failed = 0
         testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
-        # Check if testing folder exists
-        if not os.path.exists(testingFolder):
-            os.makedirs(testingFolder)
-        
         test_tutorials = os.listdir(testingFolder)
         for unit_tutorials in test_tutorials:
             try:
@@ -407,10 +395,3 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
             msec = 100
 
         slicer.util.delayDisplay(message, msec)
-
-
-
-
-
-
-        
