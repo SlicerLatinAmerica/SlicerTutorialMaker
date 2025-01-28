@@ -280,7 +280,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
                     if TutorialFile.endswith(".py"):
                         try:
                             pyRaw = files.getRaw(f"Tutorials/{TutorialRoot}/{TutorialFile}")
-                            fd = open(f"{modulePath}/Testing/{TutorialFile}", "w")
+                            fd = open(f"{modulePath}/Testing/{TutorialFile}", "w", encoding='utf-8')
                             fd.write(pyRaw)
                             fd.close()
                         except Exception as e:
