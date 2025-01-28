@@ -378,8 +378,11 @@ class TutorialGUI(qt.QMainWindow):
         self.metadata_list.insert(i, [])
         self.annotations.insert(i, new_annotation)
         self.annotations_json.insert(i, new_annotation_json)
-        self.steps.insert(i, (" - Acknowledgments"))
-        self.widgets.insert(i, ("Add the acknowledgments here"))
+        
+        self.steps.insert(i, (" - Add the acknowledgements here"))
+        self.widgets.insert(i, ("Acknowledgements"))
+        self.widgets.insert(i, ("Acknowledgements"))
+        self.steps.insert(i, (" - Add the acknowledgements here"))
 
         # Clear the existing grid layout
         while self.gridLayout.count():
