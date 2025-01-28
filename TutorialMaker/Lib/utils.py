@@ -399,9 +399,13 @@ class Widget():
             if (_fRect.size().height() == 0 or _fRect.size().width() == 0):
                 return
 
+            _fText = ""
+            if _node.data(0) is not None:
+                _fText = _node.data(0)
+
             __itemData = SimpleNamespace(name= f"XtreeViewWidget_{NodeIndex}", 
             className= lambda:"XtreeViewWidget", 
-            text= _node.data(0),
+            text= _fText,
             mapToGlobal= self.__widgetData.viewport().mapToGlobal, 
             rect= _fRect, 
             parent=lambda: self.__widgetData,
