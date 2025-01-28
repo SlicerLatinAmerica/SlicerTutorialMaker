@@ -500,6 +500,7 @@ class TutorialGUI(qt.QMainWindow):
             
             # Load files 
             for m_data in step:
+                exception_occurred = False
                 path_image = directory_path+"/"+m_data["window"]
                 print("path_image: ",path_image)
                 path_meta = directory_path+"/"+m_data["metadata"]
@@ -547,7 +548,7 @@ class TutorialGUI(qt.QMainWindow):
                 
             last_wdg = self.find_bottom_right_widget(joinedJson)
             if not last_wdg:
-                   pass
+                pass
             else:
                 widget_x, widget_y = last_wdg['position']
                 widget_width, widget_height = last_wdg['size']
@@ -568,9 +569,10 @@ class TutorialGUI(qt.QMainWindow):
                     resized_image.save(path_image)
                     joinedImage = qt.QImage(resized_image).copy()
 
+            print("Add image")
             self.gridLayout.addWidget(label)
             self.labels.append(label)
-            self.images_list.append(joinedImage)
+            self.images_list.append(path_image)
             self.metadata_list.append(joinedJson)
             self.annotations.append(new_annotation)
             self.annotations_json.append(new_annotation_json)
@@ -581,6 +583,8 @@ class TutorialGUI(qt.QMainWindow):
                 break
         self.add_first_page()
         self.firts_screen()
+        for n in self.images_list:
+            print(n)
 
     def firts_screen(self):
         self.scree_prev = 0

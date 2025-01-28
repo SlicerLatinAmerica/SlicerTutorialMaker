@@ -236,7 +236,7 @@ class markdownHTMLCreator:
             webbrowser.open("file://" + output_html_file)
         #self.onCreatePDFReportButton(output_html_file, path, tutorialName) 
         print("Star PDF on")  
-        #  self.create_pdf(path, ListTotalImages) 
+        self.create_pdf(path, ListTotalImages) 
         #self.html_to_pdf(path, output_html_file, tutorialName)
 
     def getMetadata(self,path):
@@ -302,53 +302,53 @@ class markdownHTMLCreator:
         doc = qt.QTextDocument()
         cursor = qt.QTextCursor(doc)
 
-        for num,item in enumerate(metadata):            
-            numString = str(num)
-            if (ListotalImages[num] == -1):
-                if (num == 0 or num ==i):
-                    numString = str(num + 1)
-                    totalSteps = str(len(metadata) )
-                    self.add_page_divided(cursor,
-                            title=metadata[item]["slide_title"],
-                            image_path=None,  # No imagen en la portada
-                            text=metadata[item]["slide_text"],
-                            footer=f"{str(numString)}/{str(totalSteps)}",
-                            page_height = height,
-                            num_page = num,
-                            is_first_title=True,
-                            is_white_page=False
-                    ) 
-                    printer.newPage()
+        # for num,item in enumerate(metadata):            
+        #     numString = str(num)
+        #     if (ListotalImages[num] == -1):
+        #         if (num == 0 or num ==i):
+        #             numString = str(num + 1)
+        #             totalSteps = str(len(metadata) )
+        #             self.add_page_divided(cursor,
+        #                     title=metadata[item]["slide_title"],
+        #                     image_path=None,  # No imagen en la portada
+        #                     text=metadata[item]["slide_text"],
+        #                     footer=f"{str(numString)}/{str(totalSteps)}",
+        #                     page_height = height,
+        #                     num_page = num,
+        #                     is_first_title=True,
+        #                     is_white_page=False
+        #             ) 
+        #             printer.newPage()
                     
                             
-                else:
-                    numString = str(num + 1)
-                    totalSteps = str(len(metadata) )
-                    cursor.insertBlock()
-                    cursor.insertText("\f") 
-                    self.add_page_divided(cursor,
-                            title=metadata[item]["slide_title"],
-                            image_path=None,
-                            text=metadata[item]["slide_text"],
-                            footer = f"{str(numString)}/{str(totalSteps)}",
-                            page_height = height,
-                            num_page = num,
-                            is_first_title= False,
-                            is_white_page=True)
+        #         else:
+        #             numString = str(num + 1)
+        #             totalSteps = str(len(metadata) )
+        #             cursor.insertBlock()
+        #             cursor.insertText("\f") 
+        #             self.add_page_divided(cursor,
+        #                     title=metadata[item]["slide_title"],
+        #                     image_path=None,
+        #                     text=metadata[item]["slide_text"],
+        #                     footer = f"{str(numString)}/{str(totalSteps)}",
+        #                     page_height = height,
+        #                     num_page = num,
+        #                     is_first_title= False,
+        #                     is_white_page=True)
                         
-            else:
-                numString = str(num + 1)
-                totalSteps = str(len(metadata) )
-                cursor.insertBlock()
-                cursor.insertText("\f") 
-                self.add_page_divided(cursor,
-                        title=metadata[item]["slide_title"],
-                        image_path = os.path.join(os.path.dirname(slicer.util.modulePath("TutorialMaker")),"Outputs","Translation",f"output_image_{num}.png"),
-                        text=metadata[item]["slide_text"],
-                        footer = f"{str(numString)}/{str(totalSteps)}",
-                        page_height = height,
-                        num_page = num,
-                        is_SS_page = True)
+        #     else:
+        #         numString = str(num + 1)
+        #         totalSteps = str(len(metadata) )
+        #         cursor.insertBlock()
+        #         cursor.insertText("\f") 
+        #         self.add_page_divided(cursor,
+        #                 title=metadata[item]["slide_title"],
+        #                 image_path = os.path.join(os.path.dirname(slicer.util.modulePath("TutorialMaker")),"Outputs","Translation",f"output_image_{num}.png"),
+        #                 text=metadata[item]["slide_text"],
+        #                 footer = f"{str(numString)}/{str(totalSteps)}",
+        #                 page_height = height,
+        #                 num_page = num,
+        #                 is_SS_page = True)
                 
         doc.setPageSize(qt.QSizeF(printer.pageRect().size()))
         doc.print_(printer)
