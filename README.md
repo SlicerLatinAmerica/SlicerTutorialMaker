@@ -5,10 +5,18 @@ The Slicer Tutorial Maker is an extension to 3D Slicer to streamline the creatio
 [Documentação em Português](https://github.com/SlicerLatinAmerica/SlicerTutorialMaker/blob/main/README_pt-br.md)
 [Documentación en Español](https://github.com/SlicerLatinAmerica/SlicerTutorialMaker/blob/main/README_esp.md)
 
+### Installation (Using Extension Manager)
+- Install [3D Slicer 5.9.0-2025-01-28](https://download.slicer.org/) preview version or [latest stable available](https://download.slicer.org/) 
+- Go to the "Extension Manager" and search for "TutorialMaker"
+![TutorialMakenAnnotation](https://github.com/user-attachments/assets/a6060e33-34bd-444c-a230-293c580962ca)
+- Click to restart to get the extension loaded
+![image](https://github.com/user-attachments/assets/5b035504-fcc3-42e5-9ae3-2d45615daea7)
+- Proceed to [**How to use Tutorial Maker**](#how-to-use-tutorial-maker)
 
-### Installation
+### Installation (Manually)
+Follow these steps if you want to get the latest version of the extension before the preview build (which occurs in the morning ~9 EST).
 
-- Install the latest [3D Slicer Stable Release](https://download.slicer.org/) (currently 3D Slicer-5.6.2) or [3D Slicer Preview Release version 5.7 or higher](https://download.slicer.org/) 
+- Install the latest [3D Slicer Stable Release](https://download.slicer.org/) or [3D Slicer Preview Release](https://download.slicer.org/) 
 - Open the [Tutorial Maker repository on GitHub](https://github.com/SlicerLatinAmerica/TutorialMaker)
 - Clone the green button Code' and select the option 'Download ZIP' as displayed in the image below to download the file 'TutorialMaker.zip' on your computer
 - Unzip the 'TutorialMaker.zip' archive to access the 'TutorialMaker-main' directory
