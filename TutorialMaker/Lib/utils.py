@@ -136,6 +136,12 @@ class util():
             os.mkdir(basePath + "Raw")
             os.mkdir(basePath + "Annotations")
             os.mkdir(basePath + "Translation")
+        
+        # Verify if Testing folder exists
+        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        # Check if testing folder exists
+        if not os.path.exists(testingFolder):
+            os.mkdir(testingFolder)
 
 
 class WidgetFinder(qt.QWidget):
