@@ -233,8 +233,8 @@ class markdownHTMLCreator:
                                            qt.QMessageBox.Yes | qt.QMessageBox.No)
         if confirm == qt.QMessageBox.Yes:
             webbrowser.open("file://" + output_html_file)
-        #self.onCreatePDFReportButton(output_html_file, path, tutorialName)   
-        self.create_pdf(path, ListTotalImages) 
+        #self.onCreatePDFReportButton(output_html_file, path, tutorialName) 
+        #   self.create_pdf(path, ListTotalImages) 
         #self.html_to_pdf(path, output_html_file, tutorialName)
 
     def getMetadata(self,path):

@@ -557,16 +557,15 @@ class TutorialGUI(qt.QMainWindow):
                 image = qt.QImage(joinedImage)
                 image_width = image.width()
                 image_height = image.height()
+                #print("Size image:",image_width,",",image_height)
+                #print("last wdg:",last_wdg)
 
                 if widget_end_x == image_width:
                     pass
                 else:
-                    esc = image_width/widget_end_x
-                    new_width = widget_end_x
-                    new_height = image_height / esc
-                        
-                    resized_image = image.scaled(new_width, new_height, qt.Qt.IgnoreAspectRatio, qt.Qt.SmoothTransformation)
+                    resized_image = image.scaled(widget_end_x, widget_end_y, qt.Qt.IgnoreAspectRatio, qt.Qt.SmoothTransformation)
                     resized_image.save(path_image)
+                    joinedImage = qt.QImage(resized_image).copy()
 
             self.gridLayout.addWidget(label)
             self.labels.append(label)
@@ -597,18 +596,22 @@ class TutorialGUI(qt.QMainWindow):
         bottom_right_widget = None
 
         for key, widget in content.items():
-            pos_x, pos_y = widget["position"]
-            width, height = widget["size"]
-            
-            # Calcular la esquina inferior derecha
-            bottom_right_x = pos_x + width
-            bottom_right_y = pos_y + height
-            
-            # Comparar con el máximo actual
-            if bottom_right_x > max_x or (bottom_right_x == max_x and bottom_right_y > max_y):
-                max_x = bottom_right_x
-                max_y = bottom_right_y
+            if widget["name"] == "StatusBar":
+                #print("StatusBar SI")
                 bottom_right_widget = widget
+            # pos_x, pos_y = widget["position"]
+            # width, height = widget["size"]
+            
+            # # Calcular la esquina inferior derecha
+            # bottom_right_x = pos_x + width
+            # bottom_right_y = pos_y + height
+            
+            # # Comparar con el máximo actual
+            # if bottom_right_x > max_x or (bottom_right_x == max_x and bottom_right_y > max_y):
+            #     max_x = bottom_right_x
+            #     max_y = bottom_right_y
+            #     bottom_right_widget = widget
+
 
         return bottom_right_widget 
 
@@ -749,198 +752,201 @@ class TutorialGUI(qt.QMainWindow):
         else :
             pnt_clk = self.map_point(self.start)
             self.widget_collection = self.find_widget(widgets, pnt_clk)
-            wdgts_child = self.select_widget_child(self.widget_collection)
-            
-            star = None
-            end = None
-
-            anotation = None
-            if wdgts_child is not None:
-                if self.select_annt == "rect":
-                    x_i,y_i = wdgts_child["position"]
-                    a,b = wdgts_child["size"]
-                    x_f = x_i + a
-                    y_f = y_i + b
-                    star = self.remap_point(qt.QPoint(x_i, y_i))
-                    end = self.remap_point(qt.QPoint(x_f, y_f))
-                    anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
-                elif self.select_annt == "crcls":
-                    x_i, y_i = wdgts_child["position"]
-                    w, h = wdgts_child["size"]
-                    c_x = x_i + w / 2
-                    c_y = y_i + h / 2
-                    wdgts_child['center'] = [c_x, c_y]
-                    wdgts_child['radio'] = [x_i, y_i]
-                    star = self.remap_point(qt.QPoint(c_x, c_y))
-                    end = self.remap_point(qt.QPoint(x_i, y_i)) 
-                    anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
-                elif self.select_annt == "click":
-                    x_i, y_i = wdgts_child["position"]
-                    w, h = wdgts_child["size"]
-                    offset_x = 3 * w // 4
-                    offset_y = 3 * h // 4
-                    c_x = x_i + offset_x
-                    c_y = y_i + offset_y
-                    star = self.remap_point(qt.QPoint(c_x, c_y))
-                    
-                    anotation = Notes(self.select_annt, star, end, self.selected_color, self.t_px, self.fill, self.dir_icon)
-                    wdgts_child['labelText'] = self.text_in.text
-                elif self.select_annt == "arwT":
-                    x_i, y_i = wdgts_child["position"]
-                    w, h = wdgts_child["size"]
-
-                    td = int(w / 3)
-                    bd = int(h / 3)
-                    td_2 = int(td / 2)
-                    bd_2 = int(bd / 2)
-
-                    top_left = (x_i + td_2 * 1, y_i)
-                    top_center = (x_i + td_2 * 3, y_i)
-                    top_right = (x_i + td_2 * 5, y_i)
-
-                    right_top = (x_i + w, y_i + bd_2 * 1)
-                    right_center = (x_i + w, y_i + bd_2 * 3)
-                    right_bottom = (x_i + w, y_i + bd_2 * 5)
-
-                    bottom_left = (x_i + td_2 * 1, y_i + h)
-                    bottom_center = (x_i + td_2 * 3, y_i + h)
-                    bottom_right = (x_i + td_2 * 5, y_i + h)
-
-                    right_top = (x_i + w,y_i + bd_2 * 1)
-                    right_center = (x_i + w, y_i + bd_2 * 3)
-                    right_bottom = (x_i + w, y_i + bd_2 * 5)
-
-                    left_top = (x_i, y_i + bd_2 * 1)
-                    left_center = (x_i, y_i + bd_2 * 3)
-                    left_bottom = (x_i, y_i + bd_2 * 5)
-                    
-                    p1 = (x_i + td * 1, y_i)
-                    p2 = (x_i + td * 2, y_i)                 
-                    p3 = (x_i + w, y_i + bd * 1)
-                    p4 = (x_i + w, y_i + bd * 2)                
-                    p5 = (x_i + td * 2, y_i + h)
-                    p6 = (x_i + td * 1, y_i + h)                   
-                    p7 = (x_i, y_i + bd * 2)
-                    p8 = (x_i, y_i + bd * 1)
-
-                    p0 = (x_i, y_i)
-                    p9 = (x_i + w, y_i)
-                    p10 = (x_i + w, y_i + h)
-                    p11 = (x_i, y_i + h)
-
-                    click = self.map_point(self.start)
-                    x = click.x()
-                    y = click.y()
-
-                    m1 = (p5[1] - p1[1]) / (p5[0] - p1[0])  # p1 to p5
-                    m2 = (p6[1] - p2[1]) / (p6[0] - p2[0])  # p2 to p6
-                    m3 = (p7[1] - p3[1]) / (p7[0] - p3[0])  # p7 to p3
-                    m4 = (p8[1] - p4[1]) / (p8[0] - p4[0])  # p8 to p4  
-
-                    m5 = (p10[1] - p0[1]) / (p10[0] - p0[0])  # p0 to p10 
-                    m6 = (p11[1] - p9[1]) / (p11[0] - p9[0])  # p9 to p11 
-
-                    b1 = p1[1] - m1 * p1[0]
-                    b2 = p2[1] - m2 * p2[0]
-                    b3 = p7[1] - m3 * p7[0]
-                    b4 = p8[1] - m4 * p8[0]
-                    b5 = p0[1] - m5 * p0[0]
-                    b6 = p9[1] - m6 * p9[0]
-
-                    distance = 80
-                    cat = math.sqrt(distance ** 2 / 2)
-                    
-                    if y > m1 * x + b1 and y > m2 * x + b2:
-                        wdgts_child['position_tail'] = [bottom_center[0], bottom_center[1]+distance]
-                        star = self.remap_point(qt.QPoint(bottom_center[0], bottom_center[1]))
-                        end = self.remap_point(qt.QPoint(bottom_center[0], bottom_center[1]+distance))
-                        star_painter = qt.QPoint(bottom_center[0], bottom_center[1])
-                        end_painter = qt.QPoint(bottom_center[0], bottom_center[1]+distance)
-                    elif y < m2 * x + b2 and y > m6 * x + b6:
-                        wdgts_child['position_tail'] = [bottom_left[0]-cat, bottom_left[1]+cat]
-                        star = self.remap_point(qt.QPoint(bottom_left[0], bottom_left[1]))
-                        end = self.remap_point(qt.QPoint(bottom_left[0]-cat, bottom_left[1]+cat))
-                        star_painter = qt.QPoint(bottom_left[0], bottom_left[1])
-                        end_painter = qt.QPoint(bottom_left[0]-cat, bottom_left[1]+cat)
-                    elif y < m6 * x + b6 and y > m3 * x + b3:
-                        wdgts_child['position_tail'] = [left_bottom[0]-cat, left_bottom[1]+cat]
-                        star = self.remap_point(qt.QPoint(left_bottom[0], left_bottom[1]))
-                        end = self.remap_point(qt.QPoint(left_bottom[0]-cat, left_bottom[1]+cat))
-                        star_painter = qt.QPoint(left_bottom[0], left_bottom[1])
-                        end_painter = qt.QPoint(left_bottom[0]-cat, left_bottom[1]+cat)
-                    elif y > m4 * x + b4 and y < m3 * x + b3:
-                        wdgts_child['position_tail'] = [left_center[0]-distance, left_center[1]]
-                        star = self.remap_point(qt.QPoint(left_center[0], left_center[1]))
-                        end = self.remap_point(qt.QPoint(left_center[0]-distance, left_center[1]))
-                        star_painter = qt.QPoint(left_center[0], left_center[1])
-                        end_painter = qt.QPoint(left_center[0]-distance, left_center[1])
-                    elif y < m4 * x + b4 and y > m5 * x + b5:
-                        wdgts_child['position_tail'] = [left_top[0]-cat, left_top[1]-cat]
-                        star = self.remap_point(qt.QPoint(left_top[0], left_top[1]))
-                        end = self.remap_point(qt.QPoint(left_top[0]-cat, left_top[1]-cat))
-                        star_painter = qt.QPoint(left_top[0], left_top[1])
-                        end_painter = qt.QPoint(left_top[0]-cat, left_top[1]-cat)
-                    elif y < m5 * x + b5 and y > m1 * x + b1:
-                        wdgts_child['position_tail'] = [top_left[0]-cat, top_left[1]-cat]
-                        star = self.remap_point(qt.QPoint(top_left[0], top_left[1]))
-                        end = self.remap_point(qt.QPoint(top_left[0]-cat, top_left[1]-cat))
-                        star_painter = qt.QPoint(top_left[0], top_left[1])
-                        end_painter = qt.QPoint(top_left[0]-cat, top_left[1]-cat)
-                    elif y < m1 * x + b1 and y < m2 * x + b2:
-                        wdgts_child['position_tail'] = [top_center[0], top_center[1]-distance]
-                        star = self.remap_point(qt.QPoint(top_center[0], top_center[1]))
-                        end = self.remap_point(qt.QPoint(top_center[0], top_center[1]-distance))
-                        star_painter = qt.QPoint(top_center[0], top_center[1])
-                        end_painter = qt.QPoint(top_center[0], top_center[1]-distance)
-                    elif y > m2 * x + b2 and y < m6 * x + b6:
-                        wdgts_child['position_tail'] = [top_right[0]+cat, top_right[1]-cat]
-                        star = self.remap_point(qt.QPoint(top_right[0], top_right[1]))
-                        end = self.remap_point(qt.QPoint(top_right[0]+cat, top_right[1]-cat))
-                        star_painter = qt.QPoint(top_right[0], top_right[1])
-                        end_painter = qt.QPoint(top_right[0]+cat, top_right[1]-cat)
-                    elif y > m6 * x + b6 and y < m3 * x + b3:
-                        wdgts_child['position_tail'] = [right_top[0]+cat, right_top[1]-cat]
-                        star = self.remap_point(qt.QPoint(right_top[0], right_top[1]))
-                        end = self.remap_point(qt.QPoint(right_top[0]+cat, right_top[1]-cat))
-                        star_painter = qt.QPoint(right_top[0], right_top[1])
-                        end_painter = qt.QPoint(right_top[0]+cat, right_top[1]-cat)
-                    elif y < m4 * x + b4 and y > m3 * x + b3:
-                        wdgts_child['position_tail'] = [right_center[0]+distance, right_center[1]]
-                        star = self.remap_point(qt.QPoint(right_center[0], right_center[1]))
-                        end = self.remap_point(qt.QPoint(right_center[0]+distance, right_center[1]))
-                        star_painter = qt.QPoint(right_center[0], right_center[1])
-                        end_painter = qt.QPoint(right_center[0]+distance, right_center[1])
-                    elif y > m4 * x + b4 and y < m5 * x + b5:
-                        wdgts_child['position_tail'] = [right_bottom[0]+cat, right_bottom[1]+cat]
-                        star = self.remap_point(qt.QPoint(right_bottom[0], right_bottom[1]))
-                        end = self.remap_point(qt.QPoint(right_bottom[0]+cat, right_bottom[1]+cat))
-                        star_painter = qt.QPoint(right_bottom[0], right_bottom[1])
-                        end_painter = qt.QPoint(right_bottom[0]+cat, right_bottom[1]+cat)
-                    else:
-                        wdgts_child['position_tail'] = [bottom_right[0]+cat, bottom_right[1]+cat]
-                        star = self.remap_point(qt.QPoint(bottom_right[0], bottom_right[1]))
-                        end = self.remap_point(qt.QPoint(bottom_right[0]+cat, bottom_right[1]+cat))
-                        star_painter = qt.QPoint(bottom_right[0], bottom_right[1])
-                        end_painter = qt.QPoint(bottom_right[0]+cat, bottom_right[1]+cat)
-
-                    wdgts_child['labelPosition'] = [ float(star_painter.x()), float(star_painter.y()), float(end_painter.x()), float(end_painter.y())]
-                    wdgts_child['labelText'] = self.text_in.text
-                    anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill, self.text_in.text, self.t_px)
-
-                elif self.select_annt == "icon":
-                    pass
-                elif self.select_annt == "text":
-                    pass
-                else:
-                    pass
+            try:
+                wdgts_child = self.select_widget_child(self.widget_collection)
                 
-                if self.save_annotation == True:
-                    self.annotations[self.scree_prev].append(anotation)
-                    self.annotations_json[self.scree_prev].append(wdgts_child)
-                    self.draw_annotations()
-                else:
-                    self.draw_annotations()
-                    self.draw_preview(anotation)
+                star = None
+                end = None
+
+                anotation = None
+                if wdgts_child is not None:
+                    if self.select_annt == "rect":
+                        x_i,y_i = wdgts_child["position"]
+                        a,b = wdgts_child["size"]
+                        x_f = x_i + a
+                        y_f = y_i + b
+                        star = self.remap_point(qt.QPoint(x_i, y_i))
+                        end = self.remap_point(qt.QPoint(x_f, y_f))
+                        anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
+                    elif self.select_annt == "crcls":
+                        x_i, y_i = wdgts_child["position"]
+                        w, h = wdgts_child["size"]
+                        c_x = x_i + w / 2
+                        c_y = y_i + h / 2
+                        wdgts_child['center'] = [c_x, c_y]
+                        wdgts_child['radio'] = [x_i, y_i]
+                        star = self.remap_point(qt.QPoint(c_x, c_y))
+                        end = self.remap_point(qt.QPoint(x_i, y_i)) 
+                        anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
+                    elif self.select_annt == "click":
+                        x_i, y_i = wdgts_child["position"]
+                        w, h = wdgts_child["size"]
+                        offset_x = 3 * w // 4
+                        offset_y = 3 * h // 4
+                        c_x = x_i + offset_x
+                        c_y = y_i + offset_y
+                        star = self.remap_point(qt.QPoint(c_x, c_y))
+                        
+                        anotation = Notes(self.select_annt, star, end, self.selected_color, self.t_px, self.fill, self.dir_icon)
+                        wdgts_child['labelText'] = self.text_in.text
+                    elif self.select_annt == "arwT":
+                        x_i, y_i = wdgts_child["position"]
+                        w, h = wdgts_child["size"]
+
+                        td = int(w / 3)
+                        bd = int(h / 3)
+                        td_2 = int(td / 2)
+                        bd_2 = int(bd / 2)
+
+                        top_left = (x_i + td_2 * 1, y_i)
+                        top_center = (x_i + td_2 * 3, y_i)
+                        top_right = (x_i + td_2 * 5, y_i)
+
+                        right_top = (x_i + w, y_i + bd_2 * 1)
+                        right_center = (x_i + w, y_i + bd_2 * 3)
+                        right_bottom = (x_i + w, y_i + bd_2 * 5)
+
+                        bottom_left = (x_i + td_2 * 1, y_i + h)
+                        bottom_center = (x_i + td_2 * 3, y_i + h)
+                        bottom_right = (x_i + td_2 * 5, y_i + h)
+
+                        right_top = (x_i + w,y_i + bd_2 * 1)
+                        right_center = (x_i + w, y_i + bd_2 * 3)
+                        right_bottom = (x_i + w, y_i + bd_2 * 5)
+
+                        left_top = (x_i, y_i + bd_2 * 1)
+                        left_center = (x_i, y_i + bd_2 * 3)
+                        left_bottom = (x_i, y_i + bd_2 * 5)
+                        
+                        p1 = (x_i + td * 1, y_i)
+                        p2 = (x_i + td * 2, y_i)                 
+                        p3 = (x_i + w, y_i + bd * 1)
+                        p4 = (x_i + w, y_i + bd * 2)                
+                        p5 = (x_i + td * 2, y_i + h)
+                        p6 = (x_i + td * 1, y_i + h)                   
+                        p7 = (x_i, y_i + bd * 2)
+                        p8 = (x_i, y_i + bd * 1)
+
+                        p0 = (x_i, y_i)
+                        p9 = (x_i + w, y_i)
+                        p10 = (x_i + w, y_i + h)
+                        p11 = (x_i, y_i + h)
+
+                        click = self.map_point(self.start)
+                        x = click.x()
+                        y = click.y()
+
+                        m1 = (p5[1] - p1[1]) / (p5[0] - p1[0])  # p1 to p5
+                        m2 = (p6[1] - p2[1]) / (p6[0] - p2[0])  # p2 to p6
+                        m3 = (p7[1] - p3[1]) / (p7[0] - p3[0])  # p7 to p3
+                        m4 = (p8[1] - p4[1]) / (p8[0] - p4[0])  # p8 to p4  
+
+                        m5 = (p10[1] - p0[1]) / (p10[0] - p0[0])  # p0 to p10 
+                        m6 = (p11[1] - p9[1]) / (p11[0] - p9[0])  # p9 to p11 
+
+                        b1 = p1[1] - m1 * p1[0]
+                        b2 = p2[1] - m2 * p2[0]
+                        b3 = p7[1] - m3 * p7[0]
+                        b4 = p8[1] - m4 * p8[0]
+                        b5 = p0[1] - m5 * p0[0]
+                        b6 = p9[1] - m6 * p9[0]
+
+                        distance = 80
+                        cat = math.sqrt(distance ** 2 / 2)
+                        
+                        if y > m1 * x + b1 and y > m2 * x + b2:
+                            wdgts_child['position_tail'] = [bottom_center[0], bottom_center[1]+distance]
+                            star = self.remap_point(qt.QPoint(bottom_center[0], bottom_center[1]))
+                            end = self.remap_point(qt.QPoint(bottom_center[0], bottom_center[1]+distance))
+                            star_painter = qt.QPoint(bottom_center[0], bottom_center[1])
+                            end_painter = qt.QPoint(bottom_center[0], bottom_center[1]+distance)
+                        elif y < m2 * x + b2 and y > m6 * x + b6:
+                            wdgts_child['position_tail'] = [bottom_left[0]-cat, bottom_left[1]+cat]
+                            star = self.remap_point(qt.QPoint(bottom_left[0], bottom_left[1]))
+                            end = self.remap_point(qt.QPoint(bottom_left[0]-cat, bottom_left[1]+cat))
+                            star_painter = qt.QPoint(bottom_left[0], bottom_left[1])
+                            end_painter = qt.QPoint(bottom_left[0]-cat, bottom_left[1]+cat)
+                        elif y < m6 * x + b6 and y > m3 * x + b3:
+                            wdgts_child['position_tail'] = [left_bottom[0]-cat, left_bottom[1]+cat]
+                            star = self.remap_point(qt.QPoint(left_bottom[0], left_bottom[1]))
+                            end = self.remap_point(qt.QPoint(left_bottom[0]-cat, left_bottom[1]+cat))
+                            star_painter = qt.QPoint(left_bottom[0], left_bottom[1])
+                            end_painter = qt.QPoint(left_bottom[0]-cat, left_bottom[1]+cat)
+                        elif y > m4 * x + b4 and y < m3 * x + b3:
+                            wdgts_child['position_tail'] = [left_center[0]-distance, left_center[1]]
+                            star = self.remap_point(qt.QPoint(left_center[0], left_center[1]))
+                            end = self.remap_point(qt.QPoint(left_center[0]-distance, left_center[1]))
+                            star_painter = qt.QPoint(left_center[0], left_center[1])
+                            end_painter = qt.QPoint(left_center[0]-distance, left_center[1])
+                        elif y < m4 * x + b4 and y > m5 * x + b5:
+                            wdgts_child['position_tail'] = [left_top[0]-cat, left_top[1]-cat]
+                            star = self.remap_point(qt.QPoint(left_top[0], left_top[1]))
+                            end = self.remap_point(qt.QPoint(left_top[0]-cat, left_top[1]-cat))
+                            star_painter = qt.QPoint(left_top[0], left_top[1])
+                            end_painter = qt.QPoint(left_top[0]-cat, left_top[1]-cat)
+                        elif y < m5 * x + b5 and y > m1 * x + b1:
+                            wdgts_child['position_tail'] = [top_left[0]-cat, top_left[1]-cat]
+                            star = self.remap_point(qt.QPoint(top_left[0], top_left[1]))
+                            end = self.remap_point(qt.QPoint(top_left[0]-cat, top_left[1]-cat))
+                            star_painter = qt.QPoint(top_left[0], top_left[1])
+                            end_painter = qt.QPoint(top_left[0]-cat, top_left[1]-cat)
+                        elif y < m1 * x + b1 and y < m2 * x + b2:
+                            wdgts_child['position_tail'] = [top_center[0], top_center[1]-distance]
+                            star = self.remap_point(qt.QPoint(top_center[0], top_center[1]))
+                            end = self.remap_point(qt.QPoint(top_center[0], top_center[1]-distance))
+                            star_painter = qt.QPoint(top_center[0], top_center[1])
+                            end_painter = qt.QPoint(top_center[0], top_center[1]-distance)
+                        elif y > m2 * x + b2 and y < m6 * x + b6:
+                            wdgts_child['position_tail'] = [top_right[0]+cat, top_right[1]-cat]
+                            star = self.remap_point(qt.QPoint(top_right[0], top_right[1]))
+                            end = self.remap_point(qt.QPoint(top_right[0]+cat, top_right[1]-cat))
+                            star_painter = qt.QPoint(top_right[0], top_right[1])
+                            end_painter = qt.QPoint(top_right[0]+cat, top_right[1]-cat)
+                        elif y > m6 * x + b6 and y < m3 * x + b3:
+                            wdgts_child['position_tail'] = [right_top[0]+cat, right_top[1]-cat]
+                            star = self.remap_point(qt.QPoint(right_top[0], right_top[1]))
+                            end = self.remap_point(qt.QPoint(right_top[0]+cat, right_top[1]-cat))
+                            star_painter = qt.QPoint(right_top[0], right_top[1])
+                            end_painter = qt.QPoint(right_top[0]+cat, right_top[1]-cat)
+                        elif y < m4 * x + b4 and y > m3 * x + b3:
+                            wdgts_child['position_tail'] = [right_center[0]+distance, right_center[1]]
+                            star = self.remap_point(qt.QPoint(right_center[0], right_center[1]))
+                            end = self.remap_point(qt.QPoint(right_center[0]+distance, right_center[1]))
+                            star_painter = qt.QPoint(right_center[0], right_center[1])
+                            end_painter = qt.QPoint(right_center[0]+distance, right_center[1])
+                        elif y > m4 * x + b4 and y < m5 * x + b5:
+                            wdgts_child['position_tail'] = [right_bottom[0]+cat, right_bottom[1]+cat]
+                            star = self.remap_point(qt.QPoint(right_bottom[0], right_bottom[1]))
+                            end = self.remap_point(qt.QPoint(right_bottom[0]+cat, right_bottom[1]+cat))
+                            star_painter = qt.QPoint(right_bottom[0], right_bottom[1])
+                            end_painter = qt.QPoint(right_bottom[0]+cat, right_bottom[1]+cat)
+                        else:
+                            wdgts_child['position_tail'] = [bottom_right[0]+cat, bottom_right[1]+cat]
+                            star = self.remap_point(qt.QPoint(bottom_right[0], bottom_right[1]))
+                            end = self.remap_point(qt.QPoint(bottom_right[0]+cat, bottom_right[1]+cat))
+                            star_painter = qt.QPoint(bottom_right[0], bottom_right[1])
+                            end_painter = qt.QPoint(bottom_right[0]+cat, bottom_right[1]+cat)
+
+                        wdgts_child['labelPosition'] = [ float(star_painter.x()), float(star_painter.y()), float(end_painter.x()), float(end_painter.y())]
+                        wdgts_child['labelText'] = self.text_in.text
+                        anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill, self.text_in.text, self.t_px)
+
+                    elif self.select_annt == "icon":
+                        pass
+                    elif self.select_annt == "text":
+                        pass
+                    else:
+                        pass
+                    
+                    if self.save_annotation == True:
+                        self.annotations[self.scree_prev].append(anotation)
+                        self.annotations_json[self.scree_prev].append(wdgts_child)
+                        self.draw_annotations()
+                    else:
+                        self.draw_annotations()
+                        self.draw_preview(anotation)
+            except:
+                pass
 
     def calculate_annotation_scroll(self):
         widgets = self.metadata_list[self.scree_prev]
@@ -948,198 +954,201 @@ class TutorialGUI(qt.QMainWindow):
         if not widgets:
             pass
         else :
-            wdgts_child = self.widget_collection[self.w_i]
-            
-            star = None
-            end = None
-
-            anotation = None
-            if wdgts_child is not None:
-                if self.select_annt == "rect":
-                    x_i,y_i = wdgts_child["position"]
-                    a,b = wdgts_child["size"]
-                    x_f = x_i + a
-                    y_f = y_i + b
-                    star = self.remap_point(qt.QPoint(x_i, y_i))
-                    end = self.remap_point(qt.QPoint(x_f, y_f))
-                    anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
-                elif self.select_annt == "crcls":
-                    x_i, y_i = wdgts_child["position"]
-                    w, h = wdgts_child["size"]
-                    c_x = x_i + w / 2
-                    c_y = y_i + h / 2
-                    wdgts_child['center'] = [c_x, c_y]
-                    wdgts_child['radio'] = [x_i, y_i]
-                    star = self.remap_point(qt.QPoint(c_x, c_y))
-                    end = self.remap_point(qt.QPoint(x_i, y_i)) 
-                    anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
-                elif self.select_annt == "click":
-                    x_i, y_i = wdgts_child["position"]
-                    w, h = wdgts_child["size"]
-                    offset_x = 3 * w // 4
-                    offset_y = 3 * h // 4
-                    c_x = x_i + offset_x
-                    c_y = y_i + offset_y
-                    star = self.remap_point(qt.QPoint(c_x, c_y))
-                    
-                    anotation = Notes(self.select_annt, star, end, self.selected_color, self.t_px, self.fill, self.dir_icon)
-                    wdgts_child['labelText'] = self.text_in.text
-                elif self.select_annt == "arwT":
-                    x_i, y_i = wdgts_child["position"]
-                    w, h = wdgts_child["size"]
-
-                    td = int(w / 3)
-                    bd = int(h / 3)
-                    td_2 = int(td / 2)
-                    bd_2 = int(bd / 2)
-
-                    top_left = (x_i + td_2 * 1, y_i)
-                    top_center = (x_i + td_2 * 3, y_i)
-                    top_right = (x_i + td_2 * 5, y_i)
-
-                    right_top = (x_i + w, y_i + bd_2 * 1)
-                    right_center = (x_i + w, y_i + bd_2 * 3)
-                    right_bottom = (x_i + w, y_i + bd_2 * 5)
-
-                    bottom_left = (x_i + td_2 * 1, y_i + h)
-                    bottom_center = (x_i + td_2 * 3, y_i + h)
-                    bottom_right = (x_i + td_2 * 5, y_i + h)
-
-                    right_top = (x_i + w,y_i + bd_2 * 1)
-                    right_center = (x_i + w, y_i + bd_2 * 3)
-                    right_bottom = (x_i + w, y_i + bd_2 * 5)
-
-                    left_top = (x_i, y_i + bd_2 * 1)
-                    left_center = (x_i, y_i + bd_2 * 3)
-                    left_bottom = (x_i, y_i + bd_2 * 5)
-                    
-                    p1 = (x_i + td * 1, y_i)
-                    p2 = (x_i + td * 2, y_i)                 
-                    p3 = (x_i + w, y_i + bd * 1)
-                    p4 = (x_i + w, y_i + bd * 2)                
-                    p5 = (x_i + td * 2, y_i + h)
-                    p6 = (x_i + td * 1, y_i + h)                   
-                    p7 = (x_i, y_i + bd * 2)
-                    p8 = (x_i, y_i + bd * 1)
-
-                    p0 = (x_i, y_i)
-                    p9 = (x_i + w, y_i)
-                    p10 = (x_i + w, y_i + h)
-                    p11 = (x_i, y_i + h)
-
-                    click = self.map_point(self.start)
-                    x = click.x()
-                    y = click.y()
-
-                    m1 = (p5[1] - p1[1]) / (p5[0] - p1[0])  # p1 to p5
-                    m2 = (p6[1] - p2[1]) / (p6[0] - p2[0])  # p2 to p6
-                    m3 = (p7[1] - p3[1]) / (p7[0] - p3[0])  # p7 to p3
-                    m4 = (p8[1] - p4[1]) / (p8[0] - p4[0])  # p8 to p4  
-
-                    m5 = (p10[1] - p0[1]) / (p10[0] - p0[0])  # p0 to p10 
-                    m6 = (p11[1] - p9[1]) / (p11[0] - p9[0])  # p9 to p11 
-
-                    b1 = p1[1] - m1 * p1[0]
-                    b2 = p2[1] - m2 * p2[0]
-                    b3 = p7[1] - m3 * p7[0]
-                    b4 = p8[1] - m4 * p8[0]
-                    b5 = p0[1] - m5 * p0[0]
-                    b6 = p9[1] - m6 * p9[0]
-
-                    distance = 80
-                    cat = math.sqrt(distance ** 2 / 2)
-                    
-                    if y > m1 * x + b1 and y > m2 * x + b2:
-                        wdgts_child['position_tail'] = [bottom_center[0], bottom_center[1]+distance]
-                        star = self.remap_point(qt.QPoint(bottom_center[0], bottom_center[1]))
-                        end = self.remap_point(qt.QPoint(bottom_center[0], bottom_center[1]+distance))
-                        star_painter = qt.QPoint(bottom_center[0], bottom_center[1])
-                        end_painter = qt.QPoint(bottom_center[0], bottom_center[1]+distance)
-                    elif y < m2 * x + b2 and y > m6 * x + b6:
-                        wdgts_child['position_tail'] = [bottom_left[0]-cat, bottom_left[1]+cat]
-                        star = self.remap_point(qt.QPoint(bottom_left[0], bottom_left[1]))
-                        end = self.remap_point(qt.QPoint(bottom_left[0]-cat, bottom_left[1]+cat))
-                        star_painter = qt.QPoint(bottom_left[0], bottom_left[1])
-                        end_painter = qt.QPoint(bottom_left[0]-cat, bottom_left[1]+cat)
-                    elif y < m6 * x + b6 and y > m3 * x + b3:
-                        wdgts_child['position_tail'] = [left_bottom[0]-cat, left_bottom[1]+cat]
-                        star = self.remap_point(qt.QPoint(left_bottom[0], left_bottom[1]))
-                        end = self.remap_point(qt.QPoint(left_bottom[0]-cat, left_bottom[1]+cat))
-                        star_painter = qt.QPoint(left_bottom[0], left_bottom[1])
-                        end_painter = qt.QPoint(left_bottom[0]-cat, left_bottom[1]+cat)
-                    elif y > m4 * x + b4 and y < m3 * x + b3:
-                        wdgts_child['position_tail'] = [left_center[0]-distance, left_center[1]]
-                        star = self.remap_point(qt.QPoint(left_center[0], left_center[1]))
-                        end = self.remap_point(qt.QPoint(left_center[0]-distance, left_center[1]))
-                        star_painter = qt.QPoint(left_center[0], left_center[1])
-                        end_painter = qt.QPoint(left_center[0]-distance, left_center[1])
-                    elif y < m4 * x + b4 and y > m5 * x + b5:
-                        wdgts_child['position_tail'] = [left_top[0]-cat, left_top[1]-cat]
-                        star = self.remap_point(qt.QPoint(left_top[0], left_top[1]))
-                        end = self.remap_point(qt.QPoint(left_top[0]-cat, left_top[1]-cat))
-                        star_painter = qt.QPoint(left_top[0], left_top[1])
-                        end_painter = qt.QPoint(left_top[0]-cat, left_top[1]-cat)
-                    elif y < m5 * x + b5 and y > m1 * x + b1:
-                        wdgts_child['position_tail'] = [top_left[0]-cat, top_left[1]-cat]
-                        star = self.remap_point(qt.QPoint(top_left[0], top_left[1]))
-                        end = self.remap_point(qt.QPoint(top_left[0]-cat, top_left[1]-cat))
-                        star_painter = qt.QPoint(top_left[0], top_left[1])
-                        end_painter = qt.QPoint(top_left[0]-cat, top_left[1]-cat)
-                    elif y < m1 * x + b1 and y < m2 * x + b2:
-                        wdgts_child['position_tail'] = [top_center[0], top_center[1]-distance]
-                        star = self.remap_point(qt.QPoint(top_center[0], top_center[1]))
-                        end = self.remap_point(qt.QPoint(top_center[0], top_center[1]-distance))
-                        star_painter = qt.QPoint(top_center[0], top_center[1])
-                        end_painter = qt.QPoint(top_center[0], top_center[1]-distance)
-                    elif y > m2 * x + b2 and y < m6 * x + b6:
-                        wdgts_child['position_tail'] = [top_right[0]+cat, top_right[1]-cat]
-                        star = self.remap_point(qt.QPoint(top_right[0], top_right[1]))
-                        end = self.remap_point(qt.QPoint(top_right[0]+cat, top_right[1]-cat))
-                        star_painter = qt.QPoint(top_right[0], top_right[1])
-                        end_painter = qt.QPoint(top_right[0]+cat, top_right[1]-cat)
-                    elif y > m6 * x + b6 and y < m3 * x + b3:
-                        wdgts_child['position_tail'] = [right_top[0]+cat, right_top[1]-cat]
-                        star = self.remap_point(qt.QPoint(right_top[0], right_top[1]))
-                        end = self.remap_point(qt.QPoint(right_top[0]+cat, right_top[1]-cat))
-                        star_painter = qt.QPoint(right_top[0], right_top[1])
-                        end_painter = qt.QPoint(right_top[0]+cat, right_top[1]-cat)
-                    elif y < m4 * x + b4 and y > m3 * x + b3:
-                        wdgts_child['position_tail'] = [right_center[0]+distance, right_center[1]]
-                        star = self.remap_point(qt.QPoint(right_center[0], right_center[1]))
-                        end = self.remap_point(qt.QPoint(right_center[0]+distance, right_center[1]))
-                        star_painter = qt.QPoint(right_center[0], right_center[1])
-                        end_painter = qt.QPoint(right_center[0]+distance, right_center[1])
-                    elif y > m4 * x + b4 and y < m5 * x + b5:
-                        wdgts_child['position_tail'] = [right_bottom[0]+cat, right_bottom[1]+cat]
-                        star = self.remap_point(qt.QPoint(right_bottom[0], right_bottom[1]))
-                        end = self.remap_point(qt.QPoint(right_bottom[0]+cat, right_bottom[1]+cat))
-                        star_painter = qt.QPoint(right_bottom[0], right_bottom[1])
-                        end_painter = qt.QPoint(right_bottom[0]+cat, right_bottom[1]+cat)
-                    else:
-                        wdgts_child['position_tail'] = [bottom_right[0]+cat, bottom_right[1]+cat]
-                        star = self.remap_point(qt.QPoint(bottom_right[0], bottom_right[1]))
-                        end = self.remap_point(qt.QPoint(bottom_right[0]+cat, bottom_right[1]+cat))
-                        star_painter = qt.QPoint(bottom_right[0], bottom_right[1])
-                        end_painter = qt.QPoint(bottom_right[0]+cat, bottom_right[1]+cat)
-
-                    wdgts_child['labelPosition'] = [ float(star_painter.x()), float(star_painter.y()), float(end_painter.x()), float(end_painter.y())]
-                    wdgts_child['labelText'] = self.text_in.text
-                    anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill, self.text_in.text, self.t_px)
-
-                elif self.select_annt == "icon":
-                    pass
-                elif self.select_annt == "text":
-                    pass
-                else:
-                    pass
+            try:
+                wdgts_child = self.widget_collection[self.w_i]
                 
-                if self.save_annotation == True:
-                    self.annotations[self.scree_prev].append(anotation)
-                    self.annotations_json[self.scree_prev].append(wdgts_child)
-                    self.draw_annotations()
-                else:
-                    self.draw_annotations()
-                    self.draw_preview(anotation)
+                star = None
+                end = None
+
+                anotation = None
+                if wdgts_child is not None:
+                    if self.select_annt == "rect":
+                        x_i,y_i = wdgts_child["position"]
+                        a,b = wdgts_child["size"]
+                        x_f = x_i + a
+                        y_f = y_i + b
+                        star = self.remap_point(qt.QPoint(x_i, y_i))
+                        end = self.remap_point(qt.QPoint(x_f, y_f))
+                        anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
+                    elif self.select_annt == "crcls":
+                        x_i, y_i = wdgts_child["position"]
+                        w, h = wdgts_child["size"]
+                        c_x = x_i + w / 2
+                        c_y = y_i + h / 2
+                        wdgts_child['center'] = [c_x, c_y]
+                        wdgts_child['radio'] = [x_i, y_i]
+                        star = self.remap_point(qt.QPoint(c_x, c_y))
+                        end = self.remap_point(qt.QPoint(x_i, y_i)) 
+                        anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
+                    elif self.select_annt == "click":
+                        x_i, y_i = wdgts_child["position"]
+                        w, h = wdgts_child["size"]
+                        offset_x = 3 * w // 4
+                        offset_y = 3 * h // 4
+                        c_x = x_i + offset_x
+                        c_y = y_i + offset_y
+                        star = self.remap_point(qt.QPoint(c_x, c_y))
+                        
+                        anotation = Notes(self.select_annt, star, end, self.selected_color, self.t_px, self.fill, self.dir_icon)
+                        wdgts_child['labelText'] = self.text_in.text
+                    elif self.select_annt == "arwT":
+                        x_i, y_i = wdgts_child["position"]
+                        w, h = wdgts_child["size"]
+
+                        td = int(w / 3)
+                        bd = int(h / 3)
+                        td_2 = int(td / 2)
+                        bd_2 = int(bd / 2)
+
+                        top_left = (x_i + td_2 * 1, y_i)
+                        top_center = (x_i + td_2 * 3, y_i)
+                        top_right = (x_i + td_2 * 5, y_i)
+
+                        right_top = (x_i + w, y_i + bd_2 * 1)
+                        right_center = (x_i + w, y_i + bd_2 * 3)
+                        right_bottom = (x_i + w, y_i + bd_2 * 5)
+
+                        bottom_left = (x_i + td_2 * 1, y_i + h)
+                        bottom_center = (x_i + td_2 * 3, y_i + h)
+                        bottom_right = (x_i + td_2 * 5, y_i + h)
+
+                        right_top = (x_i + w,y_i + bd_2 * 1)
+                        right_center = (x_i + w, y_i + bd_2 * 3)
+                        right_bottom = (x_i + w, y_i + bd_2 * 5)
+
+                        left_top = (x_i, y_i + bd_2 * 1)
+                        left_center = (x_i, y_i + bd_2 * 3)
+                        left_bottom = (x_i, y_i + bd_2 * 5)
+                        
+                        p1 = (x_i + td * 1, y_i)
+                        p2 = (x_i + td * 2, y_i)                 
+                        p3 = (x_i + w, y_i + bd * 1)
+                        p4 = (x_i + w, y_i + bd * 2)                
+                        p5 = (x_i + td * 2, y_i + h)
+                        p6 = (x_i + td * 1, y_i + h)                   
+                        p7 = (x_i, y_i + bd * 2)
+                        p8 = (x_i, y_i + bd * 1)
+
+                        p0 = (x_i, y_i)
+                        p9 = (x_i + w, y_i)
+                        p10 = (x_i + w, y_i + h)
+                        p11 = (x_i, y_i + h)
+
+                        click = self.map_point(self.start)
+                        x = click.x()
+                        y = click.y()
+
+                        m1 = (p5[1] - p1[1]) / (p5[0] - p1[0])  # p1 to p5
+                        m2 = (p6[1] - p2[1]) / (p6[0] - p2[0])  # p2 to p6
+                        m3 = (p7[1] - p3[1]) / (p7[0] - p3[0])  # p7 to p3
+                        m4 = (p8[1] - p4[1]) / (p8[0] - p4[0])  # p8 to p4  
+
+                        m5 = (p10[1] - p0[1]) / (p10[0] - p0[0])  # p0 to p10 
+                        m6 = (p11[1] - p9[1]) / (p11[0] - p9[0])  # p9 to p11 
+
+                        b1 = p1[1] - m1 * p1[0]
+                        b2 = p2[1] - m2 * p2[0]
+                        b3 = p7[1] - m3 * p7[0]
+                        b4 = p8[1] - m4 * p8[0]
+                        b5 = p0[1] - m5 * p0[0]
+                        b6 = p9[1] - m6 * p9[0]
+
+                        distance = 80
+                        cat = math.sqrt(distance ** 2 / 2)
+                        
+                        if y > m1 * x + b1 and y > m2 * x + b2:
+                            wdgts_child['position_tail'] = [bottom_center[0], bottom_center[1]+distance]
+                            star = self.remap_point(qt.QPoint(bottom_center[0], bottom_center[1]))
+                            end = self.remap_point(qt.QPoint(bottom_center[0], bottom_center[1]+distance))
+                            star_painter = qt.QPoint(bottom_center[0], bottom_center[1])
+                            end_painter = qt.QPoint(bottom_center[0], bottom_center[1]+distance)
+                        elif y < m2 * x + b2 and y > m6 * x + b6:
+                            wdgts_child['position_tail'] = [bottom_left[0]-cat, bottom_left[1]+cat]
+                            star = self.remap_point(qt.QPoint(bottom_left[0], bottom_left[1]))
+                            end = self.remap_point(qt.QPoint(bottom_left[0]-cat, bottom_left[1]+cat))
+                            star_painter = qt.QPoint(bottom_left[0], bottom_left[1])
+                            end_painter = qt.QPoint(bottom_left[0]-cat, bottom_left[1]+cat)
+                        elif y < m6 * x + b6 and y > m3 * x + b3:
+                            wdgts_child['position_tail'] = [left_bottom[0]-cat, left_bottom[1]+cat]
+                            star = self.remap_point(qt.QPoint(left_bottom[0], left_bottom[1]))
+                            end = self.remap_point(qt.QPoint(left_bottom[0]-cat, left_bottom[1]+cat))
+                            star_painter = qt.QPoint(left_bottom[0], left_bottom[1])
+                            end_painter = qt.QPoint(left_bottom[0]-cat, left_bottom[1]+cat)
+                        elif y > m4 * x + b4 and y < m3 * x + b3:
+                            wdgts_child['position_tail'] = [left_center[0]-distance, left_center[1]]
+                            star = self.remap_point(qt.QPoint(left_center[0], left_center[1]))
+                            end = self.remap_point(qt.QPoint(left_center[0]-distance, left_center[1]))
+                            star_painter = qt.QPoint(left_center[0], left_center[1])
+                            end_painter = qt.QPoint(left_center[0]-distance, left_center[1])
+                        elif y < m4 * x + b4 and y > m5 * x + b5:
+                            wdgts_child['position_tail'] = [left_top[0]-cat, left_top[1]-cat]
+                            star = self.remap_point(qt.QPoint(left_top[0], left_top[1]))
+                            end = self.remap_point(qt.QPoint(left_top[0]-cat, left_top[1]-cat))
+                            star_painter = qt.QPoint(left_top[0], left_top[1])
+                            end_painter = qt.QPoint(left_top[0]-cat, left_top[1]-cat)
+                        elif y < m5 * x + b5 and y > m1 * x + b1:
+                            wdgts_child['position_tail'] = [top_left[0]-cat, top_left[1]-cat]
+                            star = self.remap_point(qt.QPoint(top_left[0], top_left[1]))
+                            end = self.remap_point(qt.QPoint(top_left[0]-cat, top_left[1]-cat))
+                            star_painter = qt.QPoint(top_left[0], top_left[1])
+                            end_painter = qt.QPoint(top_left[0]-cat, top_left[1]-cat)
+                        elif y < m1 * x + b1 and y < m2 * x + b2:
+                            wdgts_child['position_tail'] = [top_center[0], top_center[1]-distance]
+                            star = self.remap_point(qt.QPoint(top_center[0], top_center[1]))
+                            end = self.remap_point(qt.QPoint(top_center[0], top_center[1]-distance))
+                            star_painter = qt.QPoint(top_center[0], top_center[1])
+                            end_painter = qt.QPoint(top_center[0], top_center[1]-distance)
+                        elif y > m2 * x + b2 and y < m6 * x + b6:
+                            wdgts_child['position_tail'] = [top_right[0]+cat, top_right[1]-cat]
+                            star = self.remap_point(qt.QPoint(top_right[0], top_right[1]))
+                            end = self.remap_point(qt.QPoint(top_right[0]+cat, top_right[1]-cat))
+                            star_painter = qt.QPoint(top_right[0], top_right[1])
+                            end_painter = qt.QPoint(top_right[0]+cat, top_right[1]-cat)
+                        elif y > m6 * x + b6 and y < m3 * x + b3:
+                            wdgts_child['position_tail'] = [right_top[0]+cat, right_top[1]-cat]
+                            star = self.remap_point(qt.QPoint(right_top[0], right_top[1]))
+                            end = self.remap_point(qt.QPoint(right_top[0]+cat, right_top[1]-cat))
+                            star_painter = qt.QPoint(right_top[0], right_top[1])
+                            end_painter = qt.QPoint(right_top[0]+cat, right_top[1]-cat)
+                        elif y < m4 * x + b4 and y > m3 * x + b3:
+                            wdgts_child['position_tail'] = [right_center[0]+distance, right_center[1]]
+                            star = self.remap_point(qt.QPoint(right_center[0], right_center[1]))
+                            end = self.remap_point(qt.QPoint(right_center[0]+distance, right_center[1]))
+                            star_painter = qt.QPoint(right_center[0], right_center[1])
+                            end_painter = qt.QPoint(right_center[0]+distance, right_center[1])
+                        elif y > m4 * x + b4 and y < m5 * x + b5:
+                            wdgts_child['position_tail'] = [right_bottom[0]+cat, right_bottom[1]+cat]
+                            star = self.remap_point(qt.QPoint(right_bottom[0], right_bottom[1]))
+                            end = self.remap_point(qt.QPoint(right_bottom[0]+cat, right_bottom[1]+cat))
+                            star_painter = qt.QPoint(right_bottom[0], right_bottom[1])
+                            end_painter = qt.QPoint(right_bottom[0]+cat, right_bottom[1]+cat)
+                        else:
+                            wdgts_child['position_tail'] = [bottom_right[0]+cat, bottom_right[1]+cat]
+                            star = self.remap_point(qt.QPoint(bottom_right[0], bottom_right[1]))
+                            end = self.remap_point(qt.QPoint(bottom_right[0]+cat, bottom_right[1]+cat))
+                            star_painter = qt.QPoint(bottom_right[0], bottom_right[1])
+                            end_painter = qt.QPoint(bottom_right[0]+cat, bottom_right[1]+cat)
+
+                        wdgts_child['labelPosition'] = [ float(star_painter.x()), float(star_painter.y()), float(end_painter.x()), float(end_painter.y())]
+                        wdgts_child['labelText'] = self.text_in.text
+                        anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill, self.text_in.text, self.t_px)
+
+                    elif self.select_annt == "icon":
+                        pass
+                    elif self.select_annt == "text":
+                        pass
+                    else:
+                        pass
+                    
+                    if self.save_annotation == True:
+                        self.annotations[self.scree_prev].append(anotation)
+                        self.annotations_json[self.scree_prev].append(wdgts_child)
+                        self.draw_annotations()
+                    else:
+                        self.draw_annotations()
+                        self.draw_preview(anotation)
+            except:
+                pass
 
     def find_widget(self, widgets_json, pnt_clk):
         w_match = []
@@ -1641,5 +1650,6 @@ class TutorialGUI(qt.QMainWindow):
         # Create MD and HTML file
         tutorialName = self.output_name
         AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName+".json",ListPositionWhite, List_totalImages)   
-        markdown_creator = markdownHTMLCreator()  
+        markdown_creator = markdownHTMLCreator()
+
         html_content = markdown_creator.markdown_to_html((os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+ tutorialName), List_totalImages, tutorialName)
