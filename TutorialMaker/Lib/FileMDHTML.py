@@ -398,7 +398,7 @@ class markdownHTMLCreator:
             cursor.insertBlock()
             for _ in range(int(calculated_heights_white[0] / 20)):
                 cursor.insertText("\n")
-            title
+
             title_format = qt.QTextCharFormat()
             title_format.setFont(qt.QFont("Times", 16, qt.QFont.Bold))
             if is_white_page == False:
@@ -508,7 +508,7 @@ class markdownHTMLCreator:
             cursor.insertBlock()
             for _ in range(int(calculated_heights_white[0] / 20)):
                 cursor.insertText("\n")
-            title
+
             title_format = qt.QTextCharFormat()
             title_format.setFont(qt.QFont("Times", 16, qt.QFont.Bold))
             
