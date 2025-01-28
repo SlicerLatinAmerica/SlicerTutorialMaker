@@ -502,7 +502,7 @@ class TutorialGUI(qt.QMainWindow):
             for m_data in step:
                 exception_occurred = False
                 path_image = directory_path+"/"+m_data["window"]
-                print("path_image: ",path_image)
+                # print("path_image: ",path_image)
                 path_meta = directory_path+"/"+m_data["metadata"]
                 List_totalImages.append(k)
                 try:
@@ -569,7 +569,6 @@ class TutorialGUI(qt.QMainWindow):
                     resized_image.save(path_image)
                     joinedImage = qt.QImage(resized_image).copy()
 
-            print("Add image")
             self.gridLayout.addWidget(label)
             self.labels.append(label)
             self.images_list.append(path_image)
@@ -581,10 +580,9 @@ class TutorialGUI(qt.QMainWindow):
 
             if exception_occurred:
                 break
+        
         self.add_first_page()
         self.firts_screen()
-        for n in self.images_list:
-            print(n)
 
     def firts_screen(self):
         self.scree_prev = 0
@@ -1656,6 +1654,5 @@ class TutorialGUI(qt.QMainWindow):
         tutorialName = self.output_name
         AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName+".json",ListPositionWhite, List_totalImages)   
         markdown_creator = markdownHTMLCreator()  
-        print("MD_created")
-        html_content = markdown_creator.markdown_to_html((os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+ tutorialName), List_totalImages, tutorialName)
-        print("Finish")
+        html_content = markdown_creator.markdown_to_html((os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName), List_totalImages, tutorialName)
+        
