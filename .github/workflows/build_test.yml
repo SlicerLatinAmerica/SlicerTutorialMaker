@@ -36,6 +36,12 @@ jobs:
           qt5dxcb-plugin \
           libsm6
 
+    - name: Install XVFB prerequisites
+      run: |
+        sudo apt-get install \
+          xvfb \
+          x11-xserver-utils
+
     - name: Download Slicer
       id: slicer-download
       run: |
@@ -68,17 +74,39 @@ jobs:
         echo "slicer-executable=${SLICER_EXECUTABLE}" >> $GITHUB_OUTPUT
 
     - name: Check Slicer installation
-      uses: coactions/setup-xvfb@v1.0.1
-      with:
-        run:
+      run: |
+        function cleanup() {
+          echo "Cleaning up..."
+          local xvfb_pids=`ps aux | grep tmp/xvfb-run | grep -v grep | awk '{print $2}'`
+          if [ "$xvfb_pids" != "" ]; then
+              echo "Killing the following xvfb processes: $xvfb_pids"
+              sudo kill $xvfb_pids
+          else
+              echo "No xvfb processes to kill"
+          fi
+        }
+        trap cleanup EXIT
+
+        xvfb-run --auto-servernum \
           ${SLICER_EXECUTABLE} --version
       env:
         SLICER_EXECUTABLE: ${{ steps.slicer-download.outputs.slicer-executable }}
 
     - name: Test SlicerTutorialMaker
-      uses: coactions/setup-xvfb@v1.0.1
-      with:
-        run: |
+      run: |
+        function cleanup() {
+          echo "Cleaning up..."
+          local xvfb_pids=`ps aux | grep tmp/xvfb-run | grep -v grep | awk '{print $2}'`
+          if [ "$xvfb_pids" != "" ]; then
+              echo "Killing the following xvfb processes: $xvfb_pids"
+              sudo kill $xvfb_pids
+          else
+              echo "No xvfb processes to kill"
+          fi
+        }
+        trap cleanup EXIT
+
+        xvfb-run --auto-servernum \
           ${SLICER_EXECUTABLE} \
             --no-splash \
             --testing \
