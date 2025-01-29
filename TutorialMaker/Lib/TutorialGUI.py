@@ -131,7 +131,7 @@ class TutorialGUI(qt.QMainWindow):
         toolbar.addAction(actionOpen)
         toolbar.addAction(actionSave)
         toolbar.addAction(actionBack)
-        toolbar.addAction(actionDelete)
+        # toolbar.addAction(actionDelete)
         toolbar.addAction(actionAdd)
         toolbar.addAction(actionCopy)
 
@@ -372,13 +372,14 @@ class TutorialGUI(qt.QMainWindow):
         new_path = self.dir_path + '/../Resources/NewSlide/Acknowledgments.png'
     
         i = len(newListImages) 
+        print(i)
         ListPositionWhite.append(i)
         List_totalImages.insert(i,-1)
         newListImages.insert(i, new_path)
         self.metadata_list.insert(i, [])
         self.annotations.insert(i, new_annotation)
         self.annotations_json.insert(i, new_annotation_json)
-        
+
         self.steps.insert(i, (" - Add the acknowledgements here"))
         self.widgets.insert(i, ("Acknowledgements"))
         self.widgets.insert(i, ("Acknowledgements"))
@@ -503,9 +504,7 @@ class TutorialGUI(qt.QMainWindow):
             
             # Load files 
             for m_data in step:
-                exception_occurred = False
                 path_image = directory_path+"/"+m_data["window"]
-                # print("path_image: ",path_image)
                 path_meta = directory_path+"/"+m_data["metadata"]
                 List_totalImages.append(k)
                 try:
@@ -551,7 +550,7 @@ class TutorialGUI(qt.QMainWindow):
                 
             last_wdg = self.find_bottom_right_widget(joinedJson)
             if not last_wdg:
-                pass
+                   pass
             else:
                 widget_x, widget_y = last_wdg['position']
                 widget_width, widget_height = last_wdg['size']
@@ -562,19 +561,21 @@ class TutorialGUI(qt.QMainWindow):
                 image = qt.QImage(joinedImage)
                 image_width = image.width()
                 image_height = image.height()
-                #print("Size image:",image_width,",",image_height)
-                #print("last wdg:",last_wdg)
 
                 if widget_end_x == image_width:
                     pass
                 else:
-                    resized_image = image.scaled(widget_end_x, widget_end_y, qt.Qt.IgnoreAspectRatio, qt.Qt.SmoothTransformation)
+                    esc = image_width/widget_end_x
+                    new_width = widget_end_x
+                    new_height = image_height / esc
+                        
+                    resized_image = image.scaled(new_width, new_height, qt.Qt.IgnoreAspectRatio, qt.Qt.SmoothTransformation)
                     resized_image.save(path_image)
                     joinedImage = qt.QImage(resized_image).copy()
 
             self.gridLayout.addWidget(label)
             self.labels.append(label)
-            self.images_list.append(path_image)
+            self.images_list.append(joinedImage)
             self.metadata_list.append(joinedJson)
             self.annotations.append(new_annotation)
             self.annotations_json.append(new_annotation_json)
@@ -583,7 +584,6 @@ class TutorialGUI(qt.QMainWindow):
 
             if exception_occurred:
                 break
-        
         self.add_first_page()
         self.firts_screen()
 
@@ -602,22 +602,18 @@ class TutorialGUI(qt.QMainWindow):
         bottom_right_widget = None
 
         for key, widget in content.items():
-            if widget["name"] == "StatusBar":
-                #print("StatusBar SI")
+            pos_x, pos_y = widget["position"]
+            width, height = widget["size"]
+            
+            # Calcular la esquina inferior derecha
+            bottom_right_x = pos_x + width
+            bottom_right_y = pos_y + height
+            
+            # Comparar con el máximo actual
+            if bottom_right_x > max_x or (bottom_right_x == max_x and bottom_right_y > max_y):
+                max_x = bottom_right_x
+                max_y = bottom_right_y
                 bottom_right_widget = widget
-            # pos_x, pos_y = widget["position"]
-            # width, height = widget["size"]
-            
-            # # Calcular la esquina inferior derecha
-            # bottom_right_x = pos_x + width
-            # bottom_right_y = pos_y + height
-            
-            # # Comparar con el máximo actual
-            # if bottom_right_x > max_x or (bottom_right_x == max_x and bottom_right_y > max_y):
-            #     max_x = bottom_right_x
-            #     max_y = bottom_right_y
-            #     bottom_right_widget = widget
-
 
         return bottom_right_widget 
 
@@ -691,6 +687,7 @@ class TutorialGUI(qt.QMainWindow):
                 self.calculate_annotation()
             else :
                 self.calculate_annotation_scroll()
+        self.unselect_annotation()
     
     def mouse_move_event(self, event):
         self.start = event.pos()
@@ -722,11 +719,16 @@ class TutorialGUI(qt.QMainWindow):
 
     def keyPressEvent(self, event):
         if event.key() == qt.Qt.Key_Escape:
-            self.select_annt = False
-            for action, icons in self.icons.items():
-                action.setChecked(False)  
-                action.setIcon(icons['inactive'])
+            self.unselect_annotation()
             self.draw_annotations()
+        if event.key() == qt.Qt.Key_Up:
+            print("Key_Up")
+        if event.key() == qt.Qt.Key_Down:
+            print("Key_Down")
+        if event.key() == qt.Qt.Key_Left:
+            print("Key_Left")
+        if event.key() == qt.Qt.Key_Right:
+            print("Key_Right")
         elif event.key() == qt.Qt.Key_Z and (event.modifiers() & qt.Qt.ControlModifier or event.modifiers() & qt.Qt.MetaModifier):
             self.delete_annotation()
 
@@ -756,9 +758,9 @@ class TutorialGUI(qt.QMainWindow):
         if not widgets:
             pass
         else :
-            pnt_clk = self.map_point(self.start)
-            self.widget_collection = self.find_widget(widgets, pnt_clk)
             try:
+                pnt_clk = self.map_point(self.start)
+                self.widget_collection = self.find_widget(widgets, pnt_clk)
                 wdgts_child = self.select_widget_child(self.widget_collection)
                 
                 star = None
@@ -785,14 +787,12 @@ class TutorialGUI(qt.QMainWindow):
                         end = self.remap_point(qt.QPoint(x_i, y_i)) 
                         anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
                     elif self.select_annt == "click":
-                        x_i, y_i = wdgts_child["position"]
-                        w, h = wdgts_child["size"]
-                        offset_x = 3 * w // 4
-                        offset_y = 3 * h // 4
-                        c_x = x_i + offset_x
-                        c_y = y_i + offset_y
-                        star = self.remap_point(qt.QPoint(c_x, c_y))
-                        
+                        x_i,y_i = wdgts_child["position"]
+                        a,b = wdgts_child["size"]
+                        x_f = x_i + a
+                        y_f = y_i + b
+                        star = self.remap_point(qt.QPoint(x_i, y_i))
+                        end = self.remap_point(qt.QPoint(x_f, y_f))
                         anotation = Notes(self.select_annt, star, end, self.selected_color, self.t_px, self.fill, self.dir_icon)
                         wdgts_child['labelText'] = self.text_in.text
                     elif self.select_annt == "arwT":
@@ -960,7 +960,7 @@ class TutorialGUI(qt.QMainWindow):
         if not widgets:
             pass
         else :
-            try:
+            try: 
                 wdgts_child = self.widget_collection[self.w_i]
                 
                 star = None
@@ -987,15 +987,14 @@ class TutorialGUI(qt.QMainWindow):
                         end = self.remap_point(qt.QPoint(x_i, y_i)) 
                         anotation = Notes(self.select_annt, star, end, self.selected_color, self.valor, self.fill)
                     elif self.select_annt == "click":
-                        x_i, y_i = wdgts_child["position"]
-                        w, h = wdgts_child["size"]
-                        offset_x = 3 * w // 4
-                        offset_y = 3 * h // 4
-                        c_x = x_i + offset_x
-                        c_y = y_i + offset_y
-                        star = self.remap_point(qt.QPoint(c_x, c_y))
-                        
+                        x_i,y_i = wdgts_child["position"]
+                        a,b = wdgts_child["size"]
+                        x_f = x_i + a
+                        y_f = y_i + b
+                        star = self.remap_point(qt.QPoint(x_i, y_i))
+                        end = self.remap_point(qt.QPoint(x_f, y_f))
                         anotation = Notes(self.select_annt, star, end, self.selected_color, self.t_px, self.fill, self.dir_icon)
+                        wdgts_child['labelText'] = self.text_in.text
                         wdgts_child['labelText'] = self.text_in.text
                     elif self.select_annt == "arwT":
                         x_i, y_i = wdgts_child["position"]
@@ -1160,7 +1159,6 @@ class TutorialGUI(qt.QMainWindow):
         w_match = []
         x = pnt_clk.x()
         y = pnt_clk.y()
-        
         widgets = widgets_json
 
         for id, info in widgets.items():
@@ -1231,61 +1229,133 @@ class TutorialGUI(qt.QMainWindow):
             elif antts.tp == "crcls":
                 painter.drawEllipse(antts.ip, self.Mdistance(antts.ip, antts.fp), self.Mdistance(antts.ip, antts.fp))
             elif antts.tp == "click":
-                painter.drawImage(antts.ip, self.new_image)
-            elif antts.tp == "arwT":
-                txt = self.split_string_to_dict(antts.tx)
-                painter.drawPath(self.arrowPath(antts.tp, antts.ip, antts.fp))
-                pen = qt.QPen(qt.QColor(255, 255, 255))
-                painter.setPen(qt.Qt.NoPen)
-                painter.setBrush(qt.QBrush(qt.QColor(antts.cl)))
-                sbv = antts.sz
+                new_point_annotationn = self.calculate_icon_position(antts.ip, antts.fp)
+                painter.drawImage(new_point_annotationn, self.new_image)
+            elif antts.tp == "arwT":  # If the annotation type is "arwT" (arrow with text)
+                # Get the start and end coordinates of the arrow
+                end_x,end_y = antts.fp.x(),antts.fp.y()
+                start_x, start_y = antts.ip.x(),antts.ip.y() 
+                
+                # Split the text associated with the arrow into multiple lines
+                txt = self.split_string_to_dict(antts.tx, 40)
+                
+                # Set the pen and brush for painting
+                pen = qt.QPen(qt.QColor(255, 255, 255))  # White pen for the arrow
+                painter.setPen(qt.Qt.NoPen)  # Disable pen for now
+                painter.setBrush(qt.QBrush(self.selected_color))  # Brush for the arrow background
+                
+                # Set font size and prepare font metrics for text measurement
+                sbv = self.t_px
                 font_small = qt.QFont("Arial", sbv)
                 font_metrics = qt.QFontMetrics(font_small)
-                texto=self.long_string(txt)
-                l_box = font_metrics.horizontalAdvance(texto) + 10
+                texto = self.long_string(txt)  # Get the concatenated text
                 painter.setFont(font_small)
-                if len(txt)  > 0:
-                    bg_h = font_metrics.height() * len(txt) + 3
-                    if antts.ip.y() > antts.fp.y():
-                        tb_i = qt.QPoint(antts.fp.x()-100, antts.fp.y()-bg_h)
-                        tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                        painter.drawRect(qt.QRect(tb_i, tb_f))
-                        pen = qt.QPen(qt.QColor(0, 0, 0))
+                
+                # Check if there is valid text and it is not the default placeholder text
+                if len(txt) > 0 and antts.tx != "Add text to accompany an arrow here.":
+                    # Calculate the longest line of text to determine the rectangle width
+                    texto_mas_largo = self.long_string(txt)
+                    bounding_box = font_metrics.boundingRect(texto_mas_largo)
+                    text_width = bounding_box.width()
+                    
+                    # Calculate the total height of the rectangle based on the number of lines
+                    text_height = font_metrics.height() * len(txt)
+                    
+                    # Initialize offsets for text position adjustments
+                    offset_x, offset_y = 0, 0
+                    
+                    # Determine arrow direction and adjust text position accordingly
+                    if end_x == start_x:  # Vertical arrow
+                        if end_y > start_y:  # Arrow pointing down
+                            offset_y = text_height / 2
+                        else:  # Arrow pointing up
+                            offset_y = -text_height / 2
+                    elif end_y == start_y:  # Horizontal arrow
+                        if end_x > start_x:  # Arrow pointing right
+                            offset_x = text_width / 2
+                        else:  # Arrow pointing left
+                            offset_x = -text_width / 2
+                    else:  # Diagonal arrow
+                        if end_x > start_x and end_y > start_y:  # Down-right
+                            offset_x, offset_y = text_width / 2, text_height / 2
+                        elif end_x < start_x and end_y < start_y:  # Up-left
+                            offset_x, offset_y = -text_width / 2, -text_height / 2
+                        elif end_x > start_x and end_y < start_y:  # Up-right
+                            offset_x, offset_y = text_width / 2, -text_height / 2
+                        elif end_x < start_x and end_y > start_y:  # Down-left
+                            offset_x, offset_y = -text_width / 2, text_height / 2
+                    
+                    # Calculate the final adjusted position for the text
+                    text_position_x = (end_x + offset_x) - text_width / 2
+                    text_position_y = (end_y + offset_y) - text_height / 2
+                    
+                    # Create a rectangle for the text
+                    text_bounding_rect = qt.QRect(
+                        text_position_x - 8, text_position_y - 8,
+                        text_width + 16, text_height + 16 #extra margins
+                    )
+                    
+                    # Check if the text rectangle is outside the pixmap boundaries
+                    pixmap_rect = self.label_image.rect
+                    if not pixmap_rect.contains(text_bounding_rect):
+                        # If the text is outside, reposition it within visible bounds
+                        screen_height = self.label_image.height
+                        screen_width = self.label_image.width
+                        
+                        if text_position_y < screen_height / 2:  # Top half of the screen
+                            new_text_position_y = screen_height - text_height -18
+                            end_y = new_text_position_y
+                        else:  # Bottom half of the screen
+                            new_text_position_y = 18
+                            end_y = new_text_position_y + text_height
+                        
+                        if end_x < start_x:  # Left side
+                            new_text_position_x = 8
+                        else:  # Right side
+                            new_text_position_x = screen_width - text_width -18
+                        
+                        end_x = new_text_position_x + text_width / 2
+                        
+                        # Recalculate the text rectangle with new coordinates
+                        new_text_bounding_rect = qt.QRect(
+                            new_text_position_x - 8, new_text_position_y - 8,
+                            text_width + 16, text_height + 16 )
+                        
+                        # Draw the new background rectangle
+                        painter.setBrush(qt.QBrush(self.selected_color))
+                        painter.drawRect(new_text_bounding_rect)
+                        
+                        # Draw each line of the text
+                        pen = qt.QPen(qt.QColor(0, 0, 0))  # Black pen for text
                         painter.setPen(pen)
-                        y_position = font_metrics.height()
-                        for r in txt:
-                            painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                            y_position+=font_metrics.height()
-                    elif antts.ip.y() < antts.fp.y():
-                        tb_i = qt.QPoint(antts.fp.x()-100, antts.fp.y())
-                        tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                        painter.drawRect(qt.QRect(tb_i, tb_f))
-                        pen = qt.QPen(qt.QColor(0, 0, 0))
+                        
+                        text_draw_x = new_text_position_x
+                        text_draw_y = new_text_position_y + font_metrics.ascent()
+                        
+                        for line in txt:
+                            painter.drawText(text_draw_x, text_draw_y, line)
+                            text_draw_y += font_metrics.height()
+                    else:
+                        # Draw the background rectangle
+                        painter.setBrush(qt.QBrush(self.selected_color))
+                        painter.drawRect(text_bounding_rect)
+                        
+                        # Draw each line of the text
+                        pen = qt.QPen(qt.QColor(0, 0, 0))  # Black pen for text
                         painter.setPen(pen)
-                        y_position = font_metrics.height()
-                        for r in txt:
-                            painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                            y_position+=font_metrics.height()
-                    elif antts.ip.x() > antts.fp.x():
-                        tb_i = qt.QPoint(antts.fp.x()-l_box, antts.fp.y()-10)
-                        tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                        painter.drawRect(qt.QRect(tb_i, tb_f))
-                        pen = qt.QPen(qt.QColor(0, 0, 0))
-                        painter.setPen(pen)
-                        y_position = font_metrics.height()
-                        for r in txt:
-                            painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                            y_position+=font_metrics.height()
-                    elif antts.ip.x() < antts.fp.x():
-                        tb_i = qt.QPoint(antts.fp.x(), antts.fp.y()-10)
-                        tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                        painter.drawRect(qt.QRect(tb_i, tb_f))
-                        pen = qt.QPen(qt.QColor(0, 0, 0))
-                        painter.setPen(pen)
-                        y_position = font_metrics.height()
-                        for r in txt:
-                            painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                            y_position+=font_metrics.height()
+                        
+                        text_draw_x = text_position_x
+                        text_draw_y = text_position_y + font_metrics.ascent()
+                        
+                        for line in txt:
+                            painter.drawText(text_draw_x, text_draw_y, line)
+                            text_draw_y += font_metrics.height()
+            
+                # Draw the arrow
+                arrow_pen = qt.QPen(self.selected_color)
+                arrow_pen.setWidth(2.9)
+                painter.setPen(arrow_pen)
+                painter.drawPath(self.arrowPath(antts.tp, qt.QPoint(start_x, start_y), qt.QPoint(end_x, end_y)))
             elif antts.tp == "icon":
                 painter.drawImage(antts.ip, qt.QImage(antts.tx))
             elif antts.tp == "text":
@@ -1297,7 +1367,7 @@ class TutorialGUI(qt.QMainWindow):
         self.label_image.setPixmap(pixmap)
 
     def draw_preview(self, antt):
-        pixmap = self.label_image.pixmap
+        pixmap = self.label_image.pixmap.copy()
         painter = qt.QPainter(pixmap)
         painter.drawPixmap(self.label_image.rect, self.background_image)
 
@@ -1311,61 +1381,134 @@ class TutorialGUI(qt.QMainWindow):
             elif antts.tp == "crcls":
                 painter.drawEllipse(antts.ip, self.Mdistance(antts.ip, antts.fp), self.Mdistance(antts.ip, antts.fp))
             elif antts.tp == "click":
-                painter.drawImage(antts.ip, self.new_image)
-            elif antts.tp == "arwT":
-                txt = self.split_string_to_dict(antts.tx)
-                painter.drawPath(self.arrowPath(antts.tp, antts.ip, antts.fp))
-                pen = qt.QPen(qt.QColor(255, 255, 255))
-                painter.setPen(qt.Qt.NoPen)
-                painter.setBrush(qt.QBrush(qt.QColor(antts.cl)))
-                sbv = antts.sz
+                new_point_annotationn = self.calculate_icon_position(antts.ip, antts.fp)
+                painter.drawImage(new_point_annotationn, self.new_image)
+            # AQUI HAY UNA PARA MODIFICAR
+            elif antts.tp == "arwT":  # If the annotation type is "arwT" (arrow with text)
+                # Get the start and end coordinates of the arrow
+                end_x,end_y = antts.fp.x(),antts.fp.y()
+                start_x, start_y = antts.ip.x(),antts.ip.y() 
+                
+                # Split the text associated with the arrow into multiple lines
+                txt = self.split_string_to_dict(antts.tx, 40)
+                
+                # Set the pen and brush for painting
+                pen = qt.QPen(qt.QColor(255, 255, 255))  # White pen for the arrow
+                painter.setPen(qt.Qt.NoPen)  # Disable pen for now
+                painter.setBrush(qt.QBrush(self.selected_color))  # Brush for the arrow background
+                
+                # Set font size and prepare font metrics for text measurement
+                sbv = self.t_px
                 font_small = qt.QFont("Arial", sbv)
                 font_metrics = qt.QFontMetrics(font_small)
-                texto=self.long_string(txt)
-                l_box = font_metrics.horizontalAdvance(texto) + 10
+                texto = self.long_string(txt)  # Get the concatenated text
                 painter.setFont(font_small)
-                if len(txt) > 0:
-                    bg_h = font_metrics.height() * len(txt) + 3
-                    if antts.ip.y() > antts.fp.y():
-                        tb_i = qt.QPoint(antts.fp.x()-100, antts.fp.y()-bg_h)
-                        tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                        painter.drawRect(qt.QRect(tb_i, tb_f))
-                        pen = qt.QPen(qt.QColor(0, 0, 0))
+                
+                # Check if there is valid text and it is not the default placeholder text
+                if len(txt) > 0 and antts.tx != "Add text to accompany an arrow here.":
+                    # Calculate the longest line of text to determine the rectangle width
+                    texto_mas_largo = self.long_string(txt)
+                    bounding_box = font_metrics.boundingRect(texto_mas_largo)
+                    text_width = bounding_box.width()
+                    
+                    # Calculate the total height of the rectangle based on the number of lines
+                    text_height = font_metrics.height() * len(txt)
+                    
+                    # Initialize offsets for text position adjustments
+                    offset_x, offset_y = 0, 0
+                    
+                    # Determine arrow direction and adjust text position accordingly
+                    if end_x == start_x:  # Vertical arrow
+                        if end_y > start_y:  # Arrow pointing down
+                            offset_y = text_height / 2
+                        else:  # Arrow pointing up
+                            offset_y = -text_height / 2
+                    elif end_y == start_y:  # Horizontal arrow
+                        if end_x > start_x:  # Arrow pointing right
+                            offset_x = text_width / 2
+                        else:  # Arrow pointing left
+                            offset_x = -text_width / 2
+                    else:  # Diagonal arrow
+                        if end_x > start_x and end_y > start_y:  # Down-right
+                            offset_x, offset_y = text_width / 2, text_height / 2
+                        elif end_x < start_x and end_y < start_y:  # Up-left
+                            offset_x, offset_y = -text_width / 2, -text_height / 2
+                        elif end_x > start_x and end_y < start_y:  # Up-right
+                            offset_x, offset_y = text_width / 2, -text_height / 2
+                        elif end_x < start_x and end_y > start_y:  # Down-left
+                            offset_x, offset_y = -text_width / 2, text_height / 2
+                    
+                    # Calculate the final adjusted position for the text
+                    text_position_x = (end_x + offset_x) - text_width / 2
+                    text_position_y = (end_y + offset_y) - text_height / 2
+                    
+                    # Create a rectangle for the text
+                    text_bounding_rect = qt.QRect(
+                        text_position_x - 8, text_position_y - 8,
+                        text_width + 16, text_height + 16 #extra margins
+                    )
+                    
+                    # Check if the text rectangle is outside the pixmap boundaries
+                    pixmap_rect = self.label_image.rect
+                    if not pixmap_rect.contains(text_bounding_rect):
+                        # If the text is outside, reposition it within visible bounds
+                        screen_height = self.label_image.height
+                        screen_width = self.label_image.width
+                        
+                        if text_position_y < screen_height / 2:  # Top half of the screen
+                            new_text_position_y = screen_height - text_height -18
+                            end_y = new_text_position_y
+                        else:  # Bottom half of the screen
+                            new_text_position_y = 18
+                            end_y = new_text_position_y + text_height
+                        
+                        if end_x < start_x:  # Left side
+                            new_text_position_x = 8
+                        else:  # Right side
+                            new_text_position_x = screen_width - text_width -18
+                        
+                        end_x = new_text_position_x + text_width / 2
+                        
+                        # Recalculate the text rectangle with new coordinates
+                        new_text_bounding_rect = qt.QRect(
+                            new_text_position_x - 8, new_text_position_y - 8,
+                            text_width + 16, text_height + 16)
+                        
+                        # Draw the new background rectangle
+                        painter.setBrush(qt.QBrush(self.selected_color))
+                        painter.drawRect(new_text_bounding_rect)
+                        
+                        # Draw each line of the text
+                        pen = qt.QPen(qt.QColor(0, 0, 0))  # Black pen for text
                         painter.setPen(pen)
-                        y_position = font_metrics.height()
-                        for r in txt:
-                            painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                            y_position+=font_metrics.height()
-                    elif antts.ip.y() < antts.fp.y():
-                        tb_i = qt.QPoint(antts.fp.x()-100, antts.fp.y())
-                        tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                        painter.drawRect(qt.QRect(tb_i, tb_f))
-                        pen = qt.QPen(qt.QColor(0, 0, 0))
+                        
+                        text_draw_x = new_text_position_x
+                        text_draw_y = new_text_position_y + font_metrics.ascent()
+                        
+                        for line in txt:
+                            painter.drawText(text_draw_x, text_draw_y, line)
+                            text_draw_y += font_metrics.height()
+                    else:
+                        # Draw the background rectangle
+                        painter.setBrush(qt.QBrush(self.selected_color))
+                        painter.drawRect(text_bounding_rect)
+                        
+                        # Draw each line of the text
+                        pen = qt.QPen(qt.QColor(0, 0, 0))  # Black pen for text
                         painter.setPen(pen)
-                        y_position = font_metrics.height()
-                        for r in txt:
-                            painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                            y_position+=font_metrics.height()
-                    elif antts.ip.x() > antts.fp.x():
-                        tb_i = qt.QPoint(antts.fp.x()-l_box, antts.fp.y()-10)
-                        tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                        painter.drawRect(qt.QRect(tb_i, tb_f))
-                        pen = qt.QPen(qt.QColor(0, 0, 0))
-                        painter.setPen(pen)
-                        y_position = font_metrics.height()
-                        for r in txt:
-                            painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                            y_position+=font_metrics.height()
-                    elif antts.ip.x() < antts.fp.x():
-                        tb_i = qt.QPoint(antts.fp.x(), antts.fp.y()-10)
-                        tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                        painter.drawRect(qt.QRect(tb_i, tb_f))
-                        pen = qt.QPen(qt.QColor(0, 0, 0))
-                        painter.setPen(pen)
-                        y_position = font_metrics.height()
-                        for r in txt:
-                            painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                            y_position+=font_metrics.height()
+                        
+                        text_draw_x = text_position_x
+                        text_draw_y = text_position_y + font_metrics.ascent()
+                        
+                        for line in txt:
+                            painter.drawText(text_draw_x, text_draw_y, line)
+                            text_draw_y += font_metrics.height()
+            
+                # Draw the arrow
+                arrow_pen = qt.QPen(self.selected_color)
+                arrow_pen.setWidth(2.9)
+                painter.setPen(arrow_pen)
+                painter.drawPath(self.arrowPath(antts.tp, qt.QPoint(start_x, start_y), qt.QPoint(end_x, end_y)))
             elif antts.tp == "icon":
                 painter.drawImage(antts.ip, qt.QImage(antts.tx))
             elif antts.tp == "text":
@@ -1383,61 +1526,141 @@ class TutorialGUI(qt.QMainWindow):
         elif antt.tp == "crcls":
             painter.drawEllipse(antt.ip, self.Mdistance(antt.ip, antt.fp), self.Mdistance(antt.ip, antt.fp))
         elif antt.tp == "click":
-            painter.drawImage(antt.ip, self.new_image)
-        elif antt.tp == "arwT":
-            txt = self.split_string_to_dict(antt.tx)
-            painter.drawPath(self.arrowPath(antt.tp, antt.ip, antt.fp))
-            pen = qt.QPen(qt.QColor(255, 255, 255))
-            painter.setPen(qt.Qt.NoPen)
-            painter.setBrush(qt.QBrush(self.selected_color)) #self.selected_color
+            pen = qt.QPen(qt.QColor(200, 200, 200))
+            pen.setWidth(2)
+            painter.setPen(pen)
+            painter.setBrush(qt.QBrush(False)) #qt.QColor(100, 100, 100)
+            painter.drawRect(qt.QRect(antt.ip, antt.fp))
+            new_point_annotationn = self.calculate_icon_position(antt.ip, antt.fp)
+            painter.drawImage(new_point_annotationn, self.new_image)
+        ###################### MODIFICACION ENRIQUE INICIO ########################################
+        elif antt.tp == "arwT":  # If the annotation type is "arwT" (arrow with text)
+            # Get the start and end coordinates of the arrow
+            end_x,end_y = antt.fp.x(),antt.fp.y()
+            start_x, start_y = antt.ip.x(),antt.ip.y() 
+            
+            # Split the text associated with the arrow into multiple lines
+            txt = self.split_string_to_dict(antt.tx, 40)
+            
+            # Set the pen and brush for painting
+            pen = qt.QPen(qt.QColor(255, 255, 255))  # White pen for the arrow
+            painter.setPen(qt.Qt.NoPen)  # Disable pen for now
+            painter.setBrush(qt.QBrush(self.selected_color))  # Brush for the arrow background
+            
+            # Set font size and prepare font metrics for text measurement
             sbv = self.t_px
             font_small = qt.QFont("Arial", sbv)
             font_metrics = qt.QFontMetrics(font_small)
-            texto=self.long_string(txt)
-            l_box = font_metrics.horizontalAdvance(texto) + 10
+            texto = self.long_string(txt)  # Get the concatenated text
             painter.setFont(font_small)
-            if len(txt) > 0 and antt.tx!="Add text to accompany an arrow here.":
-                bg_h = font_metrics.height() * len(txt) + 3
-                if antt.ip.y() > antt.fp.y():
-                    tb_i = qt.QPoint(antt.fp.x()-100, antt.fp.y()-bg_h)
-                    tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                    painter.drawRect(qt.QRect(tb_i, tb_f))
-                    pen = qt.QPen(qt.QColor(0, 0, 0))
+            
+            # Check if there is valid text and it is not the default placeholder text
+            if len(txt) > 0 and antt.tx != "Add text to accompany an arrow here.":
+                # Calculate the longest line of text to determine the rectangle width
+                texto_mas_largo = self.long_string(txt)
+                bounding_box = font_metrics.boundingRect(texto_mas_largo)
+                text_width = bounding_box.width()
+                
+                # Calculate the total height of the rectangle based on the number of lines
+                text_height = font_metrics.height() * len(txt)
+                
+                # Initialize offsets for text position adjustments
+                offset_x, offset_y = 0, 0
+                
+                # Determine arrow direction and adjust text position accordingly
+                if end_x == start_x:  # Vertical arrow
+                    if end_y > start_y:  # Arrow pointing down
+                        offset_y = text_height / 2
+                    else:  # Arrow pointing up
+                        offset_y = -text_height / 2
+                elif end_y == start_y:  # Horizontal arrow
+                    if end_x > start_x:  # Arrow pointing right
+                        offset_x = text_width / 2
+                    else:  # Arrow pointing left
+                        offset_x = -text_width / 2
+                else:  # Diagonal arrow
+                    if end_x > start_x and end_y > start_y:  # Down-right
+                        offset_x, offset_y = text_width / 2, text_height / 2
+                    elif end_x < start_x and end_y < start_y:  # Up-left
+                        offset_x, offset_y = -text_width / 2, -text_height / 2
+                    elif end_x > start_x and end_y < start_y:  # Up-right
+                        offset_x, offset_y = text_width / 2, -text_height / 2
+                    elif end_x < start_x and end_y > start_y:  # Down-left
+                        offset_x, offset_y = -text_width / 2, text_height / 2
+                
+                # Calculate the final adjusted position for the text
+                text_position_x = (end_x + offset_x) - text_width / 2
+                text_position_y = (end_y + offset_y) - text_height / 2
+                
+                # Create a rectangle for the text
+                text_bounding_rect = qt.QRect(
+                    text_position_x -8 , text_position_y - 8,
+                    text_width + 16, text_height + 16 #extra margins
+                )
+                
+                # Check if the text rectangle is outside the pixmap boundaries
+                pixmap_rect = self.label_image.rect
+                if not pixmap_rect.contains(text_bounding_rect):
+                    # If the text is outside, reposition it within visible bounds
+                    screen_height = self.label_image.height
+                    screen_width = self.label_image.width
+                    
+                    if text_position_y < screen_height / 2:  # Top half of the screen
+                        new_text_position_y = screen_height - text_height -18
+                        end_y = new_text_position_y
+                    else:  # Bottom half of the screen
+                        new_text_position_y = 18
+                        end_y = new_text_position_y + text_height
+                    
+                    if end_x < start_x:  # Left side
+                        new_text_position_x = 8
+                    else:  # Right side
+                        new_text_position_x = screen_width - text_width -18
+                    
+                    end_x = new_text_position_x + text_width / 2
+                    
+                    # Recalculate the text rectangle with new coordinates
+                    new_text_bounding_rect = qt.QRect(
+                        new_text_position_x - 8 , new_text_position_y - 8,
+                        text_width + 16, text_height + 16)
+                    
+                    # Draw the new background rectangle
+                    painter.setBrush(qt.QBrush(self.selected_color))
+                    painter.drawRect(new_text_bounding_rect)
+                    
+                    # Draw each line of the text
+                    pen = qt.QPen(qt.QColor(0, 0, 0))  # Black pen for text
                     painter.setPen(pen)
-                    y_position = font_metrics.height()
-                    for r in txt:
-                        painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                        y_position+=font_metrics.height()
-                elif antt.ip.y() < antt.fp.y():
-                    tb_i = qt.QPoint(antt.fp.x()-100, antt.fp.y())
-                    tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                    painter.drawRect(qt.QRect(tb_i, tb_f))
-                    pen = qt.QPen(qt.QColor(0, 0, 0))
+                    
+                    text_draw_x = new_text_position_x
+                    text_draw_y = new_text_position_y + font_metrics.ascent()
+                    
+                    for line in txt:
+                        painter.drawText(text_draw_x, text_draw_y, line)
+                        text_draw_y += font_metrics.height()
+                else:
+                    # Draw the background rectangle
+                    painter.setBrush(qt.QBrush(self.selected_color))
+                    painter.drawRect(text_bounding_rect)
+                    
+                    # Draw each line of the text
+                    pen = qt.QPen(qt.QColor(0, 0, 0))  # Black pen for text
                     painter.setPen(pen)
-                    y_position = font_metrics.height()
-                    for r in txt:
-                        painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                        y_position+=font_metrics.height()               
-                elif antt.ip.x() > antt.fp.x():
-                    tb_i = qt.QPoint(antt.fp.x()-l_box, antt.fp.y()-10)
-                    tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                    painter.drawRect(qt.QRect(tb_i, tb_f))
-                    pen = qt.QPen(qt.QColor(0, 0, 0))
-                    painter.setPen(pen)
-                    y_position = font_metrics.height()
-                    for r in txt:
-                        painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                        y_position+=font_metrics.height()
-                elif antt.ip.x() < antt.fp.x():
-                    tb_i = qt.QPoint(antt.fp.x(), antt.fp.y()-10)
-                    tb_f = qt.QPoint(tb_i.x()+l_box+sbv, tb_i.y()+bg_h)
-                    painter.drawRect(qt.QRect(tb_i, tb_f))
-                    pen = qt.QPen(qt.QColor(0, 0, 0))
-                    painter.setPen(pen)
-                    y_position = font_metrics.height()
-                    for r in txt:
-                        painter.drawText(tb_i.x()+5, tb_i.y()+y_position, r)
-                        y_position+=font_metrics.height()
+                    
+                    text_draw_x = text_position_x
+                    text_draw_y = text_position_y + font_metrics.ascent()
+                    
+                    for line in txt:
+                        painter.drawText(text_draw_x, text_draw_y, line)
+                        text_draw_y += font_metrics.height()
+        
+            # Draw the arrow
+            arrow_pen = qt.QPen(self.selected_color)
+            arrow_pen.setWidth(2.9)
+            painter.setPen(arrow_pen)
+            painter.drawPath(self.arrowPath(antt.tp, qt.QPoint(start_x, start_y), qt.QPoint(end_x, end_y)))
+        ###################### MODIFICACION ENRIQUE FIN ########################################
+            
         elif antt.tp == "icon":
             painter.drawImage(antt.ip, qt.QImage(antt.tx))
         elif antt.tp == "text":
@@ -1447,13 +1670,24 @@ class TutorialGUI(qt.QMainWindow):
         
         painter.end()
         self.label_image.setPixmap(pixmap)
+
+    def calculate_icon_position(self, initial_point, final_point):
+        x_initial = initial_point.x()
+        y_initial = initial_point.y()
+        x_final = final_point.x()
+        y_final = final_point.y()
+        print("[",x_initial,",",y_initial,"]-[",x_final,",",y_final,"]")
+        new_x = x_initial+int((x_final-x_initial)/2)
+        new_y = y_initial+int((y_final-y_initial)/2)
+        print(new_x,",",new_y)
+        return qt.QPoint(new_x, new_y)
     
-    def split_string_to_dict(self, input_string):
+    def split_string_to_dict(self, input_string, size = 30):
         words = input_string.split() 
         result_dict = []
         current_string = ""
         for word in words:
-            if len(current_string) + len(word) + 1 < 30:
+            if len(current_string) + len(word) + 1 < size:
                 if current_string:
                     current_string += " "
                 current_string += word
@@ -1592,17 +1826,27 @@ class TutorialGUI(qt.QMainWindow):
         self.t_px = valor
 
     def on_action_triggered(self, sender):
-        self.annotation_selected = True
-        for action, icons in self.icons.items():
-            if action is sender:
-                action.setChecked(True)
-                action.setIcon(icons['active'])
-            else:
-                action.setChecked(False)
-                action.setIcon(icons['inactive'])
+        print(sender)
+        if sender.checked != True:
+            self.unselect_annotation()
+        else:
+            self.annotation_selected = True
+            for action, icons in self.icons.items():
+                if action is sender:
+                    action.setChecked(True)
+                    action.setIcon(icons['active'])
+                else:
+                    action.setChecked(False)
+                    action.setIcon(icons['inactive'])
     
     def set_output_name(self, filename):
         self.output_name = filename
+
+    def unselect_annotation(self):
+        self.select_annt = False
+        for action, icons in self.icons.items():
+            action.setChecked(False)  
+            action.setIcon(icons['inactive'])
 
     def save_json_file(self):
         # Create json file 
@@ -1657,5 +1901,4 @@ class TutorialGUI(qt.QMainWindow):
         tutorialName = self.output_name
         AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName+".json",ListPositionWhite, List_totalImages)   
         markdown_creator = markdownHTMLCreator()  
-        html_content = markdown_creator.markdown_to_html((os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName), List_totalImages, tutorialName)
-        
+        html_content = markdown_creator.markdown_to_html((os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+ tutorialName), List_totalImages, tutorialName)
