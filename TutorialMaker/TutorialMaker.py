@@ -289,6 +289,30 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
             test_tutorials.append(content.replace(".py", ""))
         return test_tutorials
 
+    @staticmethod
+    def runTutorialTestCases(tutorial_name):
+        """ Ideally you should have several levels of tests.  At the lowest level
+        tests should exercise the functionality of the logic with different inputs
+        (both valid and invalid).  At higher levels your tests should emulate the
+        way the user would interact with your code and confirm that it still works
+        the way you intended.
+        One of the most important features of the tests is that it should alert other
+        developers when their changes will have an impact on the behavior of your
+        module.  For example, if a developer removes a feature that you depend on,
+        your test should break so they know that the feature is needed.
+        """
+        TutorialModule = importlib.import_module("Testing." + tutorial_name)
+        for className in TutorialModule.__dict__:
+            if(not ("Test" in className) or className == "ScriptedLoadableModuleTest"):
+                continue
+            testClass = getattr(TutorialModule, className)
+            tutorial = testClass()
+            tutorial.runTest()
+            return
+        logging.error(_("No tests found in {tutorial_name}".format(tutorial_name=tutorial_name)))
+        raise Exception(_("No Tests Found"))
+
+
 #
 # TutorialMakerTest
 #
@@ -320,7 +344,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
                     continue
                 unit_tutorials = unit_tutorials.replace(".py", "")
                 # Generate Screenshots and widget metadata
-                self.test_TutorialMaker1(unit_tutorials)
+                TutorialMakerLogic.runTutorialTestCases(unit_tutorials)
                 # Paint Screenshots with annotations
                 AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
             except:
@@ -332,30 +356,6 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
             pass
         if tutorials_failed > 0:
             raise Exception(_("{tutorials_failed} tutorials failed to execute".format(tutorials_failed=tutorials_failed)))
-
-
-    def test_TutorialMaker1(self, tutorial_name):
-        """ Ideally you should have several levels of tests.  At the lowest level
-        tests should exercise the functionality of the logic with different inputs
-        (both valid and invalid).  At higher levels your tests should emulate the
-        way the user would interact with your code and confirm that it still works
-        the way you intended.
-        One of the most important features of the tests is that it should alert other
-        developers when their changes will have an impact on the behavior of your
-        module.  For example, if a developer removes a feature that you depend on,
-        your test should break so they know that the feature is needed.
-        """
-        TutorialModule = importlib.import_module("Testing." + tutorial_name)
-        for className in TutorialModule.__dict__:
-            if(not ("Test" in className) or className == "ScriptedLoadableModuleTest"):
-                continue
-            testClass = getattr(TutorialModule, className)
-            tutorial = testClass()
-            tutorial.runTest()
-            return
-        logging.error(_("No tests found in {tutorial_name}".format(tutorial_name=tutorial_name)))
-        raise Exception(_("No Tests Found"))
-        pass
 
     def test_TutorialMaker2(self):
         pass
