@@ -239,7 +239,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         pass
 
     def Annotate(self, tutorialName):
-        TutorialMakerTest().test_TutorialMaker1(tutorialName)
+        TutorialMakerLogic.runTutorialTestCases(tutorialName)
         
         Annotator = TutorialGUI()
         Annotator.open_json_file(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/Tutorial.json")
