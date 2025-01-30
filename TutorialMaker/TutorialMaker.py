@@ -68,7 +68,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.__selectedTutorial = None
         self.isDebug = slicer.app.settings().value("Developer/DeveloperMode")
         
-        print("Version Date: 01/28/2025-07:45PM")
+        print("Version Date: 01/30/2025-07:45PM")
         
         #PROTOTYPE FOR PLAYBACK
 
@@ -327,6 +327,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
         """ Do whatever is needed to reset the state - typically a scene clear will be enough.
         """
         slicer.mrmlScene.Clear()
+        TutorialMakerLogic().loadTutorialsFromRepos()
 
     def runTest(self):
         """Run as few or as many tests as needed here.
@@ -346,7 +347,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
                 # Generate Screenshots and widget metadata
                 TutorialMakerLogic.runTutorialTestCases(unit_tutorials)
                 # Paint Screenshots with annotations
-                AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
+                #AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
             except:
                 logging.error(_("Tutorial Execution Failed: {unit_tutorials}".format(unit_tutorials=unit_tutorials)))
                 tutorials_failed = tutorials_failed + 1
@@ -356,9 +357,6 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
             pass
         if tutorials_failed > 0:
             raise Exception(_("{tutorials_failed} tutorials failed to execute".format(tutorials_failed=tutorials_failed)))
-
-    def test_TutorialMaker2(self):
-        pass
 
     def delayDisplay(self, message, requestedDelay=None, msec=None):
         """
