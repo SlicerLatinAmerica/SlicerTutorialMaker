@@ -452,7 +452,7 @@ class AnnotatorStepWidget(qt.QWidget):
             self.SlideWidgets[self.mergedSlideIndex].setVisible(True)
             self.Slides[self.mergedSlideIndex].Active = True
         else:
-            for wIndex, widget in self.SlideWidgets:
+            for wIndex, widget in enumerate(self.SlideWidgets):
                 widget.setVisible(True)
                 self.Slides[wIndex].Active = True
             self.SlideWidgets[self.mergedSlideIndex].setVisible(False)
