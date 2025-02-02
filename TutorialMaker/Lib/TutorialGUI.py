@@ -357,8 +357,8 @@ class AnnotatorSlide:
         if resizeX <= 0 or resizeY <= 0:
             return self.outputImage
         if keepAspectRatio:
-            self.outputImage.scaled(resizeX, resizeY, qt.Qt.KeepAspectRatio)
-        return self.outputImage.scaled(resizeX, resizeY)
+            self.outputImage.scaled(resizeX, resizeY, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+        return self.outputImage.scaled(resizeX, resizeY,qt.Qt.IgnoreAspectRatio, qt.Qt.SmoothTransformation)
 
     def ReDraw(self):
         del self.outputImage
