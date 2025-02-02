@@ -1071,12 +1071,12 @@ class TutorialGUI(qt.QMainWindow):
         self.clck.setCheckable(True)
         toolbar.addAction(self.clck)
 
-        self.arrow = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png'), _("Arrow"), self)
+        #New Icon for textless arrows, if we add text back we change it back
+        self.arrow = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_disabled.png'), _("Arrow"), self)
         self.arrow.setCheckable(True)
         toolbar.addAction(self.arrow)
 
-        # TODO: Create a icon for textBoxes
-        self.textBox = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png'), _("Text Box"), self)
+        self.textBox = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png'), _("Text Box"), self)
         self.textBox.setCheckable(True)
         toolbar.addAction(self.textBox)
 
@@ -1100,13 +1100,13 @@ class TutorialGUI(qt.QMainWindow):
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/pointer.png')
             },
             self.arrow: {
-                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3_p.png'),
-                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png')
+                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_enabled.png'),
+                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_disabled.png')
             },
             # TODO: Create a icon for textBoxes
             self.textBox: {
-                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3_p.png'),
-                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png')
+                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_enabled.png'),
+                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png')
             },
             self.icon_image: {
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act4_p.png'),
