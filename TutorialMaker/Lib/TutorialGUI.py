@@ -707,14 +707,22 @@ class TutorialGUI(qt.QMainWindow):
             #>>>>>> This assumes that the first window is always the SlicerAppMainWindow <<<<<<<
 
             #Main window
-            annotatorSlide = AnnotatorSlide(screenshots[0].getImage(), screenshots[0].getWidgets())
-            stepWidget.AddStepWindows(annotatorSlide)
+            try:
+                annotatorSlide = AnnotatorSlide(screenshots[0].getImage(), screenshots[0].getWidgets())
+                stepWidget.AddStepWindows(annotatorSlide)
+            except Exception:
+                print(f"ERROR: Annotator Failed to add top level window in step:{stepIndex}, loadImagesAndMetadata")
+                del stepWidget
+                continue
 
             for screenshot in screenshots[1:]:
-                annotatorSlide = AnnotatorSlide(screenshot.getImage(),
-                                                screenshot.getWidgets(), 
-                                                WindowOffset=screenshot.getWidgets()[0]["position"])
-                stepWidget.AddStepWindows(annotatorSlide)
+                try:
+                    annotatorSlide = AnnotatorSlide(screenshot.getImage(),
+                                                    screenshot.getWidgets(), 
+                                                    WindowOffset=screenshot.getWidgets()[0]["position"])
+                    stepWidget.AddStepWindows(annotatorSlide)
+                except Exception:
+                    print(f"ERROR: Annotator Failed to add window in step:{stepIndex}, loadImagesAndMetadata")
 
             self.steps.append(stepWidget)
             self.gridLayout.addWidget(stepWidget)
