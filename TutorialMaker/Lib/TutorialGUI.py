@@ -30,7 +30,7 @@ class DraggableLabel(qt.QLabel):
         width = size.width()
         height = size.height()
 
-        self.move(int(x - width/2), int(y - height/2))
+        self.move(x - width/2, y - height/2)
     
     def SetActive(self, state : bool):
         #Did it explicit for clarity
@@ -102,9 +102,30 @@ class Annotation:
 
         self.PERSISTENT = False
 
+        self.boundingBoxTopLeft = [0,0]
+        self.boundingBoxBottomRight = [0,0]
+
         # Need to change this later, make it loaded through resources
         self.icon_click = qt.QImage(os.path.dirname(__file__) + '/../Resources/Icons/Painter/click_icon.png')
         self.icon_click = self.icon_click.scaled(20,30)  
+
+    def setSelectionBoundingBox(self, topLeftX, topLeftY, bottomRightX, bottomRightY):
+
+        if bottomRightX < topLeftX:
+            tmp = topLeftX
+            topLeftX = bottomRightX
+            bottomRightX = tmp
+
+        if bottomRightY < topLeftY:
+            tmp = topLeftY
+            topLeftY = bottomRightY
+            bottomRightY = tmp
+
+        self.boundingBoxTopLeft = [topLeftX, topLeftY]
+        self.boundingBoxBottomRight = [bottomRightX, bottomRightY]
+    
+    def getSelectionBoundingBoxSize(self):
+        return [self.boundingBoxBottomRight[0] - self.boundingBoxTopLeft[0], self.boundingBoxBottomRight[1] - self.boundingBoxTopLeft[1]]
 
     def wantsOptHelper(self):
         return self.type in AnnotationType.Arrow | AnnotationType.TextBox
@@ -213,12 +234,15 @@ class Annotation:
             painter.drawLine(arrowLine)
             painter.drawPolygon(arrowHeadPolygon)
 
+            self.setSelectionBoundingBox(*arrowTail, *arrowHead)
             pass
         elif self.type == AnnotationType.Rectangle:
             topLeft = qt.QPoint(targetPos[0], targetPos[1])
             bottomRight = qt.QPoint(targetPos[0] + targetSize[0],targetPos[1] + targetSize[1])
             rectToDraw = qt.QRect(topLeft,bottomRight)
             painter.drawRect(rectToDraw)
+
+            self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + targetSize[0],targetPos[1] + targetSize[1])
             pass
         elif self.type == AnnotationType.Circle:
             pass
@@ -284,13 +308,14 @@ class Annotation:
             for lineIndex, line in enumerate(textLines):
                 painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)
 
-            pass
+            self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + optX, targetPos[1] + optY)
         elif self.type == AnnotationType.Click:
             bottomRight = [targetPos[0] + targetSize[0],
                            targetPos[1] + targetSize[1]]
             
             painter.drawImage(qt.QPoint(*bottomRight), self.icon_click)
-            pass
+            
+            self.setSelectionBoundingBox(*bottomRight, 20,30)
         pass
     
 class AnnotatorSlide:
@@ -328,6 +353,19 @@ class AnnotatorSlide:
             if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
                 results.append(widget)
         return results
+    
+    def FindAnnotationsAtPos(self, posX, posY):
+        results = []
+
+        for annotation in self.annotations:
+            rectX, rectY = annotation.boundingBoxTopLeft
+            rectWidth, rectHeight = annotation.getSelectionBoundingBoxSize()
+            if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
+                results.append(annotation)
+        
+        results.sort(reverse=True, key= lambda x: x.getSelectionBoundingBoxSize()[0]*x.getSelectionBoundingBoxSize()[1])
+        return results
+
 
     def MapScreenToImage(self, qPos : qt.QPoint, qLabel : qt.QLabel):
         imageSizeX = self.image.width()
@@ -336,10 +374,10 @@ class AnnotatorSlide:
         labelWidth = qLabel.width
         labelHeight = qLabel.height
 
-        ratioX = qPos.x() / labelWidth
-        ratioY = qPos.y() / labelHeight
+        x = util.mapFromTo(qPos.x(), 0, labelWidth, 0, imageSizeX)
+        y = util.mapFromTo(qPos.y(), 0, labelHeight, 0, imageSizeY)
 
-        return [int(imageSizeX * ratioX), int(imageSizeY * ratioY)]
+        return [x,y]
     
     def MapImageToScreen(self, qPos : qt.QPoint, qLabel : qt.QLabel):
         imageSizeX = self.image.width()
@@ -348,10 +386,10 @@ class AnnotatorSlide:
         labelWidth = qLabel.width
         labelHeight = qLabel.height
 
-        ratioX = qPos.x() / imageSizeX
-        ratioY = qPos.y() / imageSizeY
-
-        return [int(labelWidth * ratioX), int(labelHeight * ratioY)]
+        x = util.mapFromTo(qPos.x(), 0, imageSizeX, 0, labelWidth)
+        y = util.mapFromTo(qPos.y(), 0, imageSizeY, 0, labelHeight)
+                           
+        return [x,y]
 
     def GetResized(self, resizeX : float = 0, resizeY : float = 0, keepAspectRatio=False) -> qt.QPixmap:
         if resizeX <= 0 or resizeY <= 0:
@@ -803,7 +841,6 @@ class TutorialGUI(qt.QMainWindow):
         if index is not None:
             InsertWidget(stepWidget, index)
             return
-        print(self.selectedIndexes)
         InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
         pass
 
@@ -834,23 +871,50 @@ class TutorialGUI(qt.QMainWindow):
         pass
 
     def mouse_press_event(self, event):
-        if self.selectedAnnotationType is not AnnotationType.Nil:
-            self.annotationHandler(event.pos())
+        if self.selectedAnnotationType == AnnotationType.Nil:
+            return
+        if self.selectedAnnotationType == AnnotationType.Selecting:
+            self.selectionHandler(event.pos())
+            return
+        self.annotationHandler(event.pos())
 
+        pass #FindAnnotationsAtPos
+
+    def selectionHandler(self, appPos):
+        posInImage = self.selectedAnnotator.MapScreenToImage(appPos, self.selectedSlide)
+        annotations = self.selectedAnnotator.FindAnnotationsAtPos(*posInImage)
+
+        if len(annotations) < 1:
+            return
+        # Using the parent counter to go back a set amount from the widget parents
+        if self.selectorParentCount > len(annotations) - 1:
+            self.selectorParentCount = len(annotations) - 1
+        elif self.selectorParentCount < 0:
+            self.selectorParentCount = 0
+        selectedAnnotation = annotations[len(annotations) - 1 - self.selectorParentCount]
+        if selectedAnnotation is None:
+            return
+        optValuesInImage = self.selectedAnnotator.MapImageToScreen(qt.QPointF(selectedAnnotation.optX, selectedAnnotation.optY,), self.selectedSlide)
+        self.OptHelperWidget.SetCenter(*optValuesInImage)
+        _offsetPos = self.selectedAnnotator.MapImageToScreen(qt.QPointF(selectedAnnotation.target["position"][0] + selectedAnnotation.offsetX,
+                                                                       selectedAnnotation.target["position"][1] + selectedAnnotation.offsetY), self.selectedSlide)
+        
+
+
+        self.OffsetHelperWidget.SetCenter(*_offsetPos)
+            
+
+        self.on_action_triggered(None) #TODO: This is needed because this affects the selectiontype every mouse movement event and makes the selection process very janky 
+        self.selectedAnnotation = selectedAnnotation
+        self.selectedAnnotationType = AnnotationType.Selected
         pass
 
     def annotationHandler(self, appPos):
-        if self.selectedAnnotationType == AnnotationType.Nil:
-            return
-        # Selecting Logic
-        if self.selectedAnnotationType == AnnotationType.Selecting:
-            pass
-        else: # Applies Annotation and Selects it
-            self.selectedAnnotation.PERSISTENT = True
-            selectedAnnotation = self.selectedAnnotation
-            self.on_action_triggered(None)
-            self.selectedAnnotation = selectedAnnotation
-            self.selectedAnnotationType = AnnotationType.Selected
+        self.selectedAnnotation.PERSISTENT = True
+        selectedAnnotation = self.selectedAnnotation
+        self.on_action_triggered(None)
+        self.selectedAnnotation = selectedAnnotation
+        self.selectedAnnotationType = AnnotationType.Selected
 
     def previewAnnotation(self, appPos):
         self.lastAppPos = appPos
@@ -858,11 +922,11 @@ class TutorialGUI(qt.QMainWindow):
         widgets = self.selectedAnnotator.FindWidgetsAtPos(*posInImage)
 
         def ApplyHelper():
-            optValuesInImage = self.selectedAnnotator.MapScreenToImage(qt.QPoint(*self.OptHelperWidget.GetCenter()), self.selectedSlide)
+            optValuesInImage = self.selectedAnnotator.MapScreenToImage(qt.QPointF(*self.OptHelperWidget.GetCenter()), self.selectedSlide)
             self.selectedAnnotation.setValuesOpt(*optValuesInImage)
 
 
-            _helperPos = self.selectedAnnotator.MapScreenToImage(qt.QPoint(*self.OffsetHelperWidget.GetCenter()), self.selectedSlide)
+            _helperPos = self.selectedAnnotator.MapScreenToImage(qt.QPointF(*self.OffsetHelperWidget.GetCenter()), self.selectedSlide)
             offsetFromTargetWidget = [_helperPos[0] - self.selectedAnnotation.target["position"][0],
                                       _helperPos[1] - self.selectedAnnotation.target["position"][1]]
             
@@ -911,7 +975,7 @@ class TutorialGUI(qt.QMainWindow):
         
         # Configure The Annotation Offset Helper so it defaults to zero
         # Probably one the ugliest way to do this, maybe find someway better
-        _reversePostion = self.selectedAnnotator.MapImageToScreen(qt.QPoint(*selectedWidget["position"]), self.selectedSlide)
+        _reversePostion = self.selectedAnnotator.MapImageToScreen(qt.QPointF(*selectedWidget["position"]), self.selectedSlide)
         self.OffsetHelperWidget.SetCenter(*_reversePostion)
 
         ApplyHelper()
@@ -927,6 +991,8 @@ class TutorialGUI(qt.QMainWindow):
     def mouse_move_event(self, event):
          #TODO: Clean this up as there has to be a less roundabout way to get these
         # Probably going to have to rewrite the whole action chain
+        if self.select.isChecked():
+            self.selectedAnnotationType = AnnotationType.Selecting
         if self.square.isChecked():
             self.selectedAnnotationType = AnnotationType.Rectangle
         elif self.circle.isChecked():
@@ -951,15 +1017,18 @@ class TutorialGUI(qt.QMainWindow):
 
     def keyboardEvent(self, event):
         if self.selectedAnnotationType == AnnotationType.Selected:
-            if self.selectedAnnotation.type == AnnotationType.TextBox:
+            if event.key() == qt.Qt.Key_Delete:
+                self.selectedAnnotation.PERSISTENT = False
+                self.cancelCurrentAnnotation()
+            elif self.selectedAnnotation.type == AnnotationType.TextBox:
                 #TODO: Make so enter is also treated differently, would need to change the textBox draw code as well
                 if event.key() == qt.Qt.Key_Backspace:
                     self.selectedAnnotation.text = self.selectedAnnotation.text[:-1]
                 else:
                     self.selectedAnnotation.text += event.text()
 
-                self.selectedAnnotator.ReDraw()
-                self.refreshViews()
+            self.selectedAnnotator.ReDraw()
+            self.refreshViews()
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
                 self.selectorParentDelta(-1)
@@ -1062,6 +1131,10 @@ class TutorialGUI(qt.QMainWindow):
     
     def create_toolbar_actions(self):
         toolbar = qt.QToolBar("Actions", self)
+        #TODO: Make icon for the selection action
+        self.select = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png'), _("Select"), self)
+        self.select.setCheckable(True)
+        toolbar.addAction(self.select)
         
         self.square = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png'), _("Square"), self)
         self.square.setCheckable(True)
@@ -1090,6 +1163,11 @@ class TutorialGUI(qt.QMainWindow):
         self.in_text.setCheckable(True) 
 
         self.icons = {
+            self.select: {
+                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1_p.png'),
+                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png')
+            },
+
             self.square: {
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1_p.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png')
@@ -1121,7 +1199,7 @@ class TutorialGUI(qt.QMainWindow):
             }
         }
 
-        self.toolbar_actions = [self.square, self.circle, self.clck, self.arrow, self.icon_image, self.in_text, self.textBox]
+        self.toolbar_actions = [self.select, self.square, self.circle, self.clck, self.arrow, self.icon_image, self.in_text, self.textBox]
         for a in self.toolbar_actions:
             a.triggered.connect(lambda checked, a=a: self.on_action_triggered(a))
 
