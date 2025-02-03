@@ -315,7 +315,7 @@ class Annotation:
             
             painter.drawImage(qt.QPoint(*bottomRight), self.icon_click)
             
-            self.setSelectionBoundingBox(*bottomRight, 20,30)
+            self.setSelectionBoundingBox(*bottomRight, bottomRight[0] + 20,bottomRight[1] + 30)
         pass
     
 class AnnotatorSlide:
