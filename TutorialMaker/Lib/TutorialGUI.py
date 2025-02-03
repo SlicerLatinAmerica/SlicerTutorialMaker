@@ -557,6 +557,7 @@ class TutorialGUI(qt.QMainWindow):
 
         self.scroll_area = self.uiWidget.findChild(qt.QScrollArea, "scrollArea")
         self.scroll_area.setFixedSize(*self.scrollAreaSize) 
+        self.scroll_area.installEventFilter(self)
 
         # Configure Main Slide Screen
         self.selectedSlide = self.uiWidget.findChild(qt.QLabel, "label_imagen")
@@ -959,11 +960,13 @@ class TutorialGUI(qt.QMainWindow):
 
                 self.selectedAnnotator.ReDraw()
                 self.refreshViews()
-        elif self.selectedAnnotator is not None:
+        elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
                 self.selectorParentDelta(-1)
+                return True
             elif event.key() == qt.Qt.Key_Down:
                 self.selectorParentDelta(1)
+                return True
 
         pass
 
@@ -1017,18 +1020,18 @@ class TutorialGUI(qt.QMainWindow):
         if obj == self.selectedSlide:
             if event.type() == qt.QEvent.Leave:
                 if not self.selectedAnnotation is None and not self.selectedAnnotation.PERSISTENT:
-                    self.cancelCurrentAnnotation()
+                    return self.cancelCurrentAnnotation()
             elif event.type() == qt.QEvent.MouseButtonPress:
-                self.mouse_press_event(event)
+                return self.mouse_press_event(event)
             elif event.type() == qt.QEvent.MouseMove:
-                self.mouse_move_event(event)
+                return self.mouse_move_event(event)
             elif event.type() == qt.QEvent.MouseButtonRelease:
-                self.mouse_release_event(event)
+                return self.mouse_release_event(event)
             elif event.type() == qt.QEvent.Wheel:
-                self.scrollEvent(event)
+                return self.scrollEvent(event)
         else:
             if event.type() == qt.QEvent.KeyPress:
-                self.keyboardEvent(event)
+                return self.keyboardEvent(event)
 
     def create_toolbar_menu(self):
         toolbar = qt.QToolBar("File", self)
