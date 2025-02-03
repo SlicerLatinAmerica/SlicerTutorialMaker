@@ -649,6 +649,7 @@ class TutorialGUI(qt.QMainWindow):
                             f"{slideTitle}_body": slide.SlideBody}
 
                 slideInfo = {"ImagePath": f"{slideTitle}.png",
+                             "SlideCode": f"{stepIndex}/{slideIndex}",
                              "SlideTitle": f"{slideTitle}_title",
                              "SlideDesc": f"{slideTitle}_body",
                              "Annotations": []}
@@ -711,6 +712,8 @@ class TutorialGUI(qt.QMainWindow):
                             "fontSize": 14,
                             "direction_draw" : [ float(info["offset"][0]), float(info["offset"][1]), float(info["optional"][0]), float(info["optional"][1])] #Enrique Line
                         }
+                    else:
+                        annotation = {}
                     annotations.append(annotation)
                     pass
                 slideInfo = {
@@ -1029,6 +1032,7 @@ class TutorialGUI(qt.QMainWindow):
 
             self.selectedAnnotator.ReDraw()
             self.refreshViews()
+            return True
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
                 self.selectorParentDelta(-1)
