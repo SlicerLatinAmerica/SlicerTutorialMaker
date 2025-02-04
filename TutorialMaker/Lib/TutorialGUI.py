@@ -533,6 +533,12 @@ class TutorialGUI(qt.QMainWindow):
         self.thumbnailSize = [280, 165]
 
         self.steps = []
+
+        self.updateTimer = qt.QTimer()
+        self.updateTimer.setTimerType(qt.Qt.PreciseTimer)
+        self.updateTimer.setInterval(34) #34ms Interval = 30 ups
+        self.updateTimer.timeout.connect(self.refreshViews)
+        self.updateTimer.start()
         
         self.selectedIndexes = [0,0]
         self.selectedAnnotator = None
@@ -828,9 +834,6 @@ class TutorialGUI(qt.QMainWindow):
             self.selectedAnnotation = None
             if self.selectedAnnotationType == AnnotationType.Selected:
                 self.selectedAnnotationType = AnnotationType.Selecting
-        if self.selectedAnnotator is not None:
-            self.selectedAnnotator.ReDraw()
-            self.refreshViews()
 
     def onActionTriggered():
         pass
@@ -962,9 +965,6 @@ class TutorialGUI(qt.QMainWindow):
             self.OptHelperWidget.SetActive(self.selectedAnnotation.wantsOptHelper())
             self.OffsetHelperWidget.SetActive(self.selectedAnnotation.wantsOffsetHelper())
             ApplyHelper()
-
-            self.selectedAnnotator.ReDraw()
-            self.refreshViews()
             return
         
         if len(widgets) < 1:
@@ -1005,12 +1005,12 @@ class TutorialGUI(qt.QMainWindow):
         self.OffsetHelperWidget.SetCenter(*_reversePostion)
 
         ApplyHelper()
-        
-        self.selectedAnnotator.ReDraw()
-        self.refreshViews()
         pass
 
     def refreshViews(self):
+        if self.selectedAnnotator is None:
+            return
+        self.selectedAnnotator.ReDraw()
         self.selectedSlide.setPixmap(self.selectedAnnotator.GetResized(*self.selectedSlideSize, keepAspectRatio=True))
         pass
 
@@ -1053,8 +1053,6 @@ class TutorialGUI(qt.QMainWindow):
                 else:
                     self.selectedAnnotation.text += event.text()
 
-            self.selectedAnnotator.ReDraw()
-            self.refreshViews()
             return True
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
@@ -1069,8 +1067,6 @@ class TutorialGUI(qt.QMainWindow):
     def selectorParentDelta(self, delta : int):
         self.selectorParentCount += delta
         self.previewAnnotation(self.lastAppPos)
-        self.selectedAnnotator.ReDraw()
-        self.refreshViews()
 
 
     def scrollEvent(self, event):
