@@ -874,7 +874,13 @@ class TutorialGUI(qt.QMainWindow):
     def copy_page(self):
         pass
 
-    def updateValue(self):
+    def updateSelectedAnnotationSettings(self):
+        if self.selectedAnnotation is not None:
+            self.selectedAnnotation.penConfig(self.penSettings["color"], self.penSettings["fontSize"],self.penSettings["penThickness"], brush=True)
+
+    def updateAnnotationThicknessValue(self):
+        self.penSettings["penThickness"] = self.spin_box.value
+        self.updateSelectedAnnotationSettings()
         pass
 
     def open_icon(self):
@@ -886,7 +892,9 @@ class TutorialGUI(qt.QMainWindow):
     def actualizar_size(self):
         pass
 
-    def updateSize(self):
+    def updateTextFontSize(self):
+        self.penSettings["fontSize"] = self.spin_box_txt.value
+        self.updateSelectedAnnotationSettings()
         pass
 
     def changeColor(self):
@@ -896,8 +904,10 @@ class TutorialGUI(qt.QMainWindow):
             color = color_dialog.selectedColor()
             self.penSettings["color"] = color
         pass
+        self.updateSelectedAnnotationSettings()
 
     def mouse_press_event(self, event):
+        self.setFocus()
         if self.selectedAnnotationType == AnnotationType.Nil:
             return
         if self.selectedAnnotationType == AnnotationType.Selecting:
@@ -1042,6 +1052,9 @@ class TutorialGUI(qt.QMainWindow):
         pass
 
     def keyboardEvent(self, event):
+        if event.key() == qt.Qt.Key_Escape:
+            self.setFocus()
+            return False
         if self.selectedAnnotationType == AnnotationType.Selected:
             if event.key() == qt.Qt.Key_Delete:
                 self.selectedAnnotation.PERSISTENT = False
@@ -1247,7 +1260,7 @@ class TutorialGUI(qt.QMainWindow):
         self.spin_box.setSingleStep(1)
         self.spin_box.setValue(self.valor)
         toolbar.addWidget(self.spin_box)
-        self.spin_box.valueChanged.connect(self.updateValue)
+        self.spin_box.valueChanged.connect(self.updateAnnotationThicknessValue)
 
         label_t = qt.QLabel("Text: ")
         toolbar.addWidget(label_t)
@@ -1264,7 +1277,7 @@ class TutorialGUI(qt.QMainWindow):
         self.spin_box_txt.setSingleStep(1)
         self.spin_box_txt.setValue(self.t_px)
         toolbar.addWidget(self.spin_box_txt)
-        self.spin_box_txt.valueChanged.connect(self.updateSize)
+        self.spin_box_txt.valueChanged.connect(self.updateTextFontSize)
 
         self.text_in = qt.QLineEdit()
         self.text_in.setMaxLength(500)
