@@ -344,7 +344,10 @@ class Widget():
             print(child)
     
     def click(self):
-        return self.__widgetData.click()
+        result = self.__widgetData.click()
+        self.__widgetData.update()
+        slicer.app.processEvents(qt.QEventLoop.AllEvents, 70)
+        return result
     
     def getGlobalPos(self):
         mw = slicer.util.mainWindow()
@@ -492,7 +495,12 @@ class ScreenshotTools():
                 if hasattr(widgets[index].inner(), "isVisible") and not widgets[index].inner().isVisible():
                     continue
                 data[index] = {"name": widgets[index].name, "path": tool.uniqueWidgetPath(widgets[index]), "text": widgets[index].text, "position": widgets[index].getGlobalPos(), "size": widgets[index].getSize()}
-            except:
+                pass
+            except AttributeError as e:
+                #Working as expected, so to not save QObjects that are not QWidgets
+                pass
+            except Exception as e:
+                print(e)
                 pass
         self.handler.saveScreenshotMetadata(data, filename)
 
