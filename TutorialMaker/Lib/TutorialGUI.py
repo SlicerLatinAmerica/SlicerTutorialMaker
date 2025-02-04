@@ -101,9 +101,11 @@ class Annotation:
         self.annotationOffset = [0,0]
 
         self.PERSISTENT = False
+        self.drawBoundingBox = False
 
         self.boundingBoxTopLeft = [0,0]
         self.boundingBoxBottomRight = [0,0]
+        self.__selectionSlideEffect = 0
 
         # Need to change this later, make it loaded through resources
         self.icon_click = qt.QImage(os.path.dirname(__file__) + '/../Resources/Icons/Painter/click_icon.png')
@@ -181,6 +183,7 @@ class Annotation:
 
         pen.setColor(self.color)
         pen.setWidth(self.thickness)
+        pen.setStyle(qt.Qt.SolidLine)
 
         brush.setColor(self.color)
         brush.setStyle(qt.Qt.NoBrush)
@@ -317,6 +320,23 @@ class Annotation:
             
             self.setSelectionBoundingBox(*bottomRight, bottomRight[0] + 20,bottomRight[1] + 30)
         pass
+        if self.drawBoundingBox:
+            pen.setColor(qt.QColor("green"))
+            pen.setWidth(4)
+            pen.setStyle(qt.Qt.DotLine)
+            self.__selectionSlideEffect += 0.1
+            pen.setDashOffset(self.__selectionSlideEffect)
+            brush.setColor(qt.QColor("green"))
+            brush.setStyle(qt.Qt.NoBrush)
+
+            painter.setBrush(brush)
+            painter.setPen(pen)
+
+            topLeft = qt.QPoint(*self.boundingBoxTopLeft)
+            bottomRight = qt.QPoint(*self.boundingBoxBottomRight)
+            rectToDraw = qt.QRect(topLeft,bottomRight)
+            painter.drawRect(rectToDraw)
+
     
 class AnnotatorSlide:
     def __init__(self, BackgroundImage : qt.QPixmap, Metadata : dict, Annotations : list[Annotation] = None, WindowOffset : list[int] = None):
@@ -802,6 +822,7 @@ class TutorialGUI(qt.QMainWindow):
 
     def cancelCurrentAnnotation(self):
         if self.selectedAnnotation is not None:
+            self.selectedAnnotation.drawBoundingBox = False
             if not self.selectedAnnotation.PERSISTENT:
                 self.selectedAnnotator.annotations.remove(self.selectedAnnotation)
             self.selectedAnnotation = None
@@ -910,6 +931,7 @@ class TutorialGUI(qt.QMainWindow):
         self.on_action_triggered(None) #TODO: This is needed because this affects the selectiontype every mouse movement event and makes the selection process very janky 
         self.selectedAnnotation = selectedAnnotation
         self.selectedAnnotationType = AnnotationType.Selected
+        self.selectedAnnotation.drawBoundingBox = True
         pass
 
     def annotationHandler(self, appPos):
@@ -918,6 +940,7 @@ class TutorialGUI(qt.QMainWindow):
         self.on_action_triggered(None)
         self.selectedAnnotation = selectedAnnotation
         self.selectedAnnotationType = AnnotationType.Selected
+        self.selectedAnnotation.drawBoundingBox = True
 
     def previewAnnotation(self, appPos):
         self.lastAppPos = appPos
