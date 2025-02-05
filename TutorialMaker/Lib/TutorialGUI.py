@@ -73,7 +73,7 @@ class AnnotationType(Flag):
     Circle = auto()
     TextBox = auto()
     Click = auto()
-    Selecting = auto() # Not for saving Not Implemented
+    Selecting = auto()
     Selected = auto()  # Not for saving
 
 
@@ -352,6 +352,7 @@ class AnnotatorSlide:
         self.annotations = Annotations
         self.Active = True
 
+        self.SlideLayout = "Screenshot"
         self.SlideTitle = ""
         self.SlideBody = ""
         pass
@@ -734,6 +735,7 @@ class TutorialGUI(qt.QMainWindow):
 
                 slideInfo = {"ImagePath": f"{slideTitle}.png",
                              "SlideCode": f"{stepIndex}/{slideIndex}",
+                             "SlideLayout": slide.SlideLayout,
                              "SlideTitle": f"{slideTitle}_title",
                              "SlideDesc": f"{slideTitle}_body",
                              "Annotations": []}
@@ -859,8 +861,8 @@ class TutorialGUI(qt.QMainWindow):
 
         #TODO: use widget annotation infrastructure to make these pages more on the fly interactable
         # Insert Dummy Pages for Title, Acknowledgements
-        self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png')
-        self.addBlankPage(False, 1, self.dir_path + '/../Resources/NewSlide/Acknowledgments.png')
+        self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png', type_="CoverPage")
+        self.addBlankPage(False, 1, self.dir_path + '/../Resources/NewSlide/Acknowledgments.png', type_="Acknowledgement")
 
         pass
 
@@ -912,7 +914,7 @@ class TutorialGUI(qt.QMainWindow):
 
     #TODO: Clean this up, there's a better way to keep track of the step.stepIndex value, with this we have to keep 2 copies redundant
     #This seems like a very expensive function
-    def addBlankPage(self, state,index : int = None, backgroundPath : str = "", metadata : dict = None):
+    def addBlankPage(self, state,index : int = None, backgroundPath : str = "", metadata : dict = None, type_ : str = ""):
         stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
         stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
         stepWidget.swapRequest.connect(self.swapStepPosition)
@@ -921,6 +923,8 @@ class TutorialGUI(qt.QMainWindow):
         if metadata is None:
             metadata = {}
         annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
+        if type_ != "":
+             annotatorSlide.SlideLayout = type_
         stepWidget.AddStepWindows(annotatorSlide)
         stepWidget.CreateMergedWindow()
         
