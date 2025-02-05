@@ -727,6 +727,7 @@ class TutorialGUI(qt.QMainWindow):
                 slideTitle = f"{slidePrefix}_{cleanSlideTitle}"
                 slideImagePath = f"{self.outputFolder}/{slideTitle}"
                 if cleanSlideTitle == "":
+                    slideTitle += "slide"
                     slideImagePath += "slide"
                 slideImage.save(slideImagePath + ".png", "PNG")
 
