@@ -112,7 +112,7 @@ class Annotation:
         self.icon_click = self.icon_click.scaled(20,30)  
 
     def setSelectionBoundingBox(self, topLeftX, topLeftY, bottomRightX, bottomRightY):
-
+        padding = 5
         if bottomRightX < topLeftX:
             tmp = topLeftX
             topLeftX = bottomRightX
@@ -123,8 +123,8 @@ class Annotation:
             topLeftY = bottomRightY
             bottomRightY = tmp
 
-        self.boundingBoxTopLeft = [topLeftX, topLeftY]
-        self.boundingBoxBottomRight = [bottomRightX, bottomRightY]
+        self.boundingBoxTopLeft = [topLeftX - padding, topLeftY - padding]
+        self.boundingBoxBottomRight = [bottomRightX + padding, bottomRightY + padding]
     
     def getSelectionBoundingBoxSize(self):
         return [self.boundingBoxBottomRight[0] - self.boundingBoxTopLeft[0], self.boundingBoxBottomRight[1] - self.boundingBoxTopLeft[1]]
