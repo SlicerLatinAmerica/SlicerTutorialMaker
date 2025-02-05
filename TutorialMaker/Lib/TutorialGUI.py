@@ -1022,6 +1022,8 @@ class TutorialGUI(qt.QMainWindow):
         pass
 
     def annotationHandler(self, appPos):
+        if self.selectedAnnotation is None:
+            return
         self.selectedAnnotation.PERSISTENT = True
         selectedAnnotation = self.selectedAnnotation
         self.on_action_triggered(None)
