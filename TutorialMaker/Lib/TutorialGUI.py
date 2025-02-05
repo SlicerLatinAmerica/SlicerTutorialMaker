@@ -434,14 +434,10 @@ class AnnotatorSlide:
 
 class AnnotatorStepWidget(qt.QWidget):
     thumbnailClicked = qt.Signal(int, int)
+    swapRequest = qt.Signal(int, int)
 
-    def __init__(self, stepIndex : int, thumbnailSize):
-        super().__init__()
-        self.stepLayout = qt.QGridLayout()
-        self.setLayout(self.stepLayout)
-        self.setAttribute(qt.Qt.WA_StyledBackground, True)
-        self.setStyleSheet('background-color: red;')
-        self.setObjectName(f"label_step_{stepIndex}")
+    def __init__(self, stepIndex : int, thumbnailSize, parent = None):
+        super().__init__(parent)
 
         self.stepIndex = stepIndex
         self.screenshotCount = 0
@@ -453,8 +449,47 @@ class AnnotatorStepWidget(qt.QWidget):
 
         self.thumbnailSize = thumbnailSize
 
+        self.buttonSize = [24, 24]
+
         self.Slides = []
         self.SlideWidgets = []
+
+        self.SetupGUI()
+    
+    def SetupGUI(self):
+        self.stepLayout = qt.QGridLayout()
+        self.setLayout(self.stepLayout)
+        self.setAttribute(qt.Qt.WA_StyledBackground, True)
+        self.setStyleSheet('background-color: #9e9493;')
+        self.setObjectName(f"label_step_{self.stepIndex}")
+
+        #This can be done in a UI file
+
+        self.expandButton = qt.QPushButton()
+        self.slideUpButton = qt.QPushButton()
+        self.slideDownButton = qt.QPushButton()
+
+        self.expandButton.setParent(self)
+        self.expandButton.setFixedSize(*self.buttonSize)
+        self.expandButton.move(10, 10)
+        self.expandButton.setCheckable(True)
+        self.expandButton.setIcon(self.parent().icon_chevron)
+
+        self.slideUpButton.setParent(self)
+        self.slideUpButton.setFixedSize(*self.buttonSize)
+        self.slideUpButton.move(self.thumbnailSize[0] - 50, 10)
+        self.slideUpButton.setIcon(self.parent().icon_arrowUp)
+
+        self.slideDownButton.setParent(self)
+        self.slideDownButton.setFixedSize(*self.buttonSize)
+        self.slideDownButton.move(self.thumbnailSize[0] - 20, 10)
+        self.slideDownButton.setIcon(self.parent().icon_arrowDown)
+
+        self.expandButton.clicked.connect(self.ToggleExtended)
+        self.slideUpButton.clicked.connect(self.swapUp)
+        self.slideDownButton.clicked.connect(self.swapDown)
+
+        pass
 
     def AddStepWindows(self, annotatorSlide : AnnotatorSlide):
         screenshotWidget = tmLabel(f"label_window_{self.screenshotCount}", self.screenshotCount)
@@ -467,6 +502,16 @@ class AnnotatorStepWidget(qt.QWidget):
         screenshotWidget.clicked.connect(lambda screen= self.screenshotCount: self.thumbnailClick(screen))
 
         self.screenshotCount = self.screenshotCount + 1
+
+        screenshotWidget.stackUnder(self.expandButton)
+        pass
+    
+    def swapUp(self, state):
+        self.swapRequest.emit(self.stepIndex, self.stepIndex - 1)
+        pass
+
+    def swapDown(self, state):
+        self.swapRequest.emit(self.stepIndex, self.stepIndex + 1)
         pass
 
     def thumbnailClick(self, screenshotIndex):
@@ -475,6 +520,7 @@ class AnnotatorStepWidget(qt.QWidget):
 
     def CreateMergedWindow(self):
         if(len(self.Slides) < 2):
+            self.expandButton.hide()
             return
         finalImage = self.Slides[0].image.toImage()
         finalJson = copy.deepcopy(self.Slides[0].metadata)
@@ -517,7 +563,7 @@ class AnnotatorStepWidget(qt.QWidget):
             self.Slides[self.mergedSlideIndex].Active = False
 
     def mousePressEvent(self, event):
-        self.ToggleExtended()
+        #self.ToggleExtended()
         pass
         
 
@@ -642,6 +688,18 @@ class TutorialGUI(qt.QMainWindow):
         self.slideBodyWidget.setFixedSize(self.selectedSlideSize[0], 150)
         self.slideBodyWidget.placeholderText = "Write a description for the slide"
 
+        # Load Used Resources
+        resourceFolder = os.path.dirname(__file__) + '/../Resources'
+        self.image_ChevronUp = qt.QImage(f'{resourceFolder}/Icons/ScreenshotAnnotator/chevron_up.png').scaled(20,20, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+        self.image_ChevronDown = qt.QImage(f'{resourceFolder}/Icons/ScreenshotAnnotator/chevron_down.png').scaled(20,20, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+        self.image_ArrowUp = qt.QImage(f'{resourceFolder}/Icons/ScreenshotAnnotator/arrow_up.png').scaled(20,20, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+        self.image_ArrowDown = qt.QImage(f'{resourceFolder}/Icons/ScreenshotAnnotator/arrow_down.png').scaled(20,20, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+
+        self.icon_chevron = qt.QIcon()
+        self.icon_chevron.addPixmap(qt.QPixmap.fromImage(self.image_ChevronDown), qt.QIcon.Normal, qt.QIcon.Off)
+        self.icon_chevron.addPixmap(qt.QPixmap.fromImage(self.image_ChevronUp), qt.QIcon.Normal, qt.QIcon.On)
+        self.icon_arrowUp = qt.QIcon(qt.QPixmap.fromImage(self.image_ArrowUp))
+        self.icon_arrowDown = qt.QIcon(qt.QPixmap.fromImage(self.image_ArrowDown))
         pass
 
     def open_json_file_dialog(self):
@@ -769,8 +827,9 @@ class TutorialGUI(qt.QMainWindow):
 
     def loadImagesAndMetadata(self, tutorialData):
         for stepIndex, screenshots in enumerate(tutorialData.steps):
-            stepWidget = AnnotatorStepWidget(stepIndex, self.thumbnailSize)
+            stepWidget = AnnotatorStepWidget(stepIndex, self.thumbnailSize, parent=self)
             stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
+            stepWidget.swapRequest.connect(self.swapStepPosition)
 
             #>>>>>> This assumes that the first window is always the SlicerAppMainWindow <<<<<<<
 
@@ -803,6 +862,19 @@ class TutorialGUI(qt.QMainWindow):
         self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png')
         self.addBlankPage(False, 1, self.dir_path + '/../Resources/NewSlide/Acknowledgments.png')
 
+        pass
+
+    def swapStepPosition(self, index, swapTo):
+        if swapTo >= len(self.steps) or swapTo < 0:
+            return
+        tmp = self.steps[swapTo]
+        self.steps[swapTo] = self.steps[index]
+        self.steps[swapTo].stepIndex = swapTo
+        self.gridLayout.addWidget(self.steps[swapTo], swapTo, 0)
+
+        self.steps[index] = tmp
+        self.steps[index].stepIndex = index
+        self.gridLayout.addWidget(self.steps[index], index, 0)
         pass
 
     def changeSelectedSlide(self, stepId, screenshotId):
@@ -841,14 +913,16 @@ class TutorialGUI(qt.QMainWindow):
     #TODO: Clean this up, there's a better way to keep track of the step.stepIndex value, with this we have to keep 2 copies redundant
     #This seems like a very expensive function
     def addBlankPage(self, state,index : int = None, backgroundPath : str = "", metadata : dict = None):
-        stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize)
+        stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
         stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
+        stepWidget.swapRequest.connect(self.swapStepPosition)
         if backgroundPath == "":
             backgroundPath = self.dir_path+'/../Resources/NewSlide/white.png'
         if metadata is None:
             metadata = {}
         annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
         stepWidget.AddStepWindows(annotatorSlide)
+        stepWidget.CreateMergedWindow()
         
         def InsertWidget(_nWidget, _index):
             
@@ -1199,6 +1273,7 @@ class TutorialGUI(qt.QMainWindow):
         self.in_text.setCheckable(True) 
 
         self.icons = {
+            #TODO:Create an icon for the select tool
             self.select: {
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1_p.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png')
@@ -1220,7 +1295,6 @@ class TutorialGUI(qt.QMainWindow):
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_enabled.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_disabled.png')
             },
-            # TODO: Create a icon for textBoxes
             self.textBox: {
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_enabled.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png')
