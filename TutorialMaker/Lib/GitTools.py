@@ -38,7 +38,10 @@ class GitTools:
 
     def ParseRepo(repo:str, path="") -> GitFile:
         endpoint = f"https://api.github.com/repos/{repo}/contents{path}"
-        contents = requests.get(endpoint).json()
+        response = requests.get(endpoint)
+        if response.status_code != 200 and response.status_code != 403:
+            raise Exception(f"{endpoint} : {response.text}")
+        contents = response.json()
         if not isinstance(contents, list) or not isinstance(contents[0], dict):
             if 'message' in contents:
                 raise Exception(_("Message from {endpoint}: {message}".format(endpoint=endpoint, message=contents['message'])))
@@ -56,7 +59,10 @@ class GitTools:
 
     def __parseRecursive__(repo:str, path=""):
         endpoint = f"https://api.github.com/repos/{repo}/contents{path}"
-        contents = requests.get(endpoint).json()
+        response = requests.get(endpoint)
+        if response.status_code != 200 and response.status_code != 403:
+            raise Exception(f"{endpoint} : {response.text}")
+        contents = response.json()
         if not isinstance(contents, list) or not isinstance(contents[0], dict):
             if 'message' in contents:
                 raise Exception(_("Message from {endpoint}: {message}".format(endpoint=endpoint, message=contents['message'])))

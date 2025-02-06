@@ -263,7 +263,12 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
     def loadTutorialsFromRepos(self):
         modulePath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))
         for repo in self.TutorialRepos:
-            files = GitTools.GitTools.ParseRepo(repo)
+            try:
+                files = GitTools.GitTools.ParseRepo(repo)
+            except Exception as e:
+                print(e)
+                print(_("Please try again later."))
+                continue
             for TutorialRoot in files.dir("Tutorials"):
                 for TutorialFile in files.dir(f"Tutorials/{TutorialRoot}"):
                     if TutorialFile.endswith(".py"):
