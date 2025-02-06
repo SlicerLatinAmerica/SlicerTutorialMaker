@@ -136,6 +136,12 @@ class util():
             os.mkdir(basePath + "Raw")
             os.mkdir(basePath + "Annotations")
             os.mkdir(basePath + "Translation")
+        
+        # Verify if Testing folder exists
+        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        # Check if testing folder exists
+        if not os.path.exists(testingFolder):
+            os.mkdir(testingFolder)
 
     def mapFromTo(value : float, inputMin : float, inputMax : float, outputMin : float, outputMax : float) -> float:
         result=(value-inputMin)/(inputMax-inputMin)*(outputMax-outputMin)+outputMin
@@ -403,9 +409,13 @@ class Widget():
             if (_fRect.size().height() == 0 or _fRect.size().width() == 0):
                 return
 
+            _fText = ""
+            if _node.data(0) is not None:
+                _fText = _node.data(0)
+
             __itemData = SimpleNamespace(name= f"XtreeViewWidget_{NodeIndex}", 
             className= lambda:"XtreeViewWidget", 
-            text= _node.data(0),
+            text= _fText,
             mapToGlobal= self.__widgetData.viewport().mapToGlobal, 
             rect= _fRect, 
             parent=lambda: self.__widgetData,

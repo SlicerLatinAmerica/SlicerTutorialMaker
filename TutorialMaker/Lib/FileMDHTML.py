@@ -544,14 +544,9 @@ class markdownHTMLCreator:
                 footer_block_format = qt.QTextBlockFormat()
                 footer_block_format.setAlignment(qt.Qt.AlignCenter)
 
-                if sistemaop!="posix":
-                    cursor.movePosition(qt.QTextCursor.Start)
-                    while cursor.block().layout().position().y() < footer_y:
-                        cursor.movePosition(qt.QTextCursor.NextBlock)
-                else: 
-                    tab = ((int(cursor.block().layout().position().y()/580)+1)*580)
-                    while cursor.block().layout().position().y() < tab:
-                        cursor.insertText("\n")
+                tab = ((int(cursor.block().layout().position().y()/580)+1)*580)
+                while cursor.block().layout().position().y() < tab:
+                    cursor.insertText("\n")
                 
                 footer_image_format = qt.QTextImageFormat()
                 footer_image_format.setName(footer_image_path)
