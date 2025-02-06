@@ -390,6 +390,11 @@ class TutorialGUI(qt.QMainWindow):
         self.widgets.insert(i, ("Acknowledgements"))
         self.steps.insert(i, (" - Add the acknowledgements here"))
 
+        self.steps.insert(i, (" - Add the acknowledgements here"))
+        self.widgets.insert(i, ("Acknowledgements"))
+        self.widgets.insert(i, ("Acknowledgements"))
+        self.steps.insert(i, (" - Add the acknowledgements here"))
+
         # Clear the existing grid layout
         while self.gridLayout.count():
             widget = self.gridLayout.itemAt(0).widget()
@@ -735,7 +740,14 @@ class TutorialGUI(qt.QMainWindow):
         if event.key() == qt.Qt.Key_Escape:
             self.unselect_annotation()
             self.draw_annotations()
-            return
+        if event.key() == qt.Qt.Key_Up:
+            print("Key_Up")
+        if event.key() == qt.Qt.Key_Down:
+            print("Key_Down")
+        if event.key() == qt.Qt.Key_Left:
+            print("Key_Left")
+        if event.key() == qt.Qt.Key_Right:
+            print("Key_Right")
         elif event.key() == qt.Qt.Key_Z and (event.modifiers() & qt.Qt.ControlModifier or event.modifiers() & qt.Qt.MetaModifier):
             self.delete_annotation()
             return
@@ -1758,66 +1770,55 @@ class TutorialGUI(qt.QMainWindow):
     
     def arrowPath(self, ty, p1, p2):
         path = qt.QPainterPath()
-        tip = abs(int((((p1.x() - p2.x()) ** 2 + (p1.y() - p2.y()) ** 2) ** 0.5)/4))
-        tip = 10#tip if tip < 15 else 15
+        tip_length = 15  # Longitud de la punta de la flecha
+        tip_width = 12 # Ancho de la punta de la flecha
+        
+        # Calcular diferencias en x e y
         x = p2.x() - p1.x()
         y = p2.y() - p1.y()
-        if x >= 0 and y >= 0: # 4ro
-            path.moveTo(qt.QPointF(p1)) 
-            path.lineTo(qt.QPointF(p2))
-            pa1_x, pa1y = self.rotate_point((p1.x()-tip, p1.y()+tip), p1, self.angle(x, y)-90)
-            pa2_x, pa2y = self.rotate_point((p1.x()+tip, p1.y()+tip), p1, self.angle(x, y)-90)
-            path.moveTo(pa1_x, pa1y)
-            path.lineTo(qt.QPointF(p1))
-            path.lineTo(pa2_x, pa2y)
-        elif x < 0 and y >= 0: # 3ro
-            path.moveTo(qt.QPointF(p1))  
-            path.lineTo(qt.QPointF(p2))
-            pa1_x, pa1y = self.rotate_point((p1.x()-tip, p1.y()+tip), p1, self.angle(x, y)+180)
-            pa2_x, pa2y = self.rotate_point((p1.x()-tip, p1.y()-tip), p1, self.angle(x, y)+180)
-            path.moveTo(pa1_x, pa1y)
-            path.lineTo(qt.QPointF(p1))
-            path.lineTo(pa2_x, pa2y)
-        elif x < 0 and y < 0: # 3ro
-            path.moveTo(qt.QPointF(p1)) 
-            path.lineTo(qt.QPointF(p2))
-            pa1_x, pa1y = self.rotate_point((p1.x()+tip, p1.y()-tip), p1, self.angle(x, y)+90)
-            pa2_x, pa2y = self.rotate_point((p1.x()-tip, p1.y()-tip), p1, self.angle(x, y)+90)
-            path.moveTo(pa1_x, pa1y)
-            path.lineTo(qt.QPointF(p1))
-            path.lineTo(pa2_x, pa2y)
-        else: # 1ro
-            path.moveTo(qt.QPointF(p1)) 
-            path.lineTo(qt.QPointF(p2))
-            pa1_x, pa1y = self.rotate_point((p1.x()+tip, p1.y()-tip), p1, self.angle(x, y))
-            pa2_x, pa2y = self.rotate_point((p1.x()+tip, p1.y()+tip), p1, self.angle(x, y))
-            path.moveTo(pa1_x, pa1y)
-            path.lineTo(qt.QPointF(p1))
-            path.lineTo(pa2_x, pa2y)
+        
+        # Calcular el ángulo en grados
+        angle = self.angle(x, y)
+        
+        # Calcular el ángulo de apertura dinámicamente
+        tip_angle = max(150, min(175, 165 + abs(angle) / 15))  # Ajuste automático del ángulo
+        
+        # Dibujar la línea principal de la flecha
+        path.moveTo(qt.QPointF(p1))
+        path.lineTo(qt.QPointF(p2))
+        
+        # Calcular los puntos de la punta de la flecha para que se mantenga simétrica
+        pa1_x, pa1_y = self.rotate_point((p1.x() - tip_length, p1.y() + (tip_width / 2)), p1, angle + tip_angle)
+        pa2_x, pa2_y = self.rotate_point((p1.x() - tip_length, p1.y() - (tip_width / 2)), p1, angle - tip_angle)
+        
+        # Dibujar la punta de la flecha correctamente en la cabeza
+        path.moveTo(qt.QPointF(p1))
+        path.lineTo(pa1_x, pa1_y)
+        path.lineTo(pa2_x, pa2_y)
+        path.lineTo(qt.QPointF(p1))
+        
         return path
     
+    
+
     def angle(self, dx, dy):
         rad = math.atan2(dy, dx)
-        deg = math.degrees(rad)
-        return deg
-    
+        return math.degrees(rad)
+
+
     def rotate_point(self, point, center, angle):
         angle_rad = math.radians(angle)
-        
         x, y = point
         cx = center.x()
         cy = center.y()
-
+        
         dx = x - cx
         dy = y - cy
-
+        
         rotated_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
         rotated_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
-
-        new_x = rotated_x + cx
-        new_y = rotated_y + cy
-
-        return int(new_x), int(new_y)
+        
+        return int(rotated_x + cx), int(rotated_y + cy)
 
     def change_color(self):
         color_dialog = qt.QColorDialog()

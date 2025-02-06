@@ -99,77 +99,38 @@ class ImageDrawer:
             self.scene.addItem(text_item)
 
     def arrowPath(self, p1, p2):
-        
-        """
-            Create a QPainterPath representing an arrow from point p1 to point p2.
-
-            Title: Create Arrow Path
-            
-            Inputs:
-                - p1 (QPointF): The starting point of the arrow.
-                - p2 (QPointF): The ending point of the arrow.
-
-            Outputs:
-                QPainterPath: The path representing the arrow.
-
-            Description:
-                This method creates a QPainterPath that represents an arrow starting at p1 and ending at p2.
-                The arrow's head is created based on the direction and distance between p1 and p2.
-        """
-        # Initialize a new QPainterPath
+        # Crear un QPainterPath para la flecha completa
         path = qt.QPainterPath()
-
-        # Calculate the length of the arrow tip based on the distance between p1 and p2
-        tip = abs(int((((p1.x() - p2.x()) ** 2 + (p1.y() - p2.y()) ** 2) ** 0.5)/4))
-        tip = 10
-        # Calculate the differences in x and y coordinates
+        
+        tip_length = 15
+        tip_width = 12
+        
+        # Calcular diferencias en x e y
         x = p2.x() - p1.x()
         y = p2.y() - p1.y()
-
-        # Determine the quadrant and create the arrow accordingly
-        if x >= 0 and y >= 0:  # 4th quadrant
-            path.moveTo(qt.QPointF(p1))  # Start point
-            path.lineTo(qt.QPointF(p2))
-            # Calculate points for the arrowhead
-            pa1_x, pa1y = self.rotate_point((p1.x() - tip, p1.y() + tip), p1, self.angle(x, y) - 90)
-            pa2_x, pa2y = self.rotate_point((p1.x() + tip, p1.y() + tip), p1, self.angle(x, y) - 90)
-            # Draw the arrowhead
-            path.moveTo(pa1_x, pa1y)
-            path.lineTo(qt.QPointF(p1))
-            path.lineTo(pa2_x, pa2y)
-        elif x < 0 and y >= 0:  # 3rd quadrant
-            path.moveTo(qt.QPointF(p1))  # Start point
-            path.lineTo(qt.QPointF(p2))
-            # Calculate points for the arrowhead
-            pa1_x, pa1y = self.rotate_point((p1.x() - tip, p1.y() + tip), p1, self.angle(x, y) + 180)
-            pa2_x, pa2y = self.rotate_point((p1.x() - tip, p1.y() - tip), p1, self.angle(x, y) + 180)
-            # Draw the arrowhead
-            path.moveTo(pa1_x, pa1y)
-            path.lineTo(qt.QPointF(p1))
-            path.lineTo(pa2_x, pa2y)
-        elif x < 0 and y < 0:  # 2nd quadrant
-            path.moveTo(qt.QPointF(p1))  # Start point
-            path.lineTo(qt.QPointF(p2))
-            # Calculate points for the arrowhead
-            pa1_x, pa1y = self.rotate_point((p1.x() + tip, p1.y() - tip), p1, self.angle(x, y) + 90)
-            pa2_x, pa2y = self.rotate_point((p1.x() - tip, p1.y() - tip), p1, self.angle(x, y) + 90)
-            # Draw the arrowhead
-            path.moveTo(pa1_x, pa1y)
-            path.lineTo(qt.QPointF(p1))
-            path.lineTo(pa2_x, pa2y)
-        else:  # 1st quadrant
-            path.moveTo(qt.QPointF(p1))  # Start point
-            path.lineTo(qt.QPointF(p2))
-            # Calculate points for the arrowhead
-            pa1_x, pa1y = self.rotate_point((p1.x() + tip, p1.y() - tip), p1, self.angle(x, y))
-            pa2_x, pa2y = self.rotate_point((p1.x() + tip, p1.y() + tip), p1, self.angle(x, y))
-            # Draw the arrowhead
-            path.moveTo(pa1_x, pa1y)
-            path.lineTo(qt.QPointF(p1))
-            path.lineTo(pa2_x, pa2y)
-
-        return path
-    
+        
+        # Calcular el ángulo en grados
+        angle = self.angle(x, y)
+        
+        # Calcular el ángulo de apertura dinámicamente 
+        tip_angle = max(150, min(175, 165 + abs(angle) / 15))
+        
+        # Dibujar la línea principal de la flecha
+        path.moveTo(p1)
+        path.lineTo(p2)
+        
+        # Calcular los puntos de la punta de la flecha
+        pa1_x, pa1_y = self.rotate_point((p1.x() - tip_length, p1.y() + (tip_width / 2)), p1, angle + tip_angle)
+        pa2_x, pa2_y = self.rotate_point((p1.x() - tip_length, p1.y() - (tip_width / 2)), p1, angle - tip_angle)
+        
+        # Crear el subpath para la punta de la flecha rellena
+        path.moveTo(p1)  # Mover al punto final
+        path.lineTo(pa1_x, pa1_y)  # Línea al primer punto de la punta
+        path.lineTo(pa2_x, pa2_y)  # Línea al segundo punto de la punta
+        path.lineTo(p1)  # Volver al punto final para cerrar el triángulo
+        
+        return path  
+      
     def rotate_point(self, point, center, angle):
 
         """
@@ -273,10 +234,10 @@ class ImageDrawer:
 
         # Create the background rectangle for the text
         text_background = qt.QGraphicsRectItem(
-            end_x - text_rect.width() / 2,
-            end_y - text_rect.height() / 2,
-            text_rect.width(),
-            text_rect.height() + 5
+            (end_x - text_rect.width() / 2) - 8,
+            (end_y - text_rect.height() / 2) - 8,
+            text_rect.width() + 16 ,
+            text_rect.height() + 16
         )
         text_background.setBrush(qt.QBrush(back_color))
 
@@ -309,16 +270,6 @@ class ImageDrawer:
             print(_("Error: Load an image first."))
             return
 
-        # Create the arrow path and add it to the scene
-        p1 = qt.QPointF(start_x, start_y)
-        p2 = qt.QPointF(end_x, end_y)
-        arrow_path = self.arrowPath(p1, p2)
-        path_item = qt.QGraphicsPathItem(arrow_path)
-        pen = qt.QPen(qt.QColor.fromRgb(*color))
-        pen.setWidth(pen_width)
-        path_item.setPen(pen)
-        self.scene.addItem(path_item)
-
         if text and text != "Add text to accompany an arrow here.":
             # Wrap and justify the text before calculating its size
             wrapped_text = self.wrap_text(text)
@@ -326,7 +277,7 @@ class ImageDrawer:
             # Create a temporary QGraphicsTextItem with the wrapped text to calculate the bounding rectangle size
             temp_text_item = qt.QGraphicsTextItem(wrapped_text)
             font = qt.QFont("Arial")
-            font.setPixelSize(font_size + 10)
+            font.setPixelSize(font_size + 31)
             temp_text_item.setFont(font)
             text_rect = temp_text_item.boundingRect()
 
@@ -348,23 +299,109 @@ class ImageDrawer:
                     offset_x = -text_width / 2  # Place to the left of the arrow tip
             else:  # Diagonal arrow
                 if end_x > start_x and end_y > start_y:  # Arrow down-right
+                    print("Arrow down-right")
                     offset_x, offset_y = text_width / 2, text_height / 2 
                 elif end_x < start_x and end_y < start_y:  # Arrow up-left
                     offset_x, offset_y = -text_width / 2 , -text_height / 2 
+                    print("Arrow up-left")
                 elif end_x > start_x and end_y < start_y:  # Arrow up-right
                     offset_x, offset_y = text_width / 2 , -text_height / 2 
+                    print("Arrow up-right")
                 elif end_x < start_x and end_y > start_y:  # Arrow down-left
                     offset_x, offset_y = -text_width / 2 , text_height / 2 
+                    print("Arrow down-left")
 
-            # Add text with calculated dynamic offset
-            self.add_text_with_background(
-                wrapped_text, 
-                end_x + offset_x, 
-                end_y + offset_y, 
-                font_size + 10, 
-                qt.QColor.fromRgb(*color), 
-                qt.Qt.black
+
+            # Calculate the final adjusted position for the text
+            text_position_x = (end_x + offset_x*1.2)
+            text_position_y = (end_y + offset_y*1.2)
+            print("x:" + str(text_position_x) + ", y:" +str(text_position_y) )
+            print("end x:" + str(end_x) + ", y:" +str(end_y) )
+            print("OFFSET  x:" + str(offset_x) + ", y:" +str(offset_y) )
+
+            # Create a rectangle for the text
+            text_bounding_rect = qt.QRect(
+                text_position_x - 8, text_position_y - 8,
+                text_width + 16, text_height + 16 #extra margins
             )
+            
+            # Obtener los límites de la imagen en la escena
+            pixmap_rect = self.view.rect  # Obtiene el rectángulo de la imagen en la escena
+
+            print(pixmap_rect)
+            if not pixmap_rect.contains(text_bounding_rect):
+                print("Fuera")
+                print(text_bounding_rect)
+                # If the text is outside, reposition it within visible bounds
+                screen_height = self.view.height
+                screen_width = self.view.width
+
+                if text_position_y < screen_height / 2:  # Top half of the screen
+                    new_text_position_y = screen_height - text_height -16
+                    end_y = new_text_position_y 
+                else:  # Bottom half of the screen
+                    new_text_position_y = 16
+                    end_y = new_text_position_y + text_height
+                
+                if end_x < start_x:  # Left side
+                    new_text_position_x = 8
+                else:  # Right side
+                    new_text_position_x = screen_width - text_width -16
+                
+                end_x = new_text_position_x + text_width / 2
+                
+                # Recalculate the text rectangle with new coordinates
+                #new_text_bounding_rect = qt.QRect(
+                 #   new_text_position_x - 8, new_text_position_y - 8,
+                 #   text_width + 16, text_height + 16)
+
+                p1 = qt.QPointF(start_x, start_y)
+                p2 = qt.QPointF(end_x, end_y)
+                arrow_path = self.arrowPath(p1, p2)
+                path_item = qt.QGraphicsPathItem(arrow_path)
+                pen = qt.QPen(qt.QColor.fromRgb(*color))
+                pen.setWidth(3.5)
+                brush = qt.QBrush(qt.QColor.fromRgb(*color))  # Mismo color que el borde
+                path_item.setPen(pen)
+                path_item.setBrush(brush)  # Establece el relleno
+                self.scene.addItem(path_item)
+        
+
+                # Add text with calculated dynamic offset
+                self.add_text_with_background(
+                    wrapped_text, 
+                    end_x, 
+                    end_y, 
+                    font_size + 31, 
+                    qt.QColor.fromRgb(*color), 
+                    qt.Qt.black
+                )
+            else:
+                print("Dentro")
+                print(text_bounding_rect)
+
+                p1 = qt.QPointF(start_x, start_y)
+                p2 = qt.QPointF(end_x, end_y)
+                arrow_path = self.arrowPath(p1, p2)
+                path_item = qt.QGraphicsPathItem(arrow_path)
+                pen = qt.QPen(qt.QColor.fromRgb(*color))
+                pen.setWidth(3.5)
+                brush = qt.QBrush(qt.QColor.fromRgb(*color))  # Mismo color que el borde
+                path_item.setPen(pen)
+                path_item.setBrush(brush)  # Establece el relleno
+                self.scene.addItem(path_item)
+                                        # Add text with calculated dynamic offset
+                self.add_text_with_background(
+                    wrapped_text, 
+                    end_x + offset_x, 
+                    end_y + offset_y, 
+                    font_size + 31, 
+                    qt.QColor.fromRgb(*color), 
+                    qt.Qt.black
+                )
+                # Create the arrow path and add it to the scene
+
+
 
     def draw_click(self, x, y, text, font_size, text_color=qt.Qt.black):
 
@@ -559,7 +596,7 @@ class ImageDrawer:
                 imgSS = imgSS + 1                
             pass
             
-    def wrap_text(self, text, line_length=30):
+    def wrap_text(self, text, line_length=40):
         """
         Wraps and justifies a given text into multiple lines, ensuring that each line
         does not exceed a specified character limit, and attempting to justify 
