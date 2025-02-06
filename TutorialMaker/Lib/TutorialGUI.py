@@ -87,6 +87,8 @@ class TutorialGUI(qt.QMainWindow):
         self.label_image.installEventFilter(self)
         self.label_image.setMouseTracking(True)
 
+        self.label_image.setFocusPolicy(qt.Qt.StrongFocus)
+
         self.background_image = qt.QPixmap(label_width, label_height)
         self.background_image.fill(qt.QColor(255, 255, 255))
         
@@ -98,7 +100,8 @@ class TutorialGUI(qt.QMainWindow):
         self.text_edit.setFixedSize(label_width, 150)
 
         self.annotation_selected = False
-        self.w_i = 0
+        self.widget_index = -1
+        self.parent_selected = False
 
         self.scroll_up_count = 0
         self.scroll_down_count = 0
@@ -117,6 +120,8 @@ class TutorialGUI(qt.QMainWindow):
                 self.mouse_release_event(event)
             elif event.type() == qt.QEvent.Wheel:
                 self.wheel_event(event)
+            elif event.type() == qt.QEvent.Leave:
+                self.draw_annotations()
 
     def create_toolbar_menu(self):
         toolbar = qt.QToolBar("File", self)
@@ -372,13 +377,18 @@ class TutorialGUI(qt.QMainWindow):
         new_path = self.dir_path + '/../Resources/NewSlide/Acknowledgments.png'
     
         i = len(newListImages) 
-        print(i)
+        #print(i)
         ListPositionWhite.append(i)
         List_totalImages.insert(i,-1)
         newListImages.insert(i, new_path)
         self.metadata_list.insert(i, [])
         self.annotations.insert(i, new_annotation)
         self.annotations_json.insert(i, new_annotation_json)
+
+        self.steps.insert(i, (" - Add the acknowledgements here"))
+        self.widgets.insert(i, ("Acknowledgements"))
+        self.widgets.insert(i, ("Acknowledgements"))
+        self.steps.insert(i, (" - Add the acknowledgements here"))
 
         self.steps.insert(i, (" - Add the acknowledgements here"))
         self.widgets.insert(i, ("Acknowledgements"))
@@ -692,7 +702,10 @@ class TutorialGUI(qt.QMainWindow):
     def mouse_move_event(self, event):
         self.start = event.pos()
         self.save_annotation = False
-        self.scroll_move = False
+        #self.scroll_move = False
+        if self.label_image.underMouse():  
+            self.label_image.setFocus()
+            
         if self.square.isChecked():
             self.select_annt = "rect"
         elif self.circle.isChecked():
@@ -710,9 +723,15 @@ class TutorialGUI(qt.QMainWindow):
             self.end = event.pos()   
         else:
             pass
+        
+        if self.is_on_parent_move()==False:
+            self.parent_selected = False
 
-        if self.select_annt != False:
-            self.calculate_annotation()
+        if self.annotation_selected != False:
+            if self.parent_selected == False:
+                self.calculate_annotation()
+            else:
+                self.calculate_annotation_scroll()
 
     def mouse_release_event(self, event):
         pass
@@ -731,26 +750,45 @@ class TutorialGUI(qt.QMainWindow):
             print("Key_Right")
         elif event.key() == qt.Qt.Key_Z and (event.modifiers() & qt.Qt.ControlModifier or event.modifiers() & qt.Qt.MetaModifier):
             self.delete_annotation()
+            return
+        
+        if self.label_image.hasFocus():
+            if event.key() == qt.Qt.Key_Up:
+                self.parent_selected = True
+                if self.widget_index > 0:
+                    self.widget_index-=1
+                if self.annotation_selected != False:
+                    self.calculate_annotation_scroll()
+            elif event.key() == qt.Qt.Key_Down:
+                self.parent_selected = True
+                if self.widget_index < len(self.widget_collection)-1:
+                    self.widget_index+=1
+                if self.annotation_selected != False:
+                    self.calculate_annotation_scroll()
+            return 
+
 
     def wheel_event(self, event):
         delta = event.angleDelta().y()
         self.scroll_move = True
+        self.parent_selected = True
         if self.annotation_selected == True:
             if delta > 0:
                 self.scroll_up_count += 1
                 self.scroll_down_count = 0
                 if self.scroll_up_count >= self.scroll_threshold:
                     self.scroll_up_count = 0  # Reset the counter after confirmation
-                    if self.w_i < len(self.widget_collection)-1:
-                        self.w_i+=1
+                    if self.widget_index < len(self.widget_collection)-1:
+                        self.widget_index+=1
             else:
                 self.scroll_down_count += 1
                 self.scroll_up_count = 0
                 if self.scroll_down_count >= self.scroll_threshold:
                     self.scroll_down_count = 0  # Reset the counter after confirmation
-                    if self.w_i > 0:
-                        self.w_i-=1
-        self.calculate_annotation_scroll()
+                    if self.widget_index > 0:
+                        self.widget_index-=1
+            
+            self.calculate_annotation_scroll()
 
     def calculate_annotation(self):
         widgets = self.metadata_list[self.scree_prev]
@@ -956,12 +994,12 @@ class TutorialGUI(qt.QMainWindow):
 
     def calculate_annotation_scroll(self):
         widgets = self.metadata_list[self.scree_prev]
-
+        # print("Index: ",self.widget_index)
         if not widgets:
             pass
         else :
             try: 
-                wdgts_child = self.widget_collection[self.w_i]
+                wdgts_child = self.widget_collection[self.widget_index]
                 
                 star = None
                 end = None
@@ -1155,6 +1193,17 @@ class TutorialGUI(qt.QMainWindow):
             except:
                 pass
 
+    def is_on_parent_move(self):
+        if self.widget_index>-1 and len(self.widget_collection)!=0:
+            point_clicked = self.map_point(self.start)
+            widget_selected = self.widget_collection[self.widget_index]
+            initialPoint_x,initialPoint_y = widget_selected["position"]
+            finalPosition_x,finalPosition_y = widget_selected["size"]
+            if initialPoint_x < point_clicked.x() < (initialPoint_x+finalPosition_x) and initialPoint_y < point_clicked.y() < (initialPoint_y+finalPosition_y):
+                return True
+            else:
+                return False
+
     def find_widget(self, widgets_json, pnt_clk):
         w_match = []
         x = pnt_clk.x()
@@ -1172,10 +1221,10 @@ class TutorialGUI(qt.QMainWindow):
     def select_widget_child(self, all_widgets):
         last_wdgt = None
         if len(all_widgets) > 0:
-            self.w_i = len(all_widgets)-1
+            self.widget_index = len(all_widgets)-1
         else :
-            self.w_i = len(all_widgets)
-        last_wdgt  =  all_widgets[self.w_i]
+            self.widget_index = len(all_widgets)
+        last_wdgt  =  all_widgets[self.widget_index]
         return last_wdgt
     
     def map_point(self, p):
@@ -1303,16 +1352,16 @@ class TutorialGUI(qt.QMainWindow):
                         screen_width = self.label_image.width
                         
                         if text_position_y < screen_height / 2:  # Top half of the screen
-                            new_text_position_y = screen_height - text_height -16
+                            new_text_position_y = screen_height - text_height -18
                             end_y = new_text_position_y
                         else:  # Bottom half of the screen
-                            new_text_position_y = 16
+                            new_text_position_y = 18
                             end_y = new_text_position_y + text_height
                         
                         if end_x < start_x:  # Left side
                             new_text_position_x = 8
                         else:  # Right side
-                            new_text_position_x = screen_width - text_width -16
+                            new_text_position_x = screen_width - text_width -18
                         
                         end_x = new_text_position_x + text_width / 2
                         
@@ -1456,16 +1505,16 @@ class TutorialGUI(qt.QMainWindow):
                         screen_width = self.label_image.width
                         
                         if text_position_y < screen_height / 2:  # Top half of the screen
-                            new_text_position_y = screen_height - text_height -16
+                            new_text_position_y = screen_height - text_height -18
                             end_y = new_text_position_y
                         else:  # Bottom half of the screen
-                            new_text_position_y = 16
+                            new_text_position_y = 18
                             end_y = new_text_position_y + text_height
                         
                         if end_x < start_x:  # Left side
                             new_text_position_x = 8
                         else:  # Right side
-                            new_text_position_x = screen_width - text_width -16
+                            new_text_position_x = screen_width - text_width -18
                         
                         end_x = new_text_position_x + text_width / 2
                         
@@ -1594,8 +1643,8 @@ class TutorialGUI(qt.QMainWindow):
                 
                 # Create a rectangle for the text
                 text_bounding_rect = qt.QRect(
-                    text_position_x - 4  , text_position_y - 4 ,
-                    text_width + 16, text_height + 18 #extra margins
+                    text_position_x -8 , text_position_y - 8,
+                    text_width + 16, text_height + 16 #extra margins
                 )
                 
                 # Check if the text rectangle is outside the pixmap boundaries
@@ -1606,23 +1655,23 @@ class TutorialGUI(qt.QMainWindow):
                     screen_width = self.label_image.width
                     
                     if text_position_y < screen_height / 2:  # Top half of the screen
-                        new_text_position_y = screen_height - text_height -16
+                        new_text_position_y = screen_height - text_height -18
                         end_y = new_text_position_y
                     else:  # Bottom half of the screen
-                        new_text_position_y = 16
+                        new_text_position_y = 18
                         end_y = new_text_position_y + text_height
                     
                     if end_x < start_x:  # Left side
                         new_text_position_x = 8
                     else:  # Right side
-                        new_text_position_x = screen_width - text_width -16
+                        new_text_position_x = screen_width - text_width -18
                     
                     end_x = new_text_position_x + text_width / 2
                     
                     # Recalculate the text rectangle with new coordinates
                     new_text_bounding_rect = qt.QRect(
-                        new_text_position_x - 4 , new_text_position_y - 4, 
-                        text_width + 16, text_height + 18)
+                        new_text_position_x - 8 , new_text_position_y - 8,
+                        text_width + 16, text_height + 16)
                     
                     # Draw the new background rectangle
                     painter.setBrush(qt.QBrush(self.selected_color))
@@ -1676,10 +1725,8 @@ class TutorialGUI(qt.QMainWindow):
         y_initial = initial_point.y()
         x_final = final_point.x()
         y_final = final_point.y()
-        print("[",x_initial,",",y_initial,"]-[",x_final,",",y_final,"]")
         new_x = x_initial+int((x_final-x_initial)/2)
         new_y = y_initial+int((y_final-y_initial)/2)
-        print(new_x,",",new_y)
         return qt.QPoint(new_x, new_y)
     
     def split_string_to_dict(self, input_string, size = 30):
@@ -1815,8 +1862,10 @@ class TutorialGUI(qt.QMainWindow):
         self.t_px = valor
 
     def on_action_triggered(self, sender):
-        print(sender)
+        # print(sender)
         if sender.checked != True:
+            self.select_annt = False
+            self.annotation_selected = False
             self.unselect_annotation()
         else:
             self.annotation_selected = True
@@ -1832,7 +1881,7 @@ class TutorialGUI(qt.QMainWindow):
         self.output_name = filename
 
     def unselect_annotation(self):
-        self.select_annt = False
+        self.annotation_selected = False
         for action, icons in self.icons.items():
             action.setChecked(False)  
             action.setIcon(icons['inactive'])

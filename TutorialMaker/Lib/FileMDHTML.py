@@ -233,7 +233,7 @@ class markdownHTMLCreator:
                                            qt.QMessageBox.Yes | qt.QMessageBox.No)
         if confirm == qt.QMessageBox.Yes:
             webbrowser.open("file://" + output_html_file)
-        #self.onCreatePDFReportButton(output_html_file, path, tutorialName) 
+        #self.onCreatepReportButton(output_html_file, path, tutorialName) 
          
         self.create_pdf(path, ListTotalImages) 
         #self.html_to_pdf(path, output_html_file, tutorialName)
@@ -398,7 +398,7 @@ class markdownHTMLCreator:
             cursor.insertBlock()
             for _ in range(int(calculated_heights_white[0] / 20)):
                 cursor.insertText("\n")
-
+            
             title_format = qt.QTextCharFormat()
             title_format.setFont(qt.QFont("Times", 16, qt.QFont.Bold))
             if is_white_page == False:
@@ -508,7 +508,7 @@ class markdownHTMLCreator:
             cursor.insertBlock()
             for _ in range(int(calculated_heights_white[0] / 20)):
                 cursor.insertText("\n")
-
+            
             title_format = qt.QTextCharFormat()
             title_format.setFont(qt.QFont("Times", 16, qt.QFont.Bold))
             
@@ -544,7 +544,7 @@ class markdownHTMLCreator:
                 footer_block_format = qt.QTextBlockFormat()
                 footer_block_format.setAlignment(qt.Qt.AlignCenter)
 
-                tab = ((int(cursor.block().layout().position().y()/580)+1)*580)
+                tab = ((int(cursor.block().layout().position().y()/545)+1)*545)-190
                 while cursor.block().layout().position().y() < tab:
                     cursor.insertText("\n")
                 
