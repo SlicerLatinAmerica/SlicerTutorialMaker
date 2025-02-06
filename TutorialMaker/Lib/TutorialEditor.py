@@ -18,26 +18,26 @@ class TutorialEditor(qt.QWidget):
         self.setGeometry(0, 0, 300, 200)
 
         self.boxLayout = qt.QVBoxLayout()
-        
+
         self.Setup()
 
         self.setLayout(self.boxLayout)
-        
+
         self.currentCell = None
         self.annotator = Annotator(self)
         pass
-    
+
     def Setup(self):
 
         # Load Ui file
         uiWidget = slicer.util.loadUI(resourcePath('UI/TutorialEditor.ui'))
         self.boxLayout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
-        
+
         # Table sentings
-        self.ui.tableWidgetStates.horizontalHeader().setStretchLastSection(True) 
-        self.ui.tableWidgetStates.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch) 
-        
+        self.ui.tableWidgetStates.horizontalHeader().setStretchLastSection(True)
+        self.ui.tableWidgetStates.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
         # Connections
         self.ui.pushButtonStartStopRecord.clicked.connect(self.logic.StopStartRecording)
         self.ui.pushButtonAnnotate.clicked.connect(self.OnClickedAnnotate)
@@ -57,12 +57,12 @@ class TutorialEditor(qt.QWidget):
         self.hide()
         self.annotator.Show()
         pass
-    
+
     def onCellClicked(self, row, collumn):
         self.currentCell = row
-    
+
     #
-    # Use this method for add itens on table 
+    # Use this method for add itens on table
     #
     def TableAddItem(self, widget:str=''):
         item = qt.QTableWidgetItem(widget)
@@ -73,7 +73,7 @@ class TutorialEditor(qt.QWidget):
         table.setItem(rowsCount, 0, item)
 
         pass
-    
+
     def exit(self):
         self.logic.StopRecording()
         self.annotator.close()
@@ -146,7 +146,7 @@ class SlicerState():
 
         self.annotations = []
         pass
-    
+
 class Annotator(qt.QWidget):
     def __init__(self, parent=None):
         super().__init__()
@@ -155,7 +155,7 @@ class Annotator(qt.QWidget):
         self.setGeometry(0, 0, 600, 40)
 
         self.boxLayout = qt.QVBoxLayout()
-        
+
         self.Setup()
 
         self.setLayout(self.boxLayout)
@@ -184,7 +184,7 @@ class Annotator(qt.QWidget):
         pass
 
     def AnnotateWidget(self, widget):
-        
+
         pass
 
     pass

@@ -6,7 +6,7 @@ The Slicer Tutorial Maker is an extension to 3D Slicer to streamline the creatio
 [Documentación en Español](https://github.com/SlicerLatinAmerica/SlicerTutorialMaker/blob/main/README_esp.md)
 
 ### Installation (Using Extension Manager)
-- Install [3D Slicer 5.9.0-2025-01-28](https://download.slicer.org/) preview version or [latest stable available](https://download.slicer.org/) 
+- Install [3D Slicer 5.9.0-2025-01-28](https://download.slicer.org/) preview version or [latest stable available](https://download.slicer.org/)
 - Go to the "Extension Manager" and search for "TutorialMaker"
 ![TutorialMakenAnnotation](https://github.com/user-attachments/assets/a6060e33-34bd-444c-a230-293c580962ca)
 - Click to restart to get the extension loaded
@@ -16,7 +16,7 @@ The Slicer Tutorial Maker is an extension to 3D Slicer to streamline the creatio
 ### Installation (Manually)
 Follow these steps if you want to get the latest version of the extension before the preview build (which occurs in the morning ~9 EST).
 
-- Install the latest [3D Slicer Stable Release](https://download.slicer.org/) or [3D Slicer Preview Release](https://download.slicer.org/) 
+- Install the latest [3D Slicer Stable Release](https://download.slicer.org/) or [3D Slicer Preview Release](https://download.slicer.org/)
 - Open the [Tutorial Maker repository on GitHub](https://github.com/SlicerLatinAmerica/TutorialMaker)
 - Clone the green button Code' and select the option 'Download ZIP' as displayed in the image below to download the file 'TutorialMaker.zip' on your computer
 - Unzip the 'TutorialMaker.zip' archive to access the 'TutorialMaker-main' directory
@@ -32,7 +32,7 @@ Follow these steps if you want to get the latest version of the extension before
    2. Select 'Edit' in the main menu
    3. Select 'Application settings'
    4. A 'Parameters' window appears: select 'Modules' in the left panel
-   5. Select the file 'TutoriaMaker.py' 
+   5. Select the file 'TutoriaMaker.py'
    6. Drag and drop the file `TutorialMaker.py` located in the sub-directory 'TutorialMaker-main/TutorialMaker/'into the field 'Additional module paths' and click on OK to restart Slicer
 ![TutorialMakerInstallMac](https://github.com/SlicerLatinAmerica/TutorialMaker/assets/28208639/1aad7764-0eb6-4f2e-8a5e-ba46c3cf373d)
 
