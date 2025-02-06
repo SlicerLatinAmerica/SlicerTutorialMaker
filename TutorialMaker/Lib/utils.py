@@ -8,7 +8,7 @@ class util():
         #self.listOnScreenWidgets()
         self.mw = Widget(slicer.util.mainWindow())
         pass
-    
+
     __shortcutDict = {
         "Scene3D"     : "CentralWidget/CentralWidgetLayoutFrame/ThreeDWidget1",
         "SceneRed"    : "CentralWidget/CentralWidgetLayoutFrame/qMRMLSliceWidgetRed",
@@ -31,7 +31,7 @@ class util():
                 print(child.className, end=", ")
                 print(child.name)
                 self.__listWidgetsRecursive(child, depth + 1)
-    
+
     def getOnScreenWidgets(self, window=None):
         if window is None:
             window = self.mw
@@ -67,13 +67,13 @@ class util():
                     return None
             widget = _widget
         return widget
-    
+
     def widgetShortcuts(self, shortcut):
         if shortcut in self.__shortcutDict.keys():
             return self.__shortcutDict[shortcut].split("/")
         else:
             return [shortcut]
-    
+
     def getWidgetsByToolTip(self, parent, tooltip):
         widgets = []
         if not parent:
@@ -84,7 +84,7 @@ class util():
             if child.toolTip == tooltip:
                 widgets.append(child)
         return widgets
-    
+
     def getWidgetsByClassName(self, parent, classname):
         widgets = []
         if not parent:
@@ -95,14 +95,14 @@ class util():
             if child.className == classname:
                 widgets.append(child)
         return widgets
-    
+
     def uniqueWidgetPath(self, widgetToID):
         path = widgetToID.name
         parent = widgetToID
         if path == "":
             path = self.__classtoname(widgetToID)
             pass
-            
+
         while(True):
             parent = parent.parent()
             if not parent:
@@ -111,10 +111,10 @@ class util():
                 path = parent.name + "/" + path
             else:
                 _name = self.__classtoname(parent)
-                path = _name + "/" + path  
+                path = _name + "/" + path
                 pass
         return path
-    
+
     def __classtoname(self, widget):
         classname = widget.className
         _widgets = self.getWidgetsByClassName(widget.parent(), classname)
@@ -128,7 +128,7 @@ class util():
         if index + 1 > len(_widgets):
             name = "?"
         return name
-    
+
     def verifyOutputFolders(self):
         basePath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))+ "/Outputs/"
         if not os.path.exists(basePath):
@@ -136,7 +136,7 @@ class util():
             os.mkdir(basePath + "Raw")
             os.mkdir(basePath + "Annotations")
             os.mkdir(basePath + "Translation")
-        
+
         # Verify if Testing folder exists
         testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
         # Check if testing folder exists
@@ -150,7 +150,7 @@ class util():
 
 class WidgetFinder(qt.QWidget):
     def __init__(self, parent=None):
-        super(WidgetFinder, self).__init__(None)
+        super().__init__(None)
         self.setAttribute(qt.Qt.WA_StyledBackground)
         self.setStyleSheet("QWidget { background-color: rgba(153, 51, 153, 50)}")
         self.focusPolicy = qt.Qt.StrongFocus
@@ -230,11 +230,11 @@ class WidgetFinder(qt.QWidget):
         #we need to work on this
         self.setFixedSize(self.aux.size)
         self.pos = self.aux.pos
-        
+
 
 class Shapes(qt.QWidget):
     def __init__(self, parent=None):
-        super(Shapes, self).__init__(parent)
+        super().__init__(parent)
         self.focusPolicy = qt.Qt.StrongFocus
         self.setAttribute(qt.Qt.WA_TransparentForMouseEvents)
         self.widget = None
@@ -246,7 +246,7 @@ class Shapes(qt.QWidget):
         self.widget = widget
         self.setFixedSize(widget.size)
         self.showFullSize()
-        
+
     def showFullSize(self):
         self.pos = qt.QPoint()
         self.setFixedSize(self.parent().size)
@@ -259,7 +259,7 @@ class Shapes(qt.QWidget):
     def paintEvent(self, event):
         if self.widget is None:
             return
-        
+
         self.setFixedSize(self.parent().size)
         widget = self.widget
 
@@ -272,7 +272,7 @@ class Shapes(qt.QWidget):
         painter = qt.QPainter(self)
         painter.setPen(pen)
         painter.drawEllipse(pos.x() - (200/2) + widget.rect.width()/2, pos.y() - (200/2) + widget.rect.height()/2, 200, 200)
-        
+
 class Widget():
     def __init__(self, widgetData) -> None:
         self.__widgetData = widgetData
@@ -299,23 +299,23 @@ class Widget():
         string += "\tToolTip:   " + self.toolTip + "\n"
         string += "\tClassName: " + self.className + "\n"
         string += "\tID:        " + hex(id(self.__widgetData)) + "\n"
-        string += "\tAction:    " + str(self.actions)+ "\n" 
+        string += "\tAction:    " + str(self.actions)+ "\n"
         string += "\tPath:      " + util().uniqueWidgetPath(self)
         return string
-    
+
     def __dict__(self):
         dict = {
             "name": self.name,
             "text": self.text,
             "toolTip": self.toolTip,
             "className": self.className,
-            "id": hex(id(self.__widgetData)) 
+            "id": hex(id(self.__widgetData))
         }
         return dict
-    
+
     def inner(self):
         return self.__widgetData
-    
+
     def parent(self):
         parent = self.__widgetData.parent()
         if not parent:
@@ -341,22 +341,22 @@ class Widget():
         elif self.className == "qMRMLSubjectHierarchyTreeView":
             children.extend(self.__MRMLTreeViewAsChildren())
         return children
-    
+
     def childrenDetails(self):
         children = self.getChildren()
         for child in children:
             print(child)
-    
+
     def click(self):
         return self.__widgetData.click()
-    
+
     def getGlobalPos(self):
         mw = slicer.util.mainWindow()
         windowPos = mw.mapToGlobal(mw.rect.topLeft())
 
         globalPosTopLeft = self.__widgetData.mapToGlobal(self.__widgetData.rect.topLeft())
         return [globalPosTopLeft.x() - windowPos.x(), globalPosTopLeft.y() - windowPos.y()]
-    
+
     def getSize(self):
         posTopLeft = self.__widgetData.rect.topLeft()
         posBotRight = self.__widgetData.rect.bottomRight()
@@ -367,11 +367,11 @@ class Widget():
         virtualChildren = []
         for ItemIndex in range(self.__widgetData.count):
             item = self.__widgetData.item(ItemIndex)
-            __itemData = SimpleNamespace(name= f"XlistWidgetItem_{ItemIndex}", 
-            className= lambda:"XlistWidgetItem", 
+            __itemData = SimpleNamespace(name= f"XlistWidgetItem_{ItemIndex}",
+            className= lambda:"XlistWidgetItem",
             text= item.text(),
-            mapToGlobal= self.__widgetData.mapToGlobal, 
-            rect= self.__widgetData.visualItemRect(item), 
+            mapToGlobal= self.__widgetData.mapToGlobal,
+            rect= self.__widgetData.visualItemRect(item),
             parent=lambda: self.__widgetData,
             isVisible= self.__widgetData.isVisible)
             virtualChildren.append(Widget(__itemData))
@@ -413,11 +413,11 @@ class Widget():
             if _node.data(0) is not None:
                 _fText = _node.data(0)
 
-            __itemData = SimpleNamespace(name= f"XtreeViewWidget_{NodeIndex}", 
-            className= lambda:"XtreeViewWidget", 
+            __itemData = SimpleNamespace(name= f"XtreeViewWidget_{NodeIndex}",
+            className= lambda:"XtreeViewWidget",
             text= _fText,
-            mapToGlobal= self.__widgetData.viewport().mapToGlobal, 
-            rect= _fRect, 
+            mapToGlobal= self.__widgetData.viewport().mapToGlobal,
+            rect= _fRect,
             parent=lambda: self.__widgetData,
             isVisible= self.__widgetData.isVisible)
             virtualChildren.append(Widget(__itemData))
@@ -433,7 +433,7 @@ class Widget():
 class SignalManager(qt.QObject):
     received = qt.Signal(object)
     def __init__(self):
-        super(SignalManager, self).__init__(None)
+        super().__init__(None)
 
     def connect(self,func):
         self.received.connect(func)
@@ -482,7 +482,7 @@ class ScreenshotTools():
         slicer.app.processEvents(qt.QEventLoop.AllEvents, 69)
         pixmap = window.grab()
         return pixmap
-    
+
     def saveScreenshot(self, filename, window):
         self.getPixmap(window).save(filename, "PNG")
         pass
@@ -496,7 +496,7 @@ class ScreenshotTools():
                 if hasattr(widgets[index].inner(), "isVisible") and not widgets[index].inner().isVisible():
                     continue
                 data[index] = {"name": widgets[index].name, "path": tool.uniqueWidgetPath(widgets[index]), "text": widgets[index].text, "position": widgets[index].getGlobalPos(), "size": widgets[index].getSize()}
-            except:
+            except Exception:
                 pass
         self.handler.saveScreenshotMetadata(data, filename)
 
@@ -515,13 +515,13 @@ class Tutorial:
 
         self.steps = []
 
-    
+
     def beginTutorial(self):
         screenshotTools = ScreenshotTools()
         #Screenshot counter
         self.nSteps = 0
         self.screenshottools = screenshotTools
-        
+
     #TODO:Unsafe, there should be a better method to do this, at least add some conditions
     def clearTutorial(self):
         outputPath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/"
@@ -538,9 +538,9 @@ class Tutorial:
         pass
 
     def nextScreenshot(self, overwriteName=None):
-        if type(overwriteName) == str:
+        if type(overwriteName) is str:
             self.steps.append(self.screenshottools.saveScreenshotMetadata(overwriteName))
-            self.nSteps = self.nSteps + 1    
+            self.nSteps = self.nSteps + 1
             return
         self.steps.append(self.screenshottools.saveScreenshotMetadata(self.nSteps))
         self.nSteps = self.nSteps + 1
@@ -565,7 +565,7 @@ class TutorialScreenshot:
         nWidgets = JSONHandler.parseJSON(self.metadata)
         for keys in nWidgets:
             widgets.append(nWidgets[keys])
-        return widgets 
+        return widgets
 
 
 class JSONHandler:
@@ -578,7 +578,7 @@ class JSONHandler:
         pass
 
     def parseTutorial(self, inline=False):
-        with open(self.path + "Tutorial.json", 'r', encoding='utf-8') as f:
+        with open(self.path + "Tutorial.json", encoding='utf-8') as f:
             tutorialData = self.json.load(f)
         tutorial = Tutorial(
             tutorialData["title"],
@@ -599,18 +599,18 @@ class JSONHandler:
             return tutorial
         #TODO: Non inline parser
         return tutorial
-    
+
     def parseJSON(path):
         import json
-        with open(path, "r", encoding='utf-8') as file:
+        with open(path, encoding='utf-8') as file:
             data = json.load(file)
         return data
-        
+
 
     def saveTutorial(self, metadata, stepsList):
         metadata["steps"] = []
         for step in stepsList:
-            windows = []            
+            windows = []
             for screenshot in step:
                 datapair = {}
                 datapair["window"] = screenshot.screenshot.replace(self.path, "")
@@ -626,7 +626,3 @@ class JSONHandler:
         with open(path, 'w', encoding='utf-8') as f:
             self.json.dump(data, f, ensure_ascii=False, indent=4)
         pass
-
-
-
-

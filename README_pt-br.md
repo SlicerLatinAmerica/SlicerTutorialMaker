@@ -38,7 +38,7 @@
 
 -	As capturas de tela serão exibidas à esquerda
 ![image](https://github.com/user-attachments/assets/63c4485a-1a7e-4fc8-8f47-911f399b2d32)
--	Cada captura de tela inclui um título (seta verde) e uma seção de comentários (seta vermelha) 
+-	Cada captura de tela inclui um título (seta verde) e uma seção de comentários (seta vermelha)
 ![image](https://github.com/user-attachments/assets/07df18ae-677e-4f2d-83f0-ab7a61e1159e)
 -	Selecione uma das três ferramentas para fazer anotações
 ![image](https://github.com/user-attachments/assets/00f5bd99-0949-4594-994b-f4d02018624f)
@@ -54,7 +54,7 @@
 ![image](https://github.com/user-attachments/assets/103d5b81-7335-4d04-bf83-dac61ab6c3f5)
 
 <!--
-> [!AVISO]  
+> [!AVISO]
 > Para pessoas com epilepsia, não execute a tradução. A tela piscará a cada captura de tela.
 
 - Em seguida, clique em "Testar Tradução"

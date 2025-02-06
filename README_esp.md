@@ -1,4 +1,4 @@
-## Prototipo de Tutorial Maker 
+## Prototipo de Tutorial Maker
 
 ### Instalación
 
@@ -8,14 +8,14 @@
 ![image](DOCS/Img_es/DescargarRepo.png)
 - Descomprima el archivo “TutorialMaker.zip” para acceder al directorio “TutorialMaker-main”
 
-- **Para usuarios de Windows**: 
+- **Para usuarios de Windows**:
     1. Inicie 3D Slicer
-    2. Arrastre y suelte la carpeta “TutorialMaker” en la ventana de la aplicación de Slicer. 
+    2. Arrastre y suelte la carpeta “TutorialMaker” en la ventana de la aplicación de Slicer.
     3. Aparecerá una primera ventana emergente, “Seleccionar un lector”. Seleccione “Añadir módulos de scripting Python a la aplicación” y haga clic en OK.
     4. Aparece una segunda ventana emergente para cargar el módulo Tutorial Maker. Haga clic en “Sí”.
     ![image](DOCS/Img_es/InstalarWindows.gif)
 
-- **Para usuarios de MacOs**: 
+- **Para usuarios de MacOs**:
     1. Inicie 3D Slicer.
     2. Seleccione “Editar” en el menú principal
     3. Seleccione “Parámetros de la aplicación”
@@ -26,7 +26,7 @@
 
 ### Cómo utilizar Tutorial Maker
 
-- Seleccione el módulo “Tutorial Maker” en la categoría “Utilidades” de la lista de módulos de Slicer. 
+- Seleccione el módulo “Tutorial Maker” en la categoría “Utilidades” de la lista de módulos de Slicer.
 ![image](DOCS/Img_es/SeleccionarModulo.png)
 > [!ADVERTENCIA]
 > Antes de empezar este tutorial, cambie Slicer al modo de pantalla completa y ajuste el tamaño de la fuente a 14pt para asegurarse de que las capturas de pantalla son fáciles de leer.

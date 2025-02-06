@@ -6,14 +6,11 @@ import os
 import copy
 from enum import Flag, auto
 from Lib.utils import Tutorial, TutorialScreenshot, util
-from Lib.FileMDHTML import markdownHTMLCreator
-import Lib.painter as AnnotationPainter
-from slicer import qMRMLWidget
 from slicer.i18n import tr as _
 
 class DraggableLabel(qt.QLabel):
     def __init__(self, text="",parent=None):
-        super(DraggableLabel, self).__init__(text, parent)
+        super().__init__(text, parent)
 
     def GetCenter(self):
         pos = self.pos
@@ -31,7 +28,7 @@ class DraggableLabel(qt.QLabel):
         height = size.height()
 
         self.move(x - width/2, y - height/2)
-    
+
     def SetActive(self, state : bool):
         #Did it explicit for clarity
         if state:
@@ -42,7 +39,7 @@ class DraggableLabel(qt.QLabel):
             self.hide()
             self.setAttribute(qt.Qt.WA_TransparentForMouseEvents)
             pass
-    
+
     def eventFilter(self, obj, event):
         if obj == self:
             if event.type() == qt.QEvent.MouseMove:
@@ -53,18 +50,18 @@ class DraggableLabel(qt.QLabel):
 
 
 
-        
+
 
 class tmLabel(qt.QLabel):
     clicked = qt.Signal()
 
     def __init__(self, text, index, parent=None):
-        super(tmLabel, self).__init__(text, parent)
+        super().__init__(text, parent)
         self.index = index
 
     def mousePressEvent(self, event):
         self.clicked.emit()
-        
+
 
 class AnnotationType(Flag):
     Nil = auto() # Not for saving
@@ -78,16 +75,16 @@ class AnnotationType(Flag):
 
 
 class Annotation:
-    def __init__(self, 
-        TargetWidget : dict = None, 
-        OffsetX : float = 0, 
+    def __init__(self,
+        TargetWidget : dict = None,
+        OffsetX : float = 0,
         OffsetY : float = 0,
         OptX : float = 0, #Optional Helper Coordinates Used Differently in each Annotation Type
         OptY : float = 0,
         Text : str = "",
         Type : AnnotationType = None):
 
-        if Type == None or TargetWidget == None :
+        if Type is None or TargetWidget is None :
             raise Exception("Annotation needs a widget reference and a valid type")
 
         self.optX = OptX
@@ -109,7 +106,7 @@ class Annotation:
 
         # Need to change this later, make it loaded through resources
         self.icon_click = qt.QImage(os.path.dirname(__file__) + '/../Resources/Icons/Painter/click_icon.png')
-        self.icon_click = self.icon_click.scaled(20,30)  
+        self.icon_click = self.icon_click.scaled(20,30)
 
     def setSelectionBoundingBox(self, topLeftX, topLeftY, bottomRightX, bottomRightY):
         padding = 5
@@ -125,13 +122,13 @@ class Annotation:
 
         self.boundingBoxTopLeft = [topLeftX - padding, topLeftY - padding]
         self.boundingBoxBottomRight = [bottomRightX + padding, bottomRightY + padding]
-    
+
     def getSelectionBoundingBoxSize(self):
         return [self.boundingBoxBottomRight[0] - self.boundingBoxTopLeft[0], self.boundingBoxBottomRight[1] - self.boundingBoxTopLeft[1]]
 
     def wantsOptHelper(self):
         return self.type in AnnotationType.Arrow | AnnotationType.TextBox
-    
+
     def wantsOffsetHelper(self):
         return self.type in AnnotationType.Click | AnnotationType.TextBox
 
@@ -173,11 +170,11 @@ class Annotation:
         #Maybe we can organize this better
         targetPos = [self.target["position"][0] - self.annotationOffset[0] + self.offsetX,
                      self.target["position"][1] - self.annotationOffset[1] + self.offsetY]
-        
-        #Might as well do this then
-        targetSize = self.target["size"] 
 
-        
+        #Might as well do this then
+        targetSize = self.target["size"]
+
+
         targetCenter = [targetPos[0] + targetSize[0]/2,
                         targetPos[1] + targetSize[1]/2]
 
@@ -187,7 +184,7 @@ class Annotation:
 
         brush.setColor(self.color)
         brush.setStyle(qt.Qt.NoBrush)
-        
+
         painter.setBrush(brush)
         painter.setPen(pen)
 
@@ -206,34 +203,34 @@ class Annotation:
             # To better the user experience of moving the helper element
             optX = util.mapFromTo(optX, -targetSize[0], targetSize[0], -1, 1)
             optY = util.mapFromTo(optY, -targetSize[1], targetSize[1], -1, 1)
-            
+
             # Clamp optional values between -1 and 1
             optX = min(max(-1, optX), 1)
             optY = min(max(-1, optY), 1)
 
             arrowHead = [targetCenter[0] + optX*targetSize[0]/2,
                          targetCenter[1] + optY*targetSize[1]/2]
-            
+
             arrowTail = [arrowHead[0] + arrowSize*optX,
                          arrowHead[1] + arrowSize*optY]
 
             arrowLine = qt.QLineF(qt.QPointF(*arrowHead), qt.QPointF(*arrowTail))
-            
+
             arrowAngle = math.atan2(-arrowLine.dy(), arrowLine.dx())
 
             arrowP1 = arrowLine.p1() + qt.QPointF(math.sin(arrowAngle + math.pi / arrowRatio) * arrowHeadSize,
                                                   math.cos(arrowAngle + math.pi / arrowRatio) * arrowHeadSize)
-            
+
             arrowP2 = arrowLine.p1() + qt.QPointF(math.sin(arrowAngle + math.pi - math.pi / arrowRatio) * arrowHeadSize,
                                                   math.cos(arrowAngle + math.pi - math.pi / arrowRatio) * arrowHeadSize)
-            
+
             arrowHeadPolygon = qt.QPolygonF()
             arrowHeadPolygon.clear()
-            
+
             arrowHeadPolygon.append(arrowLine.p1())
             arrowHeadPolygon.append(arrowP1)
             arrowHeadPolygon.append(arrowP2)
-            
+
             painter.drawLine(arrowLine)
             painter.drawPolygon(arrowHeadPolygon)
 
@@ -276,7 +273,7 @@ class Annotation:
 
             fontMetrics = qt.QFontMetrics(font)
             fHeight = fontMetrics.height()
-            
+
             textBoxBottomRight = [targetPos[0] + optX, targetPos[1] + optY]
             textBoxTopLeft = [targetPos[0], targetPos[1]]
 
@@ -289,10 +286,10 @@ class Annotation:
                 tmp = textBoxTopLeft[1]
                 textBoxTopLeft[1] = textBoxBottomRight[1]
                 textBoxBottomRight[1] = tmp
-                
+
             textStart = [textBoxTopLeft[0] + xPadding,
                          textBoxTopLeft[1] + yPadding + fHeight]
-            
+
             textToWrite = self.text
             if textToWrite == "":
                 textToWrite = "Sample Text To See Breaks"
@@ -307,7 +304,7 @@ class Annotation:
                     continue
                 line += f"{token} "
             textLines.append(line)
-            
+
             for lineIndex, line in enumerate(textLines):
                 painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)
 
@@ -315,9 +312,9 @@ class Annotation:
         elif self.type == AnnotationType.Click:
             bottomRight = [targetPos[0] + targetSize[0],
                            targetPos[1] + targetSize[1]]
-            
+
             painter.drawImage(qt.QPoint(*bottomRight), self.icon_click)
-            
+
             self.setSelectionBoundingBox(*bottomRight, bottomRight[0] + 20,bottomRight[1] + 30)
         pass
         if self.drawBoundingBox:
@@ -337,7 +334,7 @@ class Annotation:
             rectToDraw = qt.QRect(topLeft,bottomRight)
             painter.drawRect(rectToDraw)
 
-    
+
 class AnnotatorSlide:
     def __init__(self, BackgroundImage : qt.QPixmap, Metadata : dict, Annotations : list[Annotation] = None, WindowOffset : list[int] = None):
 
@@ -374,7 +371,7 @@ class AnnotatorSlide:
             if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
                 results.append(widget)
         return results
-    
+
     def FindAnnotationsAtPos(self, posX, posY):
         results = []
 
@@ -383,7 +380,7 @@ class AnnotatorSlide:
             rectWidth, rectHeight = annotation.getSelectionBoundingBoxSize()
             if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
                 results.append(annotation)
-        
+
         results.sort(reverse=True, key= lambda x: x.getSelectionBoundingBoxSize()[0]*x.getSelectionBoundingBoxSize()[1])
         return results
 
@@ -399,7 +396,7 @@ class AnnotatorSlide:
         y = util.mapFromTo(qPos.y(), 0, labelHeight, 0, imageSizeY)
 
         return [x,y]
-    
+
     def MapImageToScreen(self, qPos : qt.QPoint, qLabel : qt.QLabel):
         imageSizeX = self.image.width()
         imageSizeY = self.image.height()
@@ -409,7 +406,7 @@ class AnnotatorSlide:
 
         x = util.mapFromTo(qPos.x(), 0, imageSizeX, 0, labelWidth)
         y = util.mapFromTo(qPos.y(), 0, imageSizeY, 0, labelHeight)
-                           
+
         return [x,y]
 
     def GetResized(self, resizeX : float = 0, resizeY : float = 0, keepAspectRatio=False) -> qt.QPixmap:
@@ -456,7 +453,7 @@ class AnnotatorStepWidget(qt.QWidget):
         self.SlideWidgets = []
 
         self.SetupGUI()
-    
+
     def SetupGUI(self):
         self.stepLayout = qt.QGridLayout()
         self.setLayout(self.stepLayout)
@@ -506,7 +503,7 @@ class AnnotatorStepWidget(qt.QWidget):
 
         screenshotWidget.stackUnder(self.expandButton)
         pass
-    
+
     def swapUp(self, state):
         self.swapRequest.emit(self.stepIndex, self.stepIndex - 1)
         pass
@@ -533,10 +530,10 @@ class AnnotatorStepWidget(qt.QWidget):
             nextImage = slide.image.toImage()
 
             mainWidget = slide.metadata[0]
-            painter.drawImage(qt.QRect(mainWidget["position"][0], 
-                                       mainWidget["position"][1], 
-                                       nextImage.width(), 
-                                       nextImage.height()), 
+            painter.drawImage(qt.QRect(mainWidget["position"][0],
+                                       mainWidget["position"][1],
+                                       nextImage.width(),
+                                       nextImage.height()),
                                        nextImage)
         painter.end()
         mergedSlide = AnnotatorSlide(qt.QPixmap().fromImage(finalImage), finalJson)
@@ -566,9 +563,9 @@ class AnnotatorStepWidget(qt.QWidget):
     def mousePressEvent(self, event):
         #self.ToggleExtended()
         pass
-        
 
-        
+
+
 
 class TutorialGUI(qt.QMainWindow):
     def __init__(self, parent=None):
@@ -586,7 +583,7 @@ class TutorialGUI(qt.QMainWindow):
         self.updateTimer.setInterval(34) #34ms Interval = 30 ups
         self.updateTimer.timeout.connect(self.refreshViews)
         self.updateTimer.start()
-        
+
         self.selectedIndexes = [0,0]
         self.selectedAnnotator = None
         self.selectedAnnotationType = AnnotationType.Nil
@@ -595,7 +592,7 @@ class TutorialGUI(qt.QMainWindow):
         _penSettings = {"color": qt.QColor(255, 128, 0),
                        "fontSize": 14,
                        "penThickness": 4}
-        
+
         self.penSettings = _penSettings
 
         self.selectorParentCount = 0
@@ -653,7 +650,7 @@ class TutorialGUI(qt.QMainWindow):
         # Load UI File
         self.newlayout.addWidget(self.uiWidget)
 
-        # Set self layout with UI components 
+        # Set self layout with UI components
         self.setCentralWidget(self.uiWidget)
 
         # Configure Main Window
@@ -667,7 +664,7 @@ class TutorialGUI(qt.QMainWindow):
         self.uiWidget.scrollArea.setWidget(self.scrollAreaWidgetContents)
 
         self.scroll_area = self.uiWidget.findChild(qt.QScrollArea, "scrollArea")
-        self.scroll_area.setFixedSize(*self.scrollAreaSize) 
+        self.scroll_area.setFixedSize(*self.scrollAreaSize)
         self.scroll_area.installEventFilter(self)
 
         # Configure Main Slide Screen
@@ -682,7 +679,7 @@ class TutorialGUI(qt.QMainWindow):
         # Configure the Slide Title and Slide body text boxes
         self.slideTitleWidget = self.uiWidget.findChild(qt.QLineEdit, "lineEdit")
         self.slideTitleWidget.setMinimumWidth(self.selectedSlideSize[0])
-        self.slideTitleWidget.setMaximumWidth(self.selectedSlideSize[0]) 
+        self.slideTitleWidget.setMaximumWidth(self.selectedSlideSize[0])
         self.slideTitleWidget.placeholderText = "Title for the slide"
 
         self.slideBodyWidget = self.uiWidget.findChild(qt.QTextEdit, "myTextEdit")
@@ -713,7 +710,7 @@ class TutorialGUI(qt.QMainWindow):
         outputFileOld = []
 
         outputFileAnnotations["slides"] = []
-        
+
         for stepIndex, step in enumerate(self.steps):
             for slideIndex, slide in enumerate(step.Slides):
                 if not slide.Active:
@@ -740,7 +737,7 @@ class TutorialGUI(qt.QMainWindow):
                              "SlideTitle": f"{slideTitle}_title",
                              "SlideDesc": f"{slideTitle}_body",
                              "Annotations": []}
-                
+
                 for annIndex, annotation in enumerate(slide.annotations):
                     info = annotation.toDict()
                     textDict[f"{slidePrefix}_{info['type']}_{annIndex}"] = info["text"]
@@ -755,16 +752,16 @@ class TutorialGUI(qt.QMainWindow):
                 outputFileAnnotations["slides"].append(slideInfo)
                 outputFileTextDict = {**outputFileTextDict, **textDict}
             pass
-        
+
         with open(file= f"{self.outputFolder}/annotations.json", mode='w', encoding="utf-8") as fd:
             json.dump(outputFileAnnotations, fd, ensure_ascii=False, indent=4)
-        
+
         with open(file= f"{self.outputFolder}/text_dict_default.json", mode='w', encoding="utf-8") as fd:
             json.dump(outputFileTextDict, fd, ensure_ascii=False, indent=4)
 
         # >>>>>>> this will be removed in the next few versions, the painter should conform to the new version <<<<<<<
 
-    
+
 
         for stepIndex, step in enumerate(self.steps):
             for slideIndex, slide in enumerate(step.Slides):
@@ -781,14 +778,14 @@ class TutorialGUI(qt.QMainWindow):
                             "type": "rectangle",
                             "color": color_rgb, # (r,g,b)
                             "labelText":"", #text on annotation
-                            "fontSize": "14", # size of text on annotions 14px 
+                            "fontSize": "14", # size of text on annotions 14px
                         }
                     elif annotationC.type == AnnotationType.Click:
                         annotation = {
                             "path": info["widgetPath"],
                             "type": "clickMark",
                             "labelText":"", #text on annotation
-                            "fontSize": "14", # size of text on annotions 14px 
+                            "fontSize": "14", # size of text on annotions 14px
                         }
                     elif annotationC.type == AnnotationType.Arrow:
                         annotation = {
@@ -813,7 +810,7 @@ class TutorialGUI(qt.QMainWindow):
 
         with open(file= f"{self.outputFolder}/annotations_old.json", mode='w', encoding="utf-8") as fd:
             json.dump(outputFileOld, fd, ensure_ascii=False, indent=4)
-        
+
 
     def deleteSelectedAnnotation(self):
         self.selectedAnnotation = None
@@ -848,17 +845,17 @@ class TutorialGUI(qt.QMainWindow):
             for screenshot in screenshots[1:]:
                 try:
                     annotatorSlide = AnnotatorSlide(screenshot.getImage(),
-                                                    screenshot.getWidgets(), 
+                                                    screenshot.getWidgets(),
                                                     WindowOffset=screenshot.getWidgets()[0]["position"])
-                    stepWidget.AddStepWindows(annotatorSlide)
+                    stepWidget.AddStepWindows(annotatorSlide)  # noqa: F821
                 except Exception:
                     print(f"ERROR: Annotator Failed to add window in step:{stepIndex}, loadImagesAndMetadata")
 
-            self.steps.append(stepWidget)
-            self.gridLayout.addWidget(stepWidget)
-            stepWidget.UNDELETABLE = True
-            stepWidget.CreateMergedWindow()
-            stepWidget.ToggleExtended()
+            self.steps.append(stepWidget)  # noqa: F821
+            self.gridLayout.addWidget(stepWidget)  # noqa: F821
+            stepWidget.UNDELETABLE = True # noqa: F821
+            stepWidget.CreateMergedWindow() # noqa: F821
+            stepWidget.ToggleExtended() # noqa: F821
 
         #TODO: use widget annotation infrastructure to make these pages more on the fly interactable
         # Insert Dummy Pages for Title, Acknowledgements
@@ -882,7 +879,7 @@ class TutorialGUI(qt.QMainWindow):
 
     def changeSelectedSlide(self, stepId, screenshotId):
         self.cancelCurrentAnnotation()
-        
+
         # Save text to slideAnnotator
         if self.selectedAnnotator is not None:
             self.selectedAnnotator.SlideTitle = self.slideTitleWidget.text
@@ -928,9 +925,9 @@ class TutorialGUI(qt.QMainWindow):
              annotatorSlide.SlideLayout = type_
         stepWidget.AddStepWindows(annotatorSlide)
         stepWidget.CreateMergedWindow()
-        
+
         def InsertWidget(_nWidget, _index):
-            
+
             #To make the lists bigger
             self.steps.append(_nWidget)
             self.gridLayout.addWidget(_nWidget)
@@ -1014,13 +1011,13 @@ class TutorialGUI(qt.QMainWindow):
         self.OptHelperWidget.SetCenter(*optValuesInImage)
         _offsetPos = self.selectedAnnotator.MapImageToScreen(qt.QPointF(selectedAnnotation.target["position"][0] + selectedAnnotation.offsetX,
                                                                        selectedAnnotation.target["position"][1] + selectedAnnotation.offsetY), self.selectedSlide)
-        
+
 
 
         self.OffsetHelperWidget.SetCenter(*_offsetPos)
-            
 
-        self.on_action_triggered(None) #TODO: This is needed because this affects the selectiontype every mouse movement event and makes the selection process very janky 
+
+        self.on_action_triggered(None) #TODO: This is needed because this affects the selectiontype every mouse movement event and makes the selection process very janky
         self.selectedAnnotation = selectedAnnotation
         self.selectedAnnotationType = AnnotationType.Selected
         self.selectedAnnotation.drawBoundingBox = True
@@ -1049,15 +1046,15 @@ class TutorialGUI(qt.QMainWindow):
             _helperPos = self.selectedAnnotator.MapScreenToImage(qt.QPointF(*self.OffsetHelperWidget.GetCenter()), self.selectedSlide)
             offsetFromTargetWidget = [_helperPos[0] - self.selectedAnnotation.target["position"][0],
                                       _helperPos[1] - self.selectedAnnotation.target["position"][1]]
-            
+
             self.selectedAnnotation.setValuesOffset(*offsetFromTargetWidget)
-            
+
         if self.selectedAnnotationType == AnnotationType.Selected:
             self.OptHelperWidget.SetActive(self.selectedAnnotation.wantsOptHelper())
             self.OffsetHelperWidget.SetActive(self.selectedAnnotation.wantsOffsetHelper())
             ApplyHelper()
             return
-        
+
         if len(widgets) < 1:
             return
 
@@ -1071,25 +1068,25 @@ class TutorialGUI(qt.QMainWindow):
 
         if selectedWidget is None:
             return
-        
+
         if self.selectedAnnotation is None:
             self.selectedAnnotation = Annotation(TargetWidget=selectedWidget, Type=self.selectedAnnotationType)
             self.selectedAnnotator.AddAnnotation(self.selectedAnnotation)
             self.selectedAnnotation.penConfig(self.penSettings["color"], self.penSettings["fontSize"],self.penSettings["penThickness"], brush=True)
             self.OptHelperWidget.SetActive(self.selectedAnnotation.wantsOptHelper())
             self.OffsetHelperWidget.SetActive(self.selectedAnnotation.wantsOffsetHelper())
-        
+
         self.selectedAnnotation.target = selectedWidget
 
         # Configure The Annotation Optional Helper so that its always towards the center
-        
+
         helperPosition = copy.deepcopy(self.defaultHelperOffset)
         if appPos.x() > self.selectedSlideSize[0]/2:
             helperPosition[0] = -helperPosition[0]
         if appPos.y() > self.selectedSlideSize[1]/2:
             helperPosition[1] = -helperPosition[1]
         self.OptHelperWidget.SetCenter(appPos.x() + helperPosition[0], appPos.y() + helperPosition[1])
-        
+
         # Configure The Annotation Offset Helper so it defaults to zero
         # Probably one the ugliest way to do this, maybe find someway better
         _reversePostion = self.selectedAnnotator.MapImageToScreen(qt.QPointF(*selectedWidget["position"]), self.selectedSlide)
@@ -1175,7 +1172,7 @@ class TutorialGUI(qt.QMainWindow):
     def open_json_file(self, filepath):
         directory_path = os.path.dirname(filepath)
         # Read the data from the file
-        with open(filepath, "r", encoding='utf-8') as file:
+        with open(filepath, encoding='utf-8') as file:
             rawTutorialData = json.load(file)
             file.close()
 
@@ -1201,11 +1198,11 @@ class TutorialGUI(qt.QMainWindow):
                 screenshotList.append(wScreenshot)
             tutorial.steps.append(screenshotList)
         self.loadImagesAndMetadata(tutorial)
-        
+
     def eventFilter(self, obj, event):
         if obj == self.selectedSlide:
             if event.type() == qt.QEvent.Leave:
-                if not self.selectedAnnotation is None and not self.selectedAnnotation.PERSISTENT:
+                if self.selectedAnnotation is not None and not self.selectedAnnotation.PERSISTENT:
                     return self.cancelCurrentAnnotation()
             elif event.type() == qt.QEvent.MouseButtonPress:
                 return self.mouse_press_event(event)
@@ -1245,14 +1242,14 @@ class TutorialGUI(qt.QMainWindow):
 
         toolbar.setMovable(True)
         return toolbar
-    
+
     def create_toolbar_actions(self):
         toolbar = qt.QToolBar("Actions", self)
         #TODO: Make icon for the selection action
         self.select = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png'), _("Select"), self)
         self.select.setCheckable(True)
         toolbar.addAction(self.select)
-        
+
         self.square = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png'), _("Square"), self)
         self.square.setCheckable(True)
         toolbar.addAction(self.square)
@@ -1277,7 +1274,7 @@ class TutorialGUI(qt.QMainWindow):
         self.icon_image.setCheckable(True)
 
         self.in_text = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act5.png'), _("Text"), self)
-        self.in_text.setCheckable(True) 
+        self.in_text.setCheckable(True)
 
         self.icons = {
             #TODO:Create an icon for the select tool
@@ -1322,13 +1319,13 @@ class TutorialGUI(qt.QMainWindow):
 
         toolbar.setMovable(True)
         return toolbar
-    
+
     def create_toolbar_edit(self):
         toolbar = qt.QToolBar("Edit", self)
 
         label_c = qt.QLabel("Color")
         toolbar.addWidget(label_c)
-        
+
         self.action7 = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/color.png'), _("color"), self)
         toolbar.addAction(self.action7)
         self.action7.triggered.connect(self.changeColor)
@@ -1380,7 +1377,7 @@ class TutorialGUI(qt.QMainWindow):
         toolbar.setMovable(True)
 
         return toolbar
-    
+
     def on_action_triggered(self, sender):
         self.cancelCurrentAnnotation()
         for action, icons in self.icons.items():

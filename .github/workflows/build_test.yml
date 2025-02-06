@@ -20,100 +20,99 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: Checkout out SlicerTutorialMaker
+        uses: actions/checkout@v4
+        with:
+          path: ${{ github.workspace }}/SlicerTutorialMaker
 
-    - name: Checkout out SlicerTutorialMaker
-      uses: actions/checkout@v4
-      with:
-        path: ${{ github.workspace }}/SlicerTutorialMaker
+      - name: Install Slicer prerequisites
+        run: |
+          sudo apt-get install \
+            libglu1-mesa \
+            libpulse-mainloop-glib0 \
+            libnss3 \
+            libasound2 \
+            qt5dxcb-plugin \
+            libsm6
 
-    - name: Install Slicer prerequisites
-      run: |
-        sudo apt-get install \
-          libglu1-mesa \
-          libpulse-mainloop-glib0 \
-          libnss3 \
-          libasound2 \
-          qt5dxcb-plugin \
-          libsm6
+      - name: Install XVFB prerequisites
+        run: |
+          sudo apt-get install \
+            xvfb \
+            x11-xserver-utils
 
-    - name: Install XVFB prerequisites
-      run: |
-        sudo apt-get install \
-          xvfb \
-          x11-xserver-utils
+      - name: Download Slicer
+        id: slicer-download
+        run: |
+          download_dir=$(pwd)
 
-    - name: Download Slicer
-      id: slicer-download
-      run: |
-        download_dir=$(pwd)
+          package_name=Slicer-5.8.0-linux-amd64
+          filename=${package_name}.tar.gz
+          url=https://download.slicer.org/bitstream/679325961357655fd585ffb5
+          sha512=122ae2611d6d8761f66ef6a316dfff08442df072bf80a23327e374a09935da5e829e60bcf780ffc687b8e208ca696a34a4811218afe89bfcedfc755b823a933d
 
-        package_name=Slicer-5.8.0-linux-amd64
-        filename=${package_name}.tar.gz
-        url=https://download.slicer.org/bitstream/679325961357655fd585ffb5
-        sha512=122ae2611d6d8761f66ef6a316dfff08442df072bf80a23327e374a09935da5e829e60bcf780ffc687b8e208ca696a34a4811218afe89bfcedfc755b823a933d
-
-        if [[ ! -f ${download_dir}/${filename} ]]; then
-          echo "[slicer-download] Downloading ${filename}"
-          curl -o ${download_dir}/${filename} -# -SL ${url}
-        else
-          echo "[slicer-download] Skipping download: Found ${filename}"
-        fi
-
-        echo "[slicer-download] Checking"
-        echo "${sha512}  ${download_dir}/${filename}" > ${download_dir}/${filename}.sha512
-        sha512sum -c ${download_dir}/${filename}.sha512
-        rm -f ${download_dir}/${filename}.sha512
-
-        echo "[slicer-download] Extracting"
-        tar -xzvf ${download_dir}/${filename}
-
-        install_dir=${download_dir}/${package_name}
-        SLICER_EXECUTABLE=${install_dir}/Slicer
-        echo "[slicer-download] SLICER_EXECUTABLE [${SLICER_EXECUTABLE}]"
-
-        echo "slicer-executable=${SLICER_EXECUTABLE}" >> $GITHUB_OUTPUT
-
-    - name: Check Slicer installation
-      run: |
-        function cleanup() {
-          echo "Cleaning up..."
-          local xvfb_pids=`ps aux | grep tmp/xvfb-run | grep -v grep | awk '{print $2}'`
-          if [ "$xvfb_pids" != "" ]; then
-              echo "Killing the following xvfb processes: $xvfb_pids"
-              sudo kill $xvfb_pids
+          if [[ ! -f ${download_dir}/${filename} ]]; then
+            echo "[slicer-download] Downloading ${filename}"
+            curl -o ${download_dir}/${filename} -# -SL ${url}
           else
-              echo "No xvfb processes to kill"
+            echo "[slicer-download] Skipping download: Found ${filename}"
           fi
-        }
-        trap cleanup EXIT
 
-        xvfb-run --auto-servernum \
-          ${SLICER_EXECUTABLE} --version
-      env:
-        SLICER_EXECUTABLE: ${{ steps.slicer-download.outputs.slicer-executable }}
+          echo "[slicer-download] Checking"
+          echo "${sha512}  ${download_dir}/${filename}" > ${download_dir}/${filename}.sha512
+          sha512sum -c ${download_dir}/${filename}.sha512
+          rm -f ${download_dir}/${filename}.sha512
 
-    - name: Test SlicerTutorialMaker
-      run: |
-        function cleanup() {
-          echo "Cleaning up..."
-          local xvfb_pids=`ps aux | grep tmp/xvfb-run | grep -v grep | awk '{print $2}'`
-          if [ "$xvfb_pids" != "" ]; then
-              echo "Killing the following xvfb processes: $xvfb_pids"
-              sudo kill $xvfb_pids
-          else
-              echo "No xvfb processes to kill"
-          fi
-        }
-        trap cleanup EXIT
+          echo "[slicer-download] Extracting"
+          tar -xzvf ${download_dir}/${filename}
 
-        xvfb-run --auto-servernum \
-          ${SLICER_EXECUTABLE} \
-            --no-splash \
-            --testing \
-            --additional-module-paths ${ADDITIONAL_MODULE_PATH} \
-            --python-code \
-              "import slicer.testing; slicer.testing.runUnitTest(['${ADDITIONAL_MODULE_PATH}'], '${MODULE_NAME}')"
-      env:
-        SLICER_EXECUTABLE: ${{ steps.slicer-download.outputs.slicer-executable }}
-        ADDITIONAL_MODULE_PATH: ${{ github.workspace }}/SlicerTutorialMaker/TutorialMaker
-        MODULE_NAME: TutorialMaker
+          install_dir=${download_dir}/${package_name}
+          SLICER_EXECUTABLE=${install_dir}/Slicer
+          echo "[slicer-download] SLICER_EXECUTABLE [${SLICER_EXECUTABLE}]"
+
+          echo "slicer-executable=${SLICER_EXECUTABLE}" >> $GITHUB_OUTPUT
+
+      - name: Check Slicer installation
+        run: |
+          function cleanup() {
+            echo "Cleaning up..."
+            local xvfb_pids=`ps aux | grep tmp/xvfb-run | grep -v grep | awk '{print $2}'`
+            if [ "$xvfb_pids" != "" ]; then
+                echo "Killing the following xvfb processes: $xvfb_pids"
+                sudo kill $xvfb_pids
+            else
+                echo "No xvfb processes to kill"
+            fi
+          }
+          trap cleanup EXIT
+
+          xvfb-run --auto-servernum \
+            ${SLICER_EXECUTABLE} --version
+        env:
+          SLICER_EXECUTABLE: ${{ steps.slicer-download.outputs.slicer-executable }}
+
+      - name: Test SlicerTutorialMaker
+        run: |
+          function cleanup() {
+            echo "Cleaning up..."
+            local xvfb_pids=`ps aux | grep tmp/xvfb-run | grep -v grep | awk '{print $2}'`
+            if [ "$xvfb_pids" != "" ]; then
+                echo "Killing the following xvfb processes: $xvfb_pids"
+                sudo kill $xvfb_pids
+            else
+                echo "No xvfb processes to kill"
+            fi
+          }
+          trap cleanup EXIT
+
+          xvfb-run --auto-servernum \
+            ${SLICER_EXECUTABLE} \
+              --no-splash \
+              --testing \
+              --additional-module-paths ${ADDITIONAL_MODULE_PATH} \
+              --python-code \
+                "import slicer.testing; slicer.testing.runUnitTest(['${ADDITIONAL_MODULE_PATH}'], '${MODULE_NAME}')"
+        env:
+          SLICER_EXECUTABLE: ${{ steps.slicer-download.outputs.slicer-executable }}
+          ADDITIONAL_MODULE_PATH: ${{ github.workspace }}/SlicerTutorialMaker/TutorialMaker
+          MODULE_NAME: TutorialMaker
