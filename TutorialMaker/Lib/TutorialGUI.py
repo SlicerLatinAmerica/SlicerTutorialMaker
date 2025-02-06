@@ -1148,7 +1148,7 @@ class TutorialGUI(qt.QMainWindow):
             self.selectedAnnotationType = AnnotationType.Click
         pass
 
-        if self.selectedAnnotationType is not AnnotationType.Nil:
+        if self.selectedAnnotationType is not AnnotationType.Nil and self.selectedAnnotationType is not AnnotationType.Selecting:
             self.previewAnnotation(event.pos())
 
     def mouse_release_event(self, event):
