@@ -188,6 +188,8 @@ class Annotation:
         painter.setBrush(brush)
         painter.setPen(pen)
 
+        highlightWidget = True
+
         if   self.type == AnnotationType.Arrow:
             # So the arrow will be filled
             brush.setStyle(qt.Qt.SolidPattern)
@@ -242,6 +244,7 @@ class Annotation:
             rectToDraw = qt.QRect(topLeft,bottomRight)
             painter.drawRect(rectToDraw)
 
+            highlightWidget = False
             self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + targetSize[0],targetPos[1] + targetSize[1])
             pass
         elif self.type == AnnotationType.Circle:
@@ -317,7 +320,20 @@ class Annotation:
 
             self.setSelectionBoundingBox(*bottomRight, bottomRight[0] + 20,bottomRight[1] + 30)
         pass
+        if (self.drawBoundingBox or not self.PERSISTENT) and highlightWidget:
+            #Draw bounding box for the widget
+            pen.setColor(qt.QColor("white"))
+            pen.setWidth(2)
+            pen.setStyle(qt.Qt.SolidLine)
+            brush.setStyle(qt.Qt.NoBrush)
+            painter.setBrush(brush)
+            painter.setPen(pen)
+            topLeft = qt.QPoint(self.target["position"][0], self.target["position"][1])
+            bottomRight = qt.QPoint(self.target["position"][0] + self.target["size"][0],self.target["position"][1] + self.target["size"][1])
+            rectToDraw = qt.QRect(topLeft,bottomRight)
+            painter.drawRect(rectToDraw)
         if self.drawBoundingBox:
+            #Draw bounding box for the annotation
             pen.setColor(qt.QColor("green"))
             pen.setWidth(4)
             pen.setStyle(qt.Qt.DotLine)
@@ -564,7 +580,6 @@ class AnnotatorStepWidget(qt.QWidget):
         #self.ToggleExtended()
         pass
     def mouseMoveEvent(self, event):
-        print(self.parent().name)
         if event.buttons() == qt.Qt.LeftButton:
             drag = qt.QDrag(self)
             mime = qt.QMimeData()
