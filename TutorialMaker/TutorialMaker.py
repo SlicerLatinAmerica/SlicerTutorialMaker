@@ -35,7 +35,7 @@ class TutorialMaker(ScriptedLoadableModule):
                                     "João Januário (Universidade de São Paulo)", "Lucas Silva (Universidade de São Paulo)",
                                     "Paulo Pereira (Universidade de São Paulo)", "Victor Montaño (Universidad Autónoma del Estado de México)",
                                     "Paulo Eduardo de Barros Veiga (Universidade de São Paulo)", "Valeria Gomez-Valdes (Universidad Autónoma del Estado de México)",
-                                    "Monserrat Rıos-Hernandez (Universidad Autónoma del Estado de México)", "Fatou Bintou N’Diaye (University Cheikh Anta Diop)",
+                                    "Monserrat Rıos-Hernandez (Universidad Autónoma del Estado de México)", "Fatou Bintou Ndiaye (University Cheikh Anta Diop)",
                                     "Mohamed Alalli Bilal (University Cheikh Anta Diop)", "Steve Pieper (Isomics Inc.)",
                                     "Adriana Vilchis-Gonzalez (Universidad Autónoma del Estado de México)", "Luiz Otavio Murta Junior (Universidade de São Paulo)",
                                     "Andras Lasso (Queen’s University)", "Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)"] 
@@ -68,7 +68,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.__selectedTutorial = None
         self.isDebug = slicer.app.settings().value("Developer/DeveloperMode")
         
-        print("Version Date: 03/01/2025")
+        print("Version Date: 01/30/2025-07:45PM")
         
         #PROTOTYPE FOR PLAYBACK
 
@@ -85,7 +85,9 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         uiWidget = slicer.util.loadUI(self.resourcePath('UI/TutorialMaker.ui'))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
-
+        
+        #Verify if the folders to manipulate the tutorials are created
+        utils.util.verifyOutputFolders(self)
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = TutorialMakerLogic()
@@ -116,12 +118,9 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
-
+        
         #Update GUI
         self.populateTutorialList()
-
-        #Verify if the folders to manipulate the tutorials are created
-        utils.util.verifyOutputFolders(self)
 
     def cleanup(self):
         self.logic.exitTutorialEditor()
@@ -185,7 +184,6 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.populateTutorialList()
         pass
 
-    
     def populateTutorialList(self):
         loadedTutorials = self.logic.loadTutorials()
         listWidget = self.ui.listWidgetTutorials
@@ -241,7 +239,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         pass
 
     def Annotate(self, tutorialName):
-        TutorialMakerTest().test_TutorialMaker1(tutorialName)
+        TutorialMakerLogic.runTutorialTestCases(tutorialName)
         
         Annotator = TutorialGUI()
         Annotator.open_json_file(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/Tutorial.json")
@@ -291,56 +289,8 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
             test_tutorials.append(content.replace(".py", ""))
         return test_tutorials
 
-#
-# TutorialMakerTest
-#
-class TutorialMakerTest(ScriptedLoadableModuleTest):
-    """
-    This is the test case for your scripted module.
-    Uses ScriptedLoadableModuleTest base class, available at:
-    https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
-    """
-
-    def setUp(self):
-        """ Do whatever is needed to reset the state - typically a scene clear will be enough.
-        """
-        slicer.mrmlScene.Clear()
-
-    def runTest(self):
-        """Run as few or as many tests as needed here.
-        """
-        self.setUp()
-        #Annotator test
-        #Screencapture test
-        #Then run all the tutorials
-        tutorials_failed = 0
-        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
-        # Check if testing folder exists
-        if not os.path.exists(testingFolder):
-            os.makedirs(testingFolder)
-        
-        test_tutorials = os.listdir()
-        for unit_tutorials in test_tutorials:
-            try:
-                if(not (".py" in unit_tutorials)):
-                    continue
-                unit_tutorials = unit_tutorials.replace(".py", "")
-                # Generate Screenshots and widget metadata
-                self.test_TutorialMaker1(unit_tutorials)
-                # Paint Screenshots with annotations
-                AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
-            except:
-                logging.error(_("Tutorial Execution Failed: {unit_tutorials}".format(unit_tutorials=unit_tutorials)))
-                tutorials_failed = tutorials_failed + 1
-                pass
-            finally:
-                self.delayDisplay(_("Tutorial Tested"))
-            pass
-        if tutorials_failed > 0:
-            raise Exception(_("{tutorials_failed} tutorials failed to execute".format(tutorials_failed=tutorials_failed)))
-
-
-    def test_TutorialMaker1(self, tutorial_name):
+    @staticmethod
+    def runTutorialTestCases(tutorial_name):
         """ Ideally you should have several levels of tests.  At the lowest level
         tests should exercise the functionality of the logic with different inputs
         (both valid and invalid).  At higher levels your tests should emulate the
@@ -361,10 +311,52 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
             return
         logging.error(_("No tests found in {tutorial_name}".format(tutorial_name=tutorial_name)))
         raise Exception(_("No Tests Found"))
-        pass
 
-    def test_TutorialMaker2(self):
-        pass
+
+#
+# TutorialMakerTest
+#
+class TutorialMakerTest(ScriptedLoadableModuleTest):
+    """
+    This is the test case for your scripted module.
+    Uses ScriptedLoadableModuleTest base class, available at:
+    https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
+    """
+
+    def setUp(self):
+        """ Do whatever is needed to reset the state - typically a scene clear will be enough.
+        """
+        slicer.mrmlScene.Clear()
+        TutorialMakerLogic().loadTutorialsFromRepos()
+
+    def runTest(self):
+        """Run as few or as many tests as needed here.
+        """
+        self.setUp()
+        #Annotator test
+        #Screencapture test
+        #Then run all the tutorials
+        tutorials_failed = 0
+        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        test_tutorials = os.listdir(testingFolder)
+        for unit_tutorials in test_tutorials:
+            try:
+                if(not (".py" in unit_tutorials)):
+                    continue
+                unit_tutorials = unit_tutorials.replace(".py", "")
+                # Generate Screenshots and widget metadata
+                TutorialMakerLogic.runTutorialTestCases(unit_tutorials)
+                # Paint Screenshots with annotations
+                #AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
+            except:
+                logging.error(_("Tutorial Execution Failed: {unit_tutorials}".format(unit_tutorials=unit_tutorials)))
+                tutorials_failed = tutorials_failed + 1
+                pass
+            finally:
+                self.delayDisplay(_("Tutorial Tested"))
+            pass
+        if tutorials_failed > 0:
+            raise Exception(_("{tutorials_failed} tutorials failed to execute".format(tutorials_failed=tutorials_failed)))
 
     def delayDisplay(self, message, requestedDelay=None, msec=None):
         """
@@ -401,10 +393,3 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
             msec = 100
 
         slicer.util.delayDisplay(message, msec)
-
-
-
-
-
-
-        

@@ -136,6 +136,12 @@ class util():
             os.mkdir(basePath + "Raw")
             os.mkdir(basePath + "Annotations")
             os.mkdir(basePath + "Translation")
+        
+        # Verify if Testing folder exists
+        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        # Check if testing folder exists
+        if not os.path.exists(testingFolder):
+            os.mkdir(testingFolder)
 
 
 class WidgetFinder(qt.QWidget):
@@ -326,6 +332,10 @@ class Widget():
             return children
         for child in self.__widgetData.children():
             children.append(Widget(child))
+        if self.className == "QListWidget":
+            children.extend(self.__listWidgetAsChildren())
+        elif self.className == "qMRMLSubjectHierarchyTreeView":
+            children.extend(self.__MRMLTreeViewAsChildren())
         return children
     
     def childrenDetails(self):
@@ -347,6 +357,74 @@ class Widget():
         posTopLeft = self.__widgetData.rect.topLeft()
         posBotRight = self.__widgetData.rect.bottomRight()
         return [posBotRight.x() - posTopLeft.x(), posBotRight.y() - posTopLeft.y()]
+
+    def __listWidgetAsChildren(self):
+        from types import SimpleNamespace
+        virtualChildren = []
+        for ItemIndex in range(self.__widgetData.count):
+            item = self.__widgetData.item(ItemIndex)
+            __itemData = SimpleNamespace(name= f"XlistWidgetItem_{ItemIndex}", 
+            className= lambda:"XlistWidgetItem", 
+            text= item.text(),
+            mapToGlobal= self.__widgetData.mapToGlobal, 
+            rect= self.__widgetData.visualItemRect(item), 
+            parent=lambda: self.__widgetData,
+            isVisible= self.__widgetData.isVisible)
+            virtualChildren.append(Widget(__itemData))
+        return virtualChildren
+
+    def __MRMLTreeViewAsChildren(self):
+        from types import SimpleNamespace
+        virtualChildren = []
+        model = None
+        if self.__widgetData.sortFilterProxyModel() is not None:
+            model = self.__widgetData.sortFilterProxyModel()
+        else:
+            model = self.__widgetData.model()
+        if model is None:
+            return virtualChildren
+
+        NodeIndex = 0
+        def nodeTreeTraverser(_node):
+            nonlocal NodeIndex
+            if hasattr(_node, "child"):
+                xIndex = 0
+                while True:
+                    yIndex = 0
+                    if _node.child(xIndex, yIndex) is None or not _node.child(xIndex, yIndex).isValid():
+                        break
+                    while True:
+                        if _node.child(xIndex, yIndex) is None or not _node.child(xIndex, yIndex).isValid():
+                            break
+                        nodeTreeTraverser(_node.child(xIndex, yIndex))
+                        yIndex += 1
+                    xIndex += 1
+
+            #Create fake widgets to represent the nodes in the list
+            _fRect = self.__widgetData.visualRect(_node)
+            if (_fRect.size().height() == 0 or _fRect.size().width() == 0):
+                return
+
+            _fText = ""
+            if _node.data(0) is not None:
+                _fText = _node.data(0)
+
+            __itemData = SimpleNamespace(name= f"XtreeViewWidget_{NodeIndex}", 
+            className= lambda:"XtreeViewWidget", 
+            text= _fText,
+            mapToGlobal= self.__widgetData.viewport().mapToGlobal, 
+            rect= _fRect, 
+            parent=lambda: self.__widgetData,
+            isVisible= self.__widgetData.isVisible)
+            virtualChildren.append(Widget(__itemData))
+
+            NodeIndex += 1
+
+        nodeTreeTraverser(model.index(0,0))
+
+        return virtualChildren
+
+
 
 class SignalManager(qt.QObject):
     received = qt.Signal(object)
