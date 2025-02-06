@@ -263,6 +263,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
     def loadTutorialsFromRepos(self):
         modulePath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))
         for repo in self.TutorialRepos:
+            files = GitTools.GitFile("", "")
             try:
                 files = GitTools.GitTools.ParseRepo(repo)
             except Exception as e:
