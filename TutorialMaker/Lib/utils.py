@@ -352,7 +352,7 @@ class Widget():
         self.__widgetData.update()
         slicer.app.processEvents(qt.QEventLoop.AllEvents, 70)
         return result
-    
+
     def getGlobalPos(self):
         mw = slicer.util.mainWindow()
         windowPos = mw.mapToGlobal(mw.rect.topLeft())
@@ -500,7 +500,7 @@ class ScreenshotTools():
                     continue
                 data[index] = {"name": widgets[index].name, "path": tool.uniqueWidgetPath(widgets[index]), "text": widgets[index].text, "position": widgets[index].getGlobalPos(), "size": widgets[index].getSize()}
                 pass
-            except AttributeError as e:
+            except AttributeError:
                 #Working as expected, so to not save QObjects that are not QWidgets
                 pass
             except Exception as e:
