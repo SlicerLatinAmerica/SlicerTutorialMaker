@@ -563,6 +563,15 @@ class AnnotatorStepWidget(qt.QWidget):
     def mousePressEvent(self, event):
         #self.ToggleExtended()
         pass
+    def mouseMoveEvent(self, event):
+        print(self.parent().name)
+        if event.buttons() == qt.Qt.LeftButton:
+            drag = qt.QDrag(self)
+            mime = qt.QMimeData()
+            mime.setText("AnnotatorStepWidget")
+            drag.setMimeData(mime)
+            drag.exec_(qt.Qt.MoveAction)
+        pass
 
 
 
@@ -665,6 +674,7 @@ class TutorialGUI(qt.QMainWindow):
 
         self.scroll_area = self.uiWidget.findChild(qt.QScrollArea, "scrollArea")
         self.scroll_area.setFixedSize(*self.scrollAreaSize)
+        self.scroll_area.setAcceptDrops(True)
         self.scroll_area.installEventFilter(self)
 
         # Configure Main Slide Screen
@@ -1215,6 +1225,30 @@ class TutorialGUI(qt.QMainWindow):
         else:
             if event.type() == qt.QEvent.KeyPress:
                 return self.keyboardEvent(event)
+            elif event.type() == qt.QEvent.DragEnter:
+                return self.dragEnterEvent(event)
+            elif event.type() == qt.QEvent.DragMove:
+                return self.dragEnterEvent(event)
+            elif event.type() == qt.QEvent.Drop:
+                return self.dragDropEvent(event)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasText():
+            if event.mimeData().text() == "AnnotatorStepWidget":
+                event.accept()
+                return True
+        event.ignore()
+        return True
+
+    def dragDropEvent(self, event):
+        stepWidget = event.source()
+        pos = event.pos()
+        for step in self.steps:
+            if pos.y() + self.scroll_area.verticalScrollBar().value < step.pos.y() + step.size.height():
+                self.swapStepPosition(stepWidget.stepIndex, step.stepIndex)
+                break
+        event.accept()
+        return True
 
     def create_toolbar_menu(self):
         toolbar = qt.QToolBar("File", self)
