@@ -120,11 +120,11 @@ class ImageDrawer:
         """
         # Initialize a new QPainterPath
         path = qt.QPainterPath()
-
-        # Calculate the length of the arrow tip based on the distance between p1 and p2
-        tip = abs(int((((p1.x() - p2.x()) ** 2 + (p1.y() - p2.y()) ** 2) ** 0.5)/4))
-        tip = 10
-        # Calculate the differences in x and y coordinates
+        
+        tip_length = 15
+        tip_width = 12
+        
+        # Calcular diferencias en x e y
         x = p2.x() - p1.x()
         y = p2.y() - p1.y()
 
@@ -275,10 +275,10 @@ class ImageDrawer:
 
         # Create the background rectangle for the text
         text_background = qt.QGraphicsRectItem(
-            end_x - text_rect.width() / 2,
-            end_y - text_rect.height() / 2,
-            text_rect.width(),
-            text_rect.height() + 5
+            (end_x - text_rect.width() / 2) - 8,
+            (end_y - text_rect.height() / 2) - 8,
+            text_rect.width() + 16 ,
+            text_rect.height() + 16
         )
         text_background.setBrush(qt.QBrush(back_color))
 
@@ -311,16 +311,6 @@ class ImageDrawer:
             print(_("Error: Load an image first."))
             return
 
-        # Create the arrow path and add it to the scene
-        p1 = qt.QPointF(start_x, start_y)
-        p2 = qt.QPointF(end_x, end_y)
-        arrow_path = self.arrowPath(p1, p2)
-        path_item = qt.QGraphicsPathItem(arrow_path)
-        pen = qt.QPen(qt.QColor.fromRgb(*color))
-        pen.setWidth(pen_width)
-        path_item.setPen(pen)
-        self.scene.addItem(path_item)
-
         if text and text != "Add text to accompany an arrow here.":
             # Wrap and justify the text before calculating its size
             wrapped_text = self.wrap_text(text)
@@ -328,7 +318,7 @@ class ImageDrawer:
             # Create a temporary QGraphicsTextItem with the wrapped text to calculate the bounding rectangle size
             temp_text_item = qt.QGraphicsTextItem(wrapped_text)
             font = qt.QFont("Arial")
-            font.setPixelSize(font_size + 10)
+            font.setPixelSize(font_size + 31)
             temp_text_item.setFont(font)
             text_rect = temp_text_item.boundingRect()
 
@@ -367,6 +357,84 @@ class ImageDrawer:
                 qt.QColor.fromRgb(*color),
                 qt.Qt.black
             )
+            
+            # Obtener los límites de la imagen en la escena
+            pixmap_rect = self.view.rect  # Obtiene el rectángulo de la imagen en la escena
+
+            print(pixmap_rect)
+            if not pixmap_rect.contains(text_bounding_rect):
+                print("Fuera")
+                print(text_bounding_rect)
+                # If the text is outside, reposition it within visible bounds
+                screen_height = self.view.height
+                screen_width = self.view.width
+
+                if text_position_y < screen_height / 2:  # Top half of the screen
+                    new_text_position_y = screen_height - text_height -16
+                    end_y = new_text_position_y 
+                else:  # Bottom half of the screen
+                    new_text_position_y = 16
+                    end_y = new_text_position_y + text_height
+                
+                if end_x < start_x:  # Left side
+                    new_text_position_x = 8
+                else:  # Right side
+                    new_text_position_x = screen_width - text_width -16
+                
+                end_x = new_text_position_x + text_width / 2
+                
+                # Recalculate the text rectangle with new coordinates
+                #new_text_bounding_rect = qt.QRect(
+                 #   new_text_position_x - 8, new_text_position_y - 8,
+                 #   text_width + 16, text_height + 16)
+
+                p1 = qt.QPointF(start_x, start_y)
+                p2 = qt.QPointF(end_x, end_y)
+                arrow_path = self.arrowPath(p1, p2)
+                path_item = qt.QGraphicsPathItem(arrow_path)
+                pen = qt.QPen(qt.QColor.fromRgb(*color))
+                pen.setWidth(3.5)
+                brush = qt.QBrush(qt.QColor.fromRgb(*color))  # Mismo color que el borde
+                path_item.setPen(pen)
+                path_item.setBrush(brush)  # Establece el relleno
+                self.scene.addItem(path_item)
+        
+
+                # Add text with calculated dynamic offset
+                self.add_text_with_background(
+                    wrapped_text, 
+                    end_x, 
+                    end_y, 
+                    font_size + 31, 
+                    qt.QColor.fromRgb(*color), 
+                    qt.Qt.black
+                )
+            else:
+                print("Dentro")
+                print(text_bounding_rect)
+
+                p1 = qt.QPointF(start_x, start_y)
+                p2 = qt.QPointF(end_x, end_y)
+                arrow_path = self.arrowPath(p1, p2)
+                path_item = qt.QGraphicsPathItem(arrow_path)
+                pen = qt.QPen(qt.QColor.fromRgb(*color))
+                pen.setWidth(3.5)
+                brush = qt.QBrush(qt.QColor.fromRgb(*color))  # Mismo color que el borde
+                path_item.setPen(pen)
+                path_item.setBrush(brush)  # Establece el relleno
+                self.scene.addItem(path_item)
+                                        # Add text with calculated dynamic offset
+                self.add_text_with_background(
+                    wrapped_text, 
+                    end_x + offset_x, 
+                    end_y + offset_y, 
+                    font_size + 31, 
+                    qt.QColor.fromRgb(*color), 
+                    qt.Qt.black
+                )
+                # Create the arrow path and add it to the scene
+
+
 
     def draw_click(self, x, y, text, font_size, text_color=qt.Qt.black):
 

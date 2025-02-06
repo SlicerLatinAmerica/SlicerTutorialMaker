@@ -1278,7 +1278,7 @@ class TutorialGUI(qt.QMainWindow):
         toolbar.addAction(actionOpen)
         toolbar.addAction(actionSave)
         toolbar.addAction(actionBack)
-        toolbar.addAction(actionDelete)
+        # toolbar.addAction(actionDelete)
         toolbar.addAction(actionAdd)
         toolbar.addAction(actionCopy)
 
