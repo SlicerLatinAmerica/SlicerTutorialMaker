@@ -4,6 +4,7 @@
 !.flake8
 !.gitattributes
 !.git-blame-ignore-revs
+!.github/
 !.pre-commit-config.yaml
 !.readthedocs.yaml
 !.puppeteerrc.cjs
@@ -14,9 +15,6 @@
 
 # except for .gitignore
 !.gitignore
-
-# ... and .circleci
-!.circleci
 
 # Exclude Kdevelop4 files ...
 .kdev*

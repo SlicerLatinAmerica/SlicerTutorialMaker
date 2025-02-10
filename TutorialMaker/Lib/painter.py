@@ -16,7 +16,7 @@ class ImageDrawer:
         Load and display an image using QPixmap.
 
         Title: Load Image into QGraphicsView
-        
+
         Inputs:
             - pixmap (QPixmap): A tutorial screenshoot as pixmap image to be displayed.
 
@@ -24,8 +24,8 @@ class ImageDrawer:
             None
 
         Description:
-            This method creates a QGraphicsPixmapItem from the provided QPixmap, 
-            adds it to a new QGraphicsScene, and sets the scene in a new QGraphicsView. 
+            This method creates a QGraphicsPixmapItem from the provided QPixmap,
+            adds it to a new QGraphicsScene, and sets the scene in a new QGraphicsView.
             The view is then displayed.
         """
 
@@ -40,13 +40,13 @@ class ImageDrawer:
         self.view = qt.QGraphicsView()
         self.view.setScene(self.scene)
         self.view.showFullScreen()
-    
+
 
     def draw_rectangle(self, x, y, width, height, text, font_size, color, text_color=qt.Qt.black, pen_width=5, pen_style=qt.Qt.SolidLine):
-        
+
         """
         Draw a rectangle with optional text below it on the QGraphicsView.
-        
+
         Inputs:
             - x (int): The x-coordinate of the top-left corner of the rectangle.
             - y (int): The y-coordinate of the top-left corner of the rectangle.
@@ -74,7 +74,9 @@ class ImageDrawer:
 
         # Create a QGraphicsRectItem (rectangle) and add it to the scene
         rectangle = qt.QGraphicsRectItem(x, y, width, height)
-        pen = qt.QPen(qt.QColor.fromRgb(*color)); pen.setWidth(pen_width); pen.setStyle(pen_style)
+        pen = qt.QPen(qt.QColor.fromRgb(*color))
+        pen.setWidth(pen_width)
+        pen.setStyle(pen_style)
         rectangle.setPen(pen)
         self.scene.addItem(rectangle)
 
@@ -99,12 +101,12 @@ class ImageDrawer:
             self.scene.addItem(text_item)
 
     def arrowPath(self, p1, p2):
-        
+
         """
             Create a QPainterPath representing an arrow from point p1 to point p2.
 
             Title: Create Arrow Path
-            
+
             Inputs:
                 - p1 (QPointF): The starting point of the arrow.
                 - p2 (QPointF): The ending point of the arrow.
@@ -118,11 +120,11 @@ class ImageDrawer:
         """
         # Initialize a new QPainterPath
         path = qt.QPainterPath()
-
-        # Calculate the length of the arrow tip based on the distance between p1 and p2
-        tip = abs(int((((p1.x() - p2.x()) ** 2 + (p1.y() - p2.y()) ** 2) ** 0.5)/4))
-        tip = 10
-        # Calculate the differences in x and y coordinates
+        
+        tip_length = 15
+        tip_width = 12
+        
+        # Calcular diferencias en x e y
         x = p2.x() - p1.x()
         y = p2.y() - p1.y()
 
@@ -169,7 +171,7 @@ class ImageDrawer:
             path.lineTo(pa2_x, pa2y)
 
         return path
-    
+
     def rotate_point(self, point, center, angle):
 
         """
@@ -188,10 +190,10 @@ class ImageDrawer:
             The angle is given in degrees and is converted to radians for the rotation calculation.
             The method then applies the rotation matrix to compute the new coordinates of the point.
         """
-        
+
         # Convert the angle to radians
         angle_rad = math.radians(angle)
-        
+
         # Decompose the point coordinates
         x, y = point
         cx = center.x()
@@ -211,7 +213,7 @@ class ImageDrawer:
 
         # Return the new coordinates as integers
         return int(new_x), int(new_y)
-    
+
     def angle(self, dx, dy):
         """
         Calculate the angle in degrees between the positive x-axis and the point (dx, dy).
@@ -238,7 +240,7 @@ class ImageDrawer:
 
         # Return the angle in degrees
         return deg
-    
+
     def add_text_with_background(self, text, end_x, end_y, font_size, back_color ,text_color=qt.Qt.black):
         """
         Add text with a background rectangle to the scene.
@@ -273,10 +275,10 @@ class ImageDrawer:
 
         # Create the background rectangle for the text
         text_background = qt.QGraphicsRectItem(
-            end_x - text_rect.width() / 2,
-            end_y - text_rect.height() / 2,
-            text_rect.width(),
-            text_rect.height() + 5
+            (end_x - text_rect.width() / 2) - 8,
+            (end_y - text_rect.height() / 2) - 8,
+            text_rect.width() + 16 ,
+            text_rect.height() + 16
         )
         text_background.setBrush(qt.QBrush(back_color))
 
@@ -309,16 +311,6 @@ class ImageDrawer:
             print(_("Error: Load an image first."))
             return
 
-        # Create the arrow path and add it to the scene
-        p1 = qt.QPointF(start_x, start_y)
-        p2 = qt.QPointF(end_x, end_y)
-        arrow_path = self.arrowPath(p1, p2)
-        path_item = qt.QGraphicsPathItem(arrow_path)
-        pen = qt.QPen(qt.QColor.fromRgb(*color))
-        pen.setWidth(pen_width)
-        path_item.setPen(pen)
-        self.scene.addItem(path_item)
-
         if text and text != "Add text to accompany an arrow here.":
             # Wrap and justify the text before calculating its size
             wrapped_text = self.wrap_text(text)
@@ -326,7 +318,7 @@ class ImageDrawer:
             # Create a temporary QGraphicsTextItem with the wrapped text to calculate the bounding rectangle size
             temp_text_item = qt.QGraphicsTextItem(wrapped_text)
             font = qt.QFont("Arial")
-            font.setPixelSize(font_size + 10)
+            font.setPixelSize(font_size + 31)
             temp_text_item.setFont(font)
             text_rect = temp_text_item.boundingRect()
 
@@ -348,23 +340,101 @@ class ImageDrawer:
                     offset_x = -text_width / 2  # Place to the left of the arrow tip
             else:  # Diagonal arrow
                 if end_x > start_x and end_y > start_y:  # Arrow down-right
-                    offset_x, offset_y = text_width / 2, text_height / 2 
+                    offset_x, offset_y = text_width / 2, text_height / 2
                 elif end_x < start_x and end_y < start_y:  # Arrow up-left
-                    offset_x, offset_y = -text_width / 2 , -text_height / 2 
+                    offset_x, offset_y = -text_width / 2 , -text_height / 2
                 elif end_x > start_x and end_y < start_y:  # Arrow up-right
-                    offset_x, offset_y = text_width / 2 , -text_height / 2 
+                    offset_x, offset_y = text_width / 2 , -text_height / 2
                 elif end_x < start_x and end_y > start_y:  # Arrow down-left
-                    offset_x, offset_y = -text_width / 2 , text_height / 2 
+                    offset_x, offset_y = -text_width / 2 , text_height / 2
 
             # Add text with calculated dynamic offset
             self.add_text_with_background(
-                wrapped_text, 
-                end_x + offset_x, 
-                end_y + offset_y, 
-                font_size + 10, 
-                qt.QColor.fromRgb(*color), 
+                wrapped_text,
+                end_x + offset_x,
+                end_y + offset_y,
+                font_size + 10,
+                qt.QColor.fromRgb(*color),
                 qt.Qt.black
             )
+            
+            # Obtener los límites de la imagen en la escena
+            pixmap_rect = self.view.rect  # Obtiene el rectángulo de la imagen en la escena
+
+            print(pixmap_rect)
+            if not pixmap_rect.contains(text_bounding_rect):
+                print("Fuera")
+                print(text_bounding_rect)
+                # If the text is outside, reposition it within visible bounds
+                screen_height = self.view.height
+                screen_width = self.view.width
+
+                if text_position_y < screen_height / 2:  # Top half of the screen
+                    new_text_position_y = screen_height - text_height -16
+                    end_y = new_text_position_y 
+                else:  # Bottom half of the screen
+                    new_text_position_y = 16
+                    end_y = new_text_position_y + text_height
+                
+                if end_x < start_x:  # Left side
+                    new_text_position_x = 8
+                else:  # Right side
+                    new_text_position_x = screen_width - text_width -16
+                
+                end_x = new_text_position_x + text_width / 2
+                
+                # Recalculate the text rectangle with new coordinates
+                #new_text_bounding_rect = qt.QRect(
+                 #   new_text_position_x - 8, new_text_position_y - 8,
+                 #   text_width + 16, text_height + 16)
+
+                p1 = qt.QPointF(start_x, start_y)
+                p2 = qt.QPointF(end_x, end_y)
+                arrow_path = self.arrowPath(p1, p2)
+                path_item = qt.QGraphicsPathItem(arrow_path)
+                pen = qt.QPen(qt.QColor.fromRgb(*color))
+                pen.setWidth(3.5)
+                brush = qt.QBrush(qt.QColor.fromRgb(*color))  # Mismo color que el borde
+                path_item.setPen(pen)
+                path_item.setBrush(brush)  # Establece el relleno
+                self.scene.addItem(path_item)
+        
+
+                # Add text with calculated dynamic offset
+                self.add_text_with_background(
+                    wrapped_text, 
+                    end_x, 
+                    end_y, 
+                    font_size + 31, 
+                    qt.QColor.fromRgb(*color), 
+                    qt.Qt.black
+                )
+            else:
+                print("Dentro")
+                print(text_bounding_rect)
+
+                p1 = qt.QPointF(start_x, start_y)
+                p2 = qt.QPointF(end_x, end_y)
+                arrow_path = self.arrowPath(p1, p2)
+                path_item = qt.QGraphicsPathItem(arrow_path)
+                pen = qt.QPen(qt.QColor.fromRgb(*color))
+                pen.setWidth(3.5)
+                brush = qt.QBrush(qt.QColor.fromRgb(*color))  # Mismo color que el borde
+                path_item.setPen(pen)
+                path_item.setBrush(brush)  # Establece el relleno
+                self.scene.addItem(path_item)
+                                        # Add text with calculated dynamic offset
+                self.add_text_with_background(
+                    wrapped_text, 
+                    end_x + offset_x, 
+                    end_y + offset_y, 
+                    font_size + 31, 
+                    qt.QColor.fromRgb(*color), 
+                    qt.Qt.black
+                )
+                # Create the arrow path and add it to the scene
+
+
 
     def draw_click(self, x, y, text, font_size, text_color=qt.Qt.black):
 
@@ -388,7 +458,7 @@ class ImageDrawer:
             If provided, it also displays text near the click icon. The text is
             displayed with a specified font size and color.
         """
-        
+
         if self.view is None:
             print(_("Error: Load an image first."))
             return
@@ -437,7 +507,7 @@ class ImageDrawer:
             filename using a dynamic path, and then closes the view. If the view is not
             available, it prints an error message.
         """
-    
+
         if self.view is not None:
             dynamic_path = os.path.join(os.getcwd(), filename)
             image = self.view.showFullScreen()
@@ -446,7 +516,7 @@ class ImageDrawer:
             self.view.close()
         else:
             print("Error: No view to save.")
-            
+
     # TODO: In that moment we will remove the translation and only show in English
     # after define the infrastructre with Weblate or GitHub we will use community translation
     def painter(self, metadata, screenshotData, language):
@@ -472,7 +542,10 @@ class ImageDrawer:
          # Find corresponding widget data in screenshotData
         for item in metadata['annotations']:
             text_ann = ""
-            widgetPosX = 0; widgetPosY = 0; widgetSizeX = 0; widgetSizeY = 0
+            widgetPosX = 0
+            widgetPosY = 0
+            widgetSizeX = 0
+            widgetSizeY = 0
 
             for widget in screenshotData:
                 if widget["path"] == item["path"]:
@@ -495,10 +568,10 @@ class ImageDrawer:
                                     pen_style=qt.Qt.SolidLine)
 
             elif item['type'] == 'arrow':
-                self.draw_arrow(start_x= item["direction_draw"][0], 
-                                start_y= item["direction_draw"][1],  
-                                end_x= item["direction_draw"][2],  
-                                end_y= item["direction_draw"][3],  
+                self.draw_arrow(start_x= item["direction_draw"][0],
+                                start_y= item["direction_draw"][1],
+                                end_x= item["direction_draw"][2],
+                                end_y= item["direction_draw"][3],
                                 color=tuple(map(int, item["color"].split(', '))),
                                 pen_width=6,
                                 text=text_ann,
@@ -530,7 +603,7 @@ class ImageDrawer:
             annotated image as a PNG file. It handles cases where images are not to be
             annotated (marked by -1 in ListoTotalImages) by skipping them.
         """
-        
+
         # Initialize ImageDrawer and JSONHandler instances
         import Lib.utils as utils
         image_drawer = ImageDrawer()
@@ -541,11 +614,11 @@ class ImageDrawer:
         cont = 0
         imgSS = 0
         ListPositionWhite.sort()
-        for i, annotateSteps in enumerate(OutputAnnotator): 
+        for i, annotateSteps in enumerate(OutputAnnotator):
             if(ListoTotalImages[i] == -1):
                 if(cont < len(ListPositionWhite)-1):
                     cont = cont + 1
-            else: 
+            else:
                 screenshot = tutorial.steps[ListoTotalImages[i]].getImage()
                 screenshotData = tutorial.steps[ListoTotalImages[i]].getWidgets()
                 # Load the image
@@ -555,34 +628,34 @@ class ImageDrawer:
                 # Save the view to a PNG file with a dynamic path
                 image_drawer.save_to_png(
                     os.path.dirname(slicer.util.modulePath("TutorialMaker")) + '/Outputs/Translation/output_image_' + str(i) + '.png')
-                
-                imgSS = imgSS + 1                
+
+                imgSS = imgSS + 1
             pass
-            
+
     def wrap_text(self, text, line_length=30):
         """
         Wraps and justifies a given text into multiple lines, ensuring that each line
-        does not exceed a specified character limit, and attempting to justify 
+        does not exceed a specified character limit, and attempting to justify
         the text (even spacing between words).
 
         Parameters:
         text (str): The input text to be wrapped and justified.
-        line_length (int, optional): The maximum number of characters allowed 
+        line_length (int, optional): The maximum number of characters allowed
                                     per line. Default is 30.
 
         Returns:
-        str: The input text split into justified lines, where each line is at most 
+        str: The input text split into justified lines, where each line is at most
             `line_length` characters long.
         """
         # List to store the formatted lines
         lines = []
-        
+
         # Current line being constructed
         current_line = ''
-        
+
         # Split the text into words
         words = text.split()
-        
+
         # Iterate through each word in the text
         for word in words:
             # Check if adding the word to the current line will exceed the character limit
@@ -595,17 +668,17 @@ class ImageDrawer:
                 lines.append(justified_line)
                 # Start a new line with the current word
                 current_line = word + ' '
-        
+
         # Add any remaining text in the current line to the list of lines (without justification)
         if current_line:
             lines.append(current_line.strip())
-        
+
         # Join the lines with new line characters and return the result
         return '\n'.join(lines)
 
     def justify_line(self, line, line_length):
         """
-        Justifies a single line by adding extra spaces between words 
+        Justifies a single line by adding extra spaces between words
         so that the line length matches `line_length`.
 
         Parameters:
@@ -616,24 +689,24 @@ class ImageDrawer:
         str: The justified line of text.
         """
         words = line.split()
-        
+
         # If the line contains only one word, return it as is
         if len(words) == 1:
             return line
-        
+
         # Calculate the number of spaces needed to justify the line
         total_spaces = line_length - len(line) + (len(words) - 1)
-        
+
         # Calculate how many spaces to add between each word
         space_between_words = total_spaces // (len(words) - 1)
         extra_spaces = total_spaces % (len(words) - 1)
-        
+
         # Create the justified line by adding spaces between words
         justified_line = ''
         for i, word in enumerate(words[:-1]):
             justified_line += word + ' ' * (space_between_words + (1 if i < extra_spaces else 0))
-        
+
         # Add the last word without extra spaces
         justified_line += words[-1]
-        
+
         return justified_line

@@ -5,13 +5,13 @@ set(MODULE_NAME TutorialMaker)
 set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}.py
   Lib/Anotations.py
-  Lib/CreateTutorial.py 
-  Lib/FileMDHTML.py 
-  Lib/GitTools.py 
-  Lib/painter.py 
-  Lib/tmLabel.py 
-  Lib/TutorialEditor.py 
-  Lib/TutorialGUI.py 
+  Lib/CreateTutorial.py
+  Lib/FileMDHTML.py
+  Lib/GitTools.py
+  Lib/painter.py
+  Lib/tmLabel.py
+  Lib/TutorialEditor.py
+  Lib/TutorialGUI.py
   Lib/utils.py
   )
 

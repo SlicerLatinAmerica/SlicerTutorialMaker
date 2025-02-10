@@ -1,34 +1,31 @@
 import logging
 import os
-import qt
-import vtk
 import slicer
-import logging
 import importlib
-import Lib.utils as utils
+import Lib.utils
 import Lib.painter as AnnotationPainter
 import Lib.GitTools as GitTools
 
-from slicer.ScriptedLoadableModule import *
+from slicer.ScriptedLoadableModule import * # noqa: F403
 from slicer.util import VTKObservationMixin
 from slicer.i18n import tr as _
 from slicer.i18n import translate
 from Lib.TutorialEditor import TutorialEditor
-from Lib.TutorialGUI import TutorialGUI
+import Lib.TutorialGUI
 from Lib.CreateTutorial import CreateTutorial
 
 #
 # TutorialMaker
 #
 
-class TutorialMaker(ScriptedLoadableModule):
+class TutorialMaker(ScriptedLoadableModule): # noqa: F405
     """Uses ScriptedLoadableModule base class, available at:
     https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
     """
 
     def __init__(self, parent):
-        ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = _("Tutorial Maker")  
+        ScriptedLoadableModule.__init__(self, parent) # noqa: F405
+        self.parent.title = _("Tutorial Maker")
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "Utilities")]
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
         self.parent.contributors = ["Douglas Gonçalves (Universidade de São Paulo)", "Enrique Hernández (Universidad Autónoma del Estado de México)",
@@ -38,7 +35,7 @@ class TutorialMaker(ScriptedLoadableModule):
                                     "Monserrat Rıos-Hernandez (Universidad Autónoma del Estado de México)", "Fatou Bintou Ndiaye (University Cheikh Anta Diop)",
                                     "Mohamed Alalli Bilal (University Cheikh Anta Diop)", "Steve Pieper (Isomics Inc.)",
                                     "Adriana Vilchis-Gonzalez (Universidad Autónoma del Estado de México)", "Luiz Otavio Murta Junior (Universidade de São Paulo)",
-                                    "Andras Lasso (Queen’s University)", "Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)"] 
+                                    "Andras Lasso (Queen’s University)", "Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)"]
         # TODO: update with short description of the module and a link to online module documentation
         self.parent.helpText = """help text"""
         # TODO: replace with organization, grant and thanks
@@ -50,7 +47,7 @@ class TutorialMaker(ScriptedLoadableModule):
 # TutorialMakerWidget
 #
 
-class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # noqa: F405
     """Uses ScriptedLoadableModuleWidget base class, available at:
     https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
     """
@@ -59,7 +56,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         """
         Called when the user opens the module the first time and the widget is initialized.
         """
-        ScriptedLoadableModuleWidget.__init__(self, parent)
+        ScriptedLoadableModuleWidget.__init__(self, parent) # noqa: F405
         VTKObservationMixin.__init__(self)  # needed for parameter node observation
         self.logic = None
         self._parameterNode = None
@@ -67,27 +64,31 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.__tableSize = 0
         self.__selectedTutorial = None
         self.isDebug = slicer.app.settings().value("Developer/DeveloperMode")
-        
-        print("Version Date: 01/28/2025-07:45PM")
-        
+
+        print("Version Date: 2025/02/06-07:00PM")
+
         #PROTOTYPE FOR PLAYBACK
 
         self.actionList = []
-        
+
     def setup(self):
         """
         Called when the user opens the module the first time and the widget is initialized.
         """
-        ScriptedLoadableModuleWidget.setup(self)
+        import importlib
+        importlib.reload(Lib.TutorialGUI)
+        importlib.reload(Lib.utils)
+
+        ScriptedLoadableModuleWidget.setup(self) # noqa: F405
 
         # Load widget from .ui file (created by Qt Designer).
         # Additional widgets can be instantiated manually and added to self.layout.
         uiWidget = slicer.util.loadUI(self.resourcePath('UI/TutorialMaker.ui'))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
-        
+
         #Verify if the folders to manipulate the tutorials are created
-        utils.util.verifyOutputFolders(self)
+        Lib.utils.util.verifyOutputFolders(self)
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = TutorialMakerLogic()
@@ -109,7 +110,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         #Static Tutorial Handlers
         self.ui.pushButtonAnnotate.connect('clicked(bool)', self.annotateButton)
-        if self.isDebug != True:
+        if self.isDebug != True: # noqa: E712
             self.ui.CollapsibleButtonTutorialMaking.setVisible(0)
             self.ui.pushButtonNewTutorial.setVisible(0)
             self.ui.pushButtonTestPainter.connect('clicked(bool)', self.testPainterButton)
@@ -118,7 +119,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
-        
+
         #Update GUI
         self.populateTutorialList()
 
@@ -143,7 +144,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # Do not react to parameter node changes (GUI wlil be updated when the user enters into the module)
         #self.removeObserver(self._parameterNode, vtk.vtkCommand.ModifiedEvent, self.updateGUIFromParameterNode)
         pass
-    
+
     def initializeParameterNode(self):
         """
         Ensure parameter node exists and observed.
@@ -156,14 +157,14 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         Observation is needed because when the parameter node is changed then the GUI must be updated immediately.
         """
         return
-        
+
     def updateGUIFromParameterNode(self, caller=None, event=None):
         """
         This method is called whenever parameter node is changed.
         The module GUI is updated to show the current state of the parameter node.
         """
         return
-    
+
     def testPainterButton(self):
         self.logic.TestPainter(self.__selectedTutorial)
 
@@ -172,12 +173,12 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def annotateButton(self):
         self.logic.Annotate(self.__selectedTutorial)
-    
+
     def tutorialSelectionChanged(self):
         self.__selectedTutorial = self.ui.listWidgetTutorials.selectedItems()[0].data(0)
-        self.ui.pushButtonAnnotate.setEnabled(not (self.__selectedTutorial is None))
+        self.ui.pushButtonAnnotate.setEnabled(self.__selectedTutorial is not None)
         if self.isDebug:
-            self.ui.pushButtonTestPainter.setEnabled(not (self.__selectedTutorial is None))
+            self.ui.pushButtonTestPainter.setEnabled(self.__selectedTutorial is not None)
 
     def getFromGithub(self):
         self.logic.loadTutorialsFromRepos()
@@ -193,7 +194,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 #
 # TutorialMakerLogic
 #
-class TutorialMakerLogic(ScriptedLoadableModuleLogic):
+class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
     """This class should implement all the actual
     computation done by your module.  The interface
     should be such that other python code can import
@@ -207,7 +208,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         """
         Called when the logic class is instantiated. Can be used for initializing member variables.
         """
-        ScriptedLoadableModuleLogic.__init__(self)
+        ScriptedLoadableModuleLogic.__init__(self) # noqa: F405
         self.tutorialEditor = TutorialEditor()
         self.TutorialRepos = [
             "SlicerLatinAmerica/TestSlicerTutorials"
@@ -219,7 +220,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         Initialize parameter node with default settings.
         """
         pass
-        
+
     def exitTutorialEditor(self):
         self.tutorialEditor.exit()
 
@@ -234,16 +235,16 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         pass
 
     def ExportScreenshots(self):
-        screenshot = utils.ScreenshotTools()
+        screenshot = Lib.utils.ScreenshotTools()
         screenshot.saveScreenshotMetadata(0)
         pass
 
     def Annotate(self, tutorialName):
         TutorialMakerLogic.runTutorialTestCases(tutorialName)
-        
-        Annotator = TutorialGUI()
+
+        Annotator = Lib.TutorialGUI.TutorialGUI()
         Annotator.open_json_file(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/Tutorial.json")
-        Annotator.set_output_name(tutorialName)
+        Annotator.forceTutorialOutputName(tutorialName)
         Annotator.show()
         pass
 
@@ -256,9 +257,9 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         Tutorial_Win = CreateTutorial(folderName)
         Tutorial_Win.show()
         pass
-    
+
     def OpenAnnotator(Self):
-        Annotator = TutorialGUI()
+        Annotator = Lib.TutorialGUI.TutorialGUI()
         Annotator.open_json_file(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/Tutorial.json")
         Annotator.show()
         pass
@@ -266,7 +267,13 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
     def loadTutorialsFromRepos(self):
         modulePath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))
         for repo in self.TutorialRepos:
-            files = GitTools.GitTools.ParseRepo(repo)
+            files = GitTools.GitFile("", "")
+            try:
+                files = GitTools.GitTools.ParseRepo(repo)
+            except Exception as e:
+                print(e)
+                print(_("Please try again later."))
+                continue
             for TutorialRoot in files.dir("Tutorials"):
                 for TutorialFile in files.dir(f"Tutorials/{TutorialRoot}"):
                     if TutorialFile.endswith(".py"):
@@ -284,7 +291,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         test_tutorials = []
         test_contents = os.listdir(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/")
         for content in test_contents:
-            if(not (".py" in content)):
+            if(".py" not in content):
                 continue
             test_tutorials.append(content.replace(".py", ""))
         return test_tutorials
@@ -303,20 +310,20 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic):
         """
         TutorialModule = importlib.import_module("Testing." + tutorial_name)
         for className in TutorialModule.__dict__:
-            if(not ("Test" in className) or className == "ScriptedLoadableModuleTest"):
+            if("Test" not in className or className == "ScriptedLoadableModuleTest"):
                 continue
             testClass = getattr(TutorialModule, className)
             tutorial = testClass()
             tutorial.runTest()
             return
-        logging.error(_("No tests found in {tutorial_name}".format(tutorial_name=tutorial_name)))
+        logging.error(_(f"No tests found in {tutorial_name}"))
         raise Exception(_("No Tests Found"))
 
 
 #
 # TutorialMakerTest
 #
-class TutorialMakerTest(ScriptedLoadableModuleTest):
+class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
     """
     This is the test case for your scripted module.
     Uses ScriptedLoadableModuleTest base class, available at:
@@ -327,6 +334,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
         """ Do whatever is needed to reset the state - typically a scene clear will be enough.
         """
         slicer.mrmlScene.Clear()
+        TutorialMakerLogic().loadTutorialsFromRepos()
 
     def runTest(self):
         """Run as few or as many tests as needed here.
@@ -340,25 +348,22 @@ class TutorialMakerTest(ScriptedLoadableModuleTest):
         test_tutorials = os.listdir(testingFolder)
         for unit_tutorials in test_tutorials:
             try:
-                if(not (".py" in unit_tutorials)):
+                if(".py" not in unit_tutorials):
                     continue
                 unit_tutorials = unit_tutorials.replace(".py", "")
                 # Generate Screenshots and widget metadata
                 TutorialMakerLogic.runTutorialTestCases(unit_tutorials)
                 # Paint Screenshots with annotations
-                AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
-            except:
-                logging.error(_("Tutorial Execution Failed: {unit_tutorials}".format(unit_tutorials=unit_tutorials)))
+                #AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
+            except Exception as e:
+                logging.error(_(f"Tutorial Execution Failed: {unit_tutorials} - Error: {e}"))
                 tutorials_failed = tutorials_failed + 1
                 pass
             finally:
                 self.delayDisplay(_("Tutorial Tested"))
             pass
         if tutorials_failed > 0:
-            raise Exception(_("{tutorials_failed} tutorials failed to execute".format(tutorials_failed=tutorials_failed)))
-
-    def test_TutorialMaker2(self):
-        pass
+            raise Exception(_(f"{tutorials_failed} tutorials failed to execute"))
 
     def delayDisplay(self, message, requestedDelay=None, msec=None):
         """
