@@ -2,7 +2,7 @@ import logging
 import os
 import slicer
 import importlib
-import Lib.utils as utils
+import Lib.utils
 import Lib.painter as AnnotationPainter
 import Lib.GitTools as GitTools
 
@@ -11,7 +11,7 @@ from slicer.util import VTKObservationMixin
 from slicer.i18n import tr as _
 from slicer.i18n import translate
 from Lib.TutorialEditor import TutorialEditor
-from Lib.TutorialGUI import TutorialGUI
+import Lib.TutorialGUI
 from Lib.CreateTutorial import CreateTutorial
 
 #
@@ -75,6 +75,10 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         """
         Called when the user opens the module the first time and the widget is initialized.
         """
+        import importlib
+        importlib.reload(Lib.TutorialGUI)
+        importlib.reload(Lib.utils)
+
         ScriptedLoadableModuleWidget.setup(self) # noqa: F405
 
         # Load widget from .ui file (created by Qt Designer).
@@ -84,7 +88,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
         #Verify if the folders to manipulate the tutorials are created
-        utils.util.verifyOutputFolders(self)
+        Lib.utils.util.verifyOutputFolders(self)
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = TutorialMakerLogic()
@@ -231,14 +235,14 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def ExportScreenshots(self):
-        screenshot = utils.ScreenshotTools()
+        screenshot = Lib.utils.ScreenshotTools()
         screenshot.saveScreenshotMetadata(0)
         pass
 
     def Annotate(self, tutorialName):
         TutorialMakerLogic.runTutorialTestCases(tutorialName)
 
-        Annotator = TutorialGUI()
+        Annotator = Lib.TutorialGUI.TutorialGUI()
         Annotator.open_json_file(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/Tutorial.json")
         Annotator.forceTutorialOutputName(tutorialName)
         Annotator.show()
@@ -255,7 +259,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def OpenAnnotator(Self):
-        Annotator = TutorialGUI()
+        Annotator = Lib.TutorialGUI.TutorialGUI()
         Annotator.open_json_file(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/Tutorial.json")
         Annotator.show()
         pass
