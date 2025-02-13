@@ -710,3 +710,6 @@ class ImageDrawer:
         justified_line += words[-1]
 
         return justified_line
+
+class Paiter:
+    

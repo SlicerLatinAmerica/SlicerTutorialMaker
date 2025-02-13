@@ -3,7 +3,7 @@ import os
 import slicer
 import importlib
 import Lib.utils
-import Lib.painter as AnnotationPainter
+import TutorialMaker.Lib.TutorialPainter as AnnotationPainter
 import Lib.GitTools as GitTools
 
 from slicer.ScriptedLoadableModule import * # noqa: F403
