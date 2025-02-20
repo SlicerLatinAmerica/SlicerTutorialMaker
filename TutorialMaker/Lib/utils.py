@@ -137,6 +137,9 @@ class util():
             os.mkdir(basePath + "Annotations")
             os.mkdir(basePath + "Translation")
 
+    def mapFromTo(value : float, inputMin : float, inputMax : float, outputMin : float, outputMax : float) -> float:
+        result=(value-inputMin)/(inputMax-inputMin)*(outputMax-outputMin)+outputMin
+        return result
 
 class WidgetFinder(qt.QWidget):
     def __init__(self, parent=None):

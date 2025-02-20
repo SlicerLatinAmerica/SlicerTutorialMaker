@@ -955,6 +955,9 @@ class TutorialGUI(qt.QMainWindow):
         selected_items = self.listWidget.selectedItems()
         selected_images = [item.text() for item in selected_items]  # Extraer los textos (paths) de los ítems seleccionados
 
+       # print("Selected images:", selected_images)
+        self.dialog.accept()  # Cerrar el diálogo
+
     #The next functions are related to the gallery
     def images_selector(self, tutorialData):
         
@@ -1051,7 +1054,7 @@ class TutorialGUI(qt.QMainWindow):
 
         
         addButton = qt.QPushButton("Add Image")
-        addButton.clicked.connect(self.add_selected_image)
+        info = addButton.clicked.connect(self.add_selected_image)
 
         button_layout = qt.QHBoxLayout()
         button_layout.addWidget(addButton)
@@ -1065,8 +1068,10 @@ class TutorialGUI(qt.QMainWindow):
         main_layout.addWidget(button_widget)  
 
         self.dialog.setLayout(main_layout)
-        result = self.dialog.exec_()
-        
+
+       
+        self.dialog.exec_()
+       # return annotatorSlide,
 
     def toggle_selection(self, screenshot, button):
         
@@ -1088,6 +1093,10 @@ class TutorialGUI(qt.QMainWindow):
         print(self.selected_image)
         button.setStyleSheet("border: 2px solid blue;")
 
+        addButton = self.dialog.findChild(qt.QPushButton, "Add Image")
+        if addButton:
+            addButton.setEnabled(True)
+
     
     def add_selected_image(self):
        
@@ -1101,31 +1110,51 @@ class TutorialGUI(qt.QMainWindow):
 
             
                 if not image_pixmap or image_pixmap.isNull():
-                    print("Image pixmap is null")
+                    print("⚠️ La imagen seleccionada es nula.")
                     return
-
                 stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
                 stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
-                stepWidget.swapRequest.connect(self.swapStepPosition)            
+                stepWidget.swapRequest.connect(self.swapStepPosition)
 
-                #stepWidget.UNDELETABLE = True # noqa: F821
-                #stepWidget.CreateMergedWindow() # noqa: F821
-                stepWidget.AddStepWindows(annotatorSlide) #Agrega el step
+                # Crear widget de paso para la imagen seleccionada
+                #new_step_widget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
+                #new_step_widget.thumbnailClicked.connect(self.changeSelectedSlide)
+                #new_step_widget.swapRequest.connect(self.swapStepPosition)
+
+                #annotatorSlide = AnnotatorSlide(image_pixmap, image_widgets)
+                #new_step_widget.AddStepWindows(annotatorSlide)
+
+                # Agregar al layout del lado izquierdo
+                #self.steps.insert(2, new_step_widget)  # Después de title (0) y acknowledgment (1)
+                #self.gridLayout.addWidget(new_step_widget, 2, 0)  # Insertar en la posición deseada
+
+                #new_step_widget.UNDELETABLE = True
+                #new_step_widget.CreateMergedWindow()
+                #new_step_widget.ToggleExtended()
+
+               
 
                 self.steps.append(stepWidget)  # noqa: F821
                 self.gridLayout.addWidget(stepWidget)  # noqa: F821 #coloca las imagenes del lado izquierdo ordenadas
-
-                
-                self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
-                self.selected_image = None
-               
+                stepWidget.UNDELETABLE = True # noqa: F821
+                stepWidget.CreateMergedWindow() # noqa: F821
+                stepWidget.AddStepWindows(annotatorSlide) #Agrega el step
                 print(self.steps)
-                
-
+                #stepWidget.ToggleExtended() # noqa: F821
+                print("✅ Imagen agregada exitosamente.")
+                self.dialog.close()
             except Exception as e:
-                print(f"ERROR")
-        
+                print(f"❌ ERROR al agregar la imagen: {str(e)}")
+        else:
+            print("⚠️ No se ha seleccionado ninguna imagen.")
        
+        #if self.selected_image:
+         #   screenshot, button = self.selected_image
+          #  if screenshot not in self.final_selected_images:
+           #     self.final_selected_images.append(screenshot)
+                #print("Imagen agregada:", screenshot.getImage())
+
+            #self.dialog.accept()
 
 
 
@@ -1133,43 +1162,43 @@ class TutorialGUI(qt.QMainWindow):
     #This seems like a very expensive function
     def addBlankPage(self, state,index : int = None, backgroundPath : str = "", metadata : dict = None, type_ : str = ""):
         
+        stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
+        stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
+        stepWidget.swapRequest.connect(self.swapStepPosition)
         if backgroundPath == "":
             self.images_selector(self.tutorialTest) 
-        else:
-            stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
-            stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
-            stepWidget.swapRequest.connect(self.swapStepPosition) 
-            if metadata is None:
-                metadata = {}
-            annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
-            if type_ != "":
-                annotatorSlide.SlideLayout = type_
-            stepWidget.AddStepWindows(annotatorSlide)
-
-            def InsertWidget(_nWidget, _index):
-
-                #To make the lists bigger
-                self.steps.append(_nWidget)
-                self.gridLayout.addWidget(_nWidget)
-            
-
-                for stepIndex in range(len(self.steps) - 1, _index, -1):
-                    self.steps[stepIndex] = self.steps[stepIndex - 1]
-                    self.steps[stepIndex].stepIndex = stepIndex
-                    self.gridLayout.addWidget(self.steps[stepIndex], stepIndex, 0)
-                    
-                self.steps[_index] = _nWidget
-                _nWidget.stepIndex = _index
-                self.gridLayout.addWidget(_nWidget, _index, 0)
-
-            if index is not None:
-                InsertWidget(stepWidget, index)
-                return
-            InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
-            pass
+            #backgroundPath = self.dir_path+'/../Resources/NewSlide/white.png'
+        if metadata is None:
+            metadata = {}
+        annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
+        if type_ != "":
+             annotatorSlide.SlideLayout = type_
+        stepWidget.AddStepWindows(annotatorSlide)
         print(self.steps)
+        #stepWidget.CreateMergedWindow()
         
-        
+
+        def InsertWidget(_nWidget, _index):
+
+            #To make the lists bigger
+            self.steps.append(_nWidget)
+            self.gridLayout.addWidget(_nWidget)
+           
+
+            for stepIndex in range(len(self.steps) - 1, _index, -1):
+                self.steps[stepIndex] = self.steps[stepIndex - 1]
+                self.steps[stepIndex].stepIndex = stepIndex
+                self.gridLayout.addWidget(self.steps[stepIndex], stepIndex, 0)
+                
+            self.steps[_index] = _nWidget
+            _nWidget.stepIndex = _index
+            self.gridLayout.addWidget(_nWidget, _index, 0)
+
+        if index is not None:
+            InsertWidget(stepWidget, index)
+            return
+        InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
+        pass
 
     def copy_page(self):
         pass
