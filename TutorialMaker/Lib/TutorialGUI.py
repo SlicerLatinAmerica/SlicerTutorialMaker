@@ -246,7 +246,7 @@ class Annotation:
 
             arrowRatio = 3 # defined as > 1 (bigger than one) and changes the arrow head angle
             arrowHeadSize = 40
-            arrowSize = 90
+            arrowSize = 200
 
             optX =  self.optX - targetCenter[0]
             optY = self.optY - targetCenter[1]
@@ -287,14 +287,11 @@ class Annotation:
 
              
             self.setSelectionBoundingBox(*arrowTail, *arrowHead)
-
-            # Agregar caja de texto editable en la cola de la flecha
-            yPadding = 0
+            
+            # Text section
+            yPadding = -6
             xPadding = 0
             lineSpacing = 2
-
-            topLeft = qt.QPoint(arrowTail[0], arrowTail[1])
-            
 
             font = qt.QFont("Arial", self.fontSize)
             painter.setFont(font)
@@ -303,51 +300,30 @@ class Annotation:
 
             fontMetrics = qt.QFontMetrics(font)
             fHeight = fontMetrics.height()
-            
-            textBoxTopLeft = [arrowTail[0], arrowTail[1]]
-            textBoxBottomRight = [arrowTail[0] + optX, arrowTail[1] + optY]
-            
-
-            if textBoxBottomRight[0] < textBoxTopLeft[0]:
-                tmp = textBoxTopLeft[0]
-                textBoxTopLeft[0] = textBoxBottomRight[0]
-                textBoxBottomRight[0] = tmp
-
-            if textBoxBottomRight[1] < textBoxTopLeft[1]:
-                tmp = textBoxTopLeft[1]
-                textBoxTopLeft[1] = textBoxBottomRight[1]
-                textBoxBottomRight[1] = tmp
-
-            textStart = [textBoxTopLeft[0] + xPadding,
-                         textBoxTopLeft[1] + yPadding + fHeight]
 
             textToWrite = self.text
             if textToWrite == "":
                 textToWrite = "Sample Text To See Breaks"
+            textLines = textToWrite.splitlines()
 
-            textTokens = textToWrite.splitlines()
-            textLines = []
-            line = ""
-            for token in textTokens:
-                if fontMetrics.width(line + token) > textBoxBottomRight[0] - textBoxTopLeft[0] - xPadding:
-                    textLines.append(copy.deepcopy(line))
-                    line = f"{token} "
-                    continue
-                line += f"{token} "
-            textLines.append(line)
-
-            # Get splited text size
+            # Calculate text size
             textHeight = len(textLines) * fHeight + (len(textLines) - 1) * lineSpacing
             textWidth = max(fontMetrics.width(line) for line in textLines)
-            
-            bottomRight = qt.QPoint(arrowTail[0] + textWidth, arrowTail[1] + textHeight)
-            rectToDraw = qt.QRect(topLeft,bottomRight)
+
+            # Calcule the position of the text box (center)
+            topLeft = qt.QPoint(arrowTail[0] - textWidth // 2, arrowTail[1] - textHeight // 2)
+            bottomRight = qt.QPoint(arrowTail[0] + textWidth // 2, arrowTail[1] + textHeight // 2)
+            rectToDraw = qt.QRect(topLeft, bottomRight)
             painter.drawRect(rectToDraw)
 
+            # Ajust text to the center box
+            textStart = [topLeft.x() + xPadding, topLeft.y() + yPadding + fHeight]
+
+          
             for lineIndex, line in enumerate(textLines):
-                painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)            
-            
-            self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + optX, targetPos[1] + optY)
+                painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight * lineIndex, line)
+
+            self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + textWidth, targetPos[1] + textHeight)
 
 
             pass
