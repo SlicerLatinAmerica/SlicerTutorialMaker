@@ -305,7 +305,7 @@ class Annotation:
             fHeight = fontMetrics.height()
             
             textBoxTopLeft = [arrowTail[0], arrowTail[1]]
-            textBoxBottomRight = [arrowTail[0] + optX*5, arrowTail[1] + optY*5]
+            textBoxBottomRight = [arrowTail[0] + optX, arrowTail[1] + optY]
             
 
             if textBoxBottomRight[0] < textBoxTopLeft[0]:
@@ -325,7 +325,7 @@ class Annotation:
             if textToWrite == "":
                 textToWrite = "Sample Text To See Breaks"
 
-            textTokens = textToWrite.split()
+            textTokens = textToWrite.splitlines()
             textLines = []
             line = ""
             for token in textTokens:
@@ -345,9 +345,7 @@ class Annotation:
             painter.drawRect(rectToDraw)
 
             for lineIndex, line in enumerate(textLines):
-                painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)
-
-            
+                painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)            
             
             self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + optX, targetPos[1] + optY)
 
@@ -413,7 +411,7 @@ class Annotation:
             if textToWrite == "":
                 textToWrite = "Sample Text To See Breaks"
 
-            textTokens = textToWrite.split()
+            textTokens = textToWrite.splitlines()
             textLines = []
             line = ""
             for token in textTokens:
@@ -428,6 +426,7 @@ class Annotation:
                 painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)
 
             self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + optX, targetPos[1] + optY)
+            
         elif self.type == AnnotationType.Click:
             bottomRight = [targetPos[0] + targetSize[0],
                            targetPos[1] + targetSize[1]]
@@ -1285,19 +1284,22 @@ class TutorialGUI(qt.QMainWindow):
         if event.key() == qt.Qt.Key_Escape:
             self.setFocus()
             return False
+
         if self.selectedAnnotationType == AnnotationType.Selected:
             if event.key() == qt.Qt.Key_Delete:
                 self.selectedAnnotation.PERSISTENT = False
                 self.cancelCurrentAnnotation()
-            elif self.selectedAnnotation.type == AnnotationType.TextBox or self.selectedAnnotation.type == AnnotationType.ArrowText:
-                print("HOLA")
-                #TODO: Make so enter is also treated differently, would need to change the textBox draw code as well
-                if event.key() == qt.Qt.Key_Backspace:
+            elif self.selectedAnnotation.type in [AnnotationType.TextBox, AnnotationType.ArrowText]:
+                # Detectar Enter y agregar un salto de línea
+                if event.key() in [qt.Qt.Key_Return, qt.Qt.Key_Enter]:
+                    self.selectedAnnotation.text += "\n"
+                    
+                elif event.key() == qt.Qt.Key_Backspace:
                     self.selectedAnnotation.text = self.selectedAnnotation.text[:-1]
                 else:
                     self.selectedAnnotation.text += event.text()
-
             return True
+
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
                 self.selectorParentDelta(-1)
@@ -1306,7 +1308,7 @@ class TutorialGUI(qt.QMainWindow):
                 self.selectorParentDelta(1)
                 return True
 
-        pass
+        return False 
 
     def selectorParentDelta(self, delta : int):
         self.selectorParentCount += delta
