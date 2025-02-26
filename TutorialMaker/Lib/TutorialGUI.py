@@ -287,7 +287,7 @@ class Annotation:
 
              
             self.setSelectionBoundingBox(*arrowTail, *arrowHead)
-            
+
             # Text section
             yPadding = -6
             xPadding = 0
@@ -1265,15 +1265,27 @@ class TutorialGUI(qt.QMainWindow):
             if event.key() == qt.Qt.Key_Delete:
                 self.selectedAnnotation.PERSISTENT = False
                 self.cancelCurrentAnnotation()
+
             elif self.selectedAnnotation.type in [AnnotationType.TextBox, AnnotationType.ArrowText]:
+                # Detectar Ctrl+C (Copiar)
+                if event.key() == qt.Qt.Key_C and event.modifiers() & qt.Qt.ControlModifier:
+                    qt.QApplication.clipboard().setText(self.selectedAnnotation.text)
+                
+                # Detectar Ctrl+V (Pegar)
+                elif event.key() == qt.Qt.Key_V and event.modifiers() & qt.Qt.ControlModifier:
+                    self.selectedAnnotation.text += qt.QApplication.clipboard().text()
+
                 # Detectar Enter y agregar un salto de línea
-                if event.key() in [qt.Qt.Key_Return, qt.Qt.Key_Enter]:
+                elif event.key() in [qt.Qt.Key_Return, qt.Qt.Key_Enter]:
                     self.selectedAnnotation.text += "\n"
-                    
+
+                # Detectar Backspace
                 elif event.key() == qt.Qt.Key_Backspace:
                     self.selectedAnnotation.text = self.selectedAnnotation.text[:-1]
+
                 else:
                     self.selectedAnnotation.text += event.text()
+
             return True
 
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
@@ -1284,7 +1296,8 @@ class TutorialGUI(qt.QMainWindow):
                 self.selectorParentDelta(1)
                 return True
 
-        return False 
+        return False
+
 
     def selectorParentDelta(self, delta : int):
         self.selectorParentCount += delta
