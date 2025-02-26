@@ -951,15 +951,15 @@ class TutorialGUI(qt.QMainWindow):
         pass
 
     def confirmSelection(self):
-        # Obtener los elementos seleccionados
+       
         selected_items = self.listWidget.selectedItems()
         selected_images = [item.text() for item in selected_items]  # Extraer los textos (paths) de los ítems seleccionados
 
     #The next functions are related to the gallery
-    def images_selector(self, tutorialData):
+    def images_selector(self, tutorialData,index):
         
         self.dialog = qt.QDialog()
-        self.dialog.setWindowTitle("Select an Image")
+        self.dialog.setWindowTitle("Select the images")
         self.dialog.setGeometry(100, 100, 800, 600) 
         
         self.listWidget = qt.QListWidget()
@@ -988,7 +988,8 @@ class TutorialGUI(qt.QMainWindow):
 
                 except Exception as e:
                     print(f"ERROR")
-
+        has_widgets = False
+    
         for stepIndex, screenshots in grouped_steps.items():
             if not screenshots:
                 continue 
@@ -1001,42 +1002,50 @@ class TutorialGUI(qt.QMainWindow):
             main_button.setIcon(qt.QIcon(main_pixmap))
             main_button.setIconSize(qt.QSize(300, 200))
             main_button.setCheckable(True)
-            main_button.setStyleSheet("border: 2px solid transparent;")  
+            if len(screenshots[1:])>0:
+                main_button.setStyleSheet("border: 2px solid #FFFF00;")
+            else:
+                main_button.setStyleSheet("border: 2px solid transparent;")
             main_button.clicked.connect(lambda _, img=main_screenshot, btn=main_button: self.select_single_image(img, btn))
+            if len(screenshots[1:])>0:
+                toggle_button = qt.QPushButton()
+                toggle_button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_down.png'))  
+                toggle_button.setIconSize(qt.QSize(32, 32))
+                toggle_button.setCheckable(True)
 
+                secondary_container = qt.QWidget()
+                secondary_layout = qt.QVBoxLayout(secondary_container)
 
-           #Secondary images
-            toggle_button = qt.QPushButton(f"Step {stepIndex}")
-            toggle_button.setCheckable(True)
-            print(stepIndex)
+                for pixmap, screenshot in screenshots[1:]:
+                    if not pixmap:
+                        continue 
+                    sec_button = qt.QPushButton()
+                    sec_button.setIcon(qt.QIcon(pixmap))
+                    sec_button.setIconSize(qt.QSize(250, 150))
+                    sec_button.setCheckable(True)
+                    sec_button.setStyleSheet("border: 2px solid transparent;")  
+                    
+                    if hasattr(screenshot, 'widgets') and screenshot.widgets:
+                        has_widgets = True
 
-            secondary_container = qt.QWidget()
-            secondary_layout = qt.QVBoxLayout(secondary_container)
+                    sec_button.clicked.connect(lambda _, img=screenshot, btn=sec_button: self.select_single_image(img, btn))
+                    secondary_layout.addWidget(sec_button)
 
-            for pixmap, screenshot in screenshots[1:]:
-                sec_button = qt.QPushButton()
-                sec_button.setIcon(qt.QIcon(pixmap))
-                sec_button.setIconSize(qt.QSize(250, 150))
-                sec_button.setCheckable(True)
-                sec_button.setStyleSheet("border: 2px solid transparent;")  
+                secondary_container.setVisible(False)  
 
-                sec_button.clicked.connect(lambda _, img=screenshot, btn=sec_button: self.select_single_image(img, btn))
+                def toggle_secondary_images(checked, container=secondary_container, button=toggle_button):
+                    container.setVisible(checked)
+                    if checked:
+                        button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_up.png'))
+                    else:
+                        button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_down.png')) 
 
-                secondary_layout.addWidget(sec_button)
+                toggle_button.toggled.connect(toggle_secondary_images)
 
-            secondary_container.setVisible(False)  
-
-            
-            def toggle_secondary_images(checked, container=secondary_container, button=toggle_button):
-                container.setVisible(checked)
-                button.setText(f"Step {stepIndex}" if checked else f"Step {stepIndex}")
-
-            toggle_button.toggled.connect(toggle_secondary_images)
-
-           
             layout.addWidget(main_button)
-            layout.addWidget(toggle_button)
-            layout.addWidget(secondary_container)
+            if len(screenshots[1:])>0:
+                layout.addWidget(toggle_button)
+                layout.addWidget(secondary_container)         
 
             
             item = qt.QListWidgetItem(self.listWidget)
@@ -1085,14 +1094,14 @@ class TutorialGUI(qt.QMainWindow):
             self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
 
         self.selected_image = (screenshot, button)
-        print(self.selected_image)
+        #print(self.selected_image)
         button.setStyleSheet("border: 2px solid blue;")
 
     
     def add_selected_image(self):
-       
+        insert_index = self.selectedIndexes[0]+1
+        print(insert_index)
         if self.selected_image:
-            
             try:
                 screenshot = self.selected_image[0]
                 image_pixmap = screenshot.getImage()
@@ -1107,23 +1116,26 @@ class TutorialGUI(qt.QMainWindow):
                 stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
                 stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
                 stepWidget.swapRequest.connect(self.swapStepPosition)            
-
-                #stepWidget.UNDELETABLE = True # noqa: F821
-                #stepWidget.CreateMergedWindow() # noqa: F821
                 stepWidget.AddStepWindows(annotatorSlide) #Agrega el step
 
-                self.steps.append(stepWidget)  # noqa: F821
-                self.gridLayout.addWidget(stepWidget)  # noqa: F821 #coloca las imagenes del lado izquierdo ordenadas
-
-                
+                self.steps.insert(insert_index, stepWidget)  # noqa: F821
+                while self.gridLayout.count():
+                    item = self.gridLayout.takeAt(0)
+                    widget = item.widget()
+                    if widget is not None:
+                        widget.setParent(None)
+                for idx, step in enumerate(self.steps):
+                    step.stepIndex =idx
+                    self.gridLayout.addWidget(step, idx, 0)  # noqa: F821 #coloca las imagenes del lado izquierdo ordenadas
+               
                 self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
                 self.selected_image = None
-               
-                print(self.steps)
                 
+                    #print(self.steps)
+                    
 
             except Exception as e:
-                print(f"ERROR")
+                print(f"❌ ERROR al agregar la imagen: {str(e)}")
         
        
 
@@ -1134,7 +1146,7 @@ class TutorialGUI(qt.QMainWindow):
     def addBlankPage(self, state,index : int = None, backgroundPath : str = "", metadata : dict = None, type_ : str = ""):
         
         if backgroundPath == "":
-            self.images_selector(self.tutorialTest) 
+            self.images_selector(self.tutorialTest,index) 
         else:
             stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
             stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
@@ -1167,7 +1179,7 @@ class TutorialGUI(qt.QMainWindow):
                 return
             InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
             pass
-        print(self.steps)
+        #print(self.steps)
         
         
 
