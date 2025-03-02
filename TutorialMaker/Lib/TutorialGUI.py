@@ -66,6 +66,7 @@ class tmLabel(qt.QLabel):
 class AnnotationType(Flag):
     Nil = auto() # Not for saving
     Arrow = auto()
+    ArrowText = auto()
     Rectangle = auto()
     Circle = auto()
     TextBox = auto()
@@ -127,7 +128,7 @@ class Annotation:
         return [self.boundingBoxBottomRight[0] - self.boundingBoxTopLeft[0], self.boundingBoxBottomRight[1] - self.boundingBoxTopLeft[1]]
 
     def wantsOptHelper(self):
-        return self.type in AnnotationType.Arrow | AnnotationType.TextBox
+        return self.type in AnnotationType.Arrow | AnnotationType.TextBox | AnnotationType.ArrowText
 
     def wantsOffsetHelper(self):
         return self.type in AnnotationType.Click | AnnotationType.TextBox
@@ -238,6 +239,95 @@ class Annotation:
 
             self.setSelectionBoundingBox(*arrowTail, *arrowHead)
             pass
+        elif self.type == AnnotationType.ArrowText:
+            # So the arrow will be filled
+            brush.setStyle(qt.Qt.SolidPattern)
+            painter.setBrush(brush)
+
+            arrowRatio = 3 # defined as > 1 (bigger than one) and changes the arrow head angle
+            arrowHeadSize = 40
+            arrowSize = 200
+
+            optX =  self.optX - targetCenter[0]
+            optY = self.optY - targetCenter[1]
+
+            # To better the user experience of moving the helper element
+            optX = util.mapFromTo(optX, -targetSize[0], targetSize[0], -1, 1)
+            optY = util.mapFromTo(optY, -targetSize[1], targetSize[1], -1, 1)
+
+            # Clamp optional values between -1 and 1
+            optX = min(max(-1, optX), 1)
+            optY = min(max(-1, optY), 1)
+
+            arrowHead = [targetCenter[0] + optX*targetSize[0]/2,
+                         targetCenter[1] + optY*targetSize[1]/2]
+
+            arrowTail = [arrowHead[0] + arrowSize*optX,
+                         arrowHead[1] + arrowSize*optY]
+
+            arrowLine = qt.QLineF(qt.QPointF(*arrowHead), qt.QPointF(*arrowTail))
+
+            arrowAngle = math.atan2(-arrowLine.dy(), arrowLine.dx())
+
+            arrowP1 = arrowLine.p1() + qt.QPointF(math.sin(arrowAngle + math.pi / arrowRatio) * arrowHeadSize,
+                                                  math.cos(arrowAngle + math.pi / arrowRatio) * arrowHeadSize)
+
+            arrowP2 = arrowLine.p1() + qt.QPointF(math.sin(arrowAngle + math.pi - math.pi / arrowRatio) * arrowHeadSize,
+                                                  math.cos(arrowAngle + math.pi - math.pi / arrowRatio) * arrowHeadSize)
+
+            arrowHeadPolygon = qt.QPolygonF()
+            arrowHeadPolygon.clear()
+
+            arrowHeadPolygon.append(arrowLine.p1())
+            arrowHeadPolygon.append(arrowP1)
+            arrowHeadPolygon.append(arrowP2)
+
+            painter.drawLine(arrowLine)
+            painter.drawPolygon(arrowHeadPolygon)
+
+             
+            self.setSelectionBoundingBox(*arrowTail, *arrowHead)
+
+            # Text section
+            yPadding = -6
+            xPadding = 0
+            lineSpacing = 2
+
+            font = qt.QFont("Arial", self.fontSize)
+            painter.setFont(font)
+            pen.setColor(qt.Qt.black)
+            painter.setPen(pen)
+
+            fontMetrics = qt.QFontMetrics(font)
+            fHeight = fontMetrics.height()
+
+            textToWrite = self.text
+            if textToWrite == "":
+                textToWrite = "Sample Text To See Breaks"
+            textLines = textToWrite.splitlines()
+
+            # Calculate text size
+            textHeight = len(textLines) * fHeight + (len(textLines) - 1) * lineSpacing
+            textWidth = max(fontMetrics.width(line) for line in textLines)
+
+            # Calcule the position of the text box (center)
+            topLeft = qt.QPoint(arrowTail[0] - textWidth // 2, arrowTail[1] - textHeight // 2)
+            bottomRight = qt.QPoint(arrowTail[0] + textWidth // 2, arrowTail[1] + textHeight // 2)
+            rectToDraw = qt.QRect(topLeft, bottomRight)
+            painter.drawRect(rectToDraw)
+
+            # Ajust text to the center box
+            textStart = [topLeft.x() + xPadding, topLeft.y() + yPadding + fHeight]
+
+          
+            for lineIndex, line in enumerate(textLines):
+                painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight * lineIndex, line)
+
+            self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + textWidth, targetPos[1] + textHeight)
+
+
+            pass
+
         elif self.type == AnnotationType.Rectangle:
             topLeft = qt.QPoint(targetPos[0], targetPos[1])
             bottomRight = qt.QPoint(targetPos[0] + targetSize[0],targetPos[1] + targetSize[1])
@@ -297,7 +387,7 @@ class Annotation:
             if textToWrite == "":
                 textToWrite = "Sample Text To See Breaks"
 
-            textTokens = textToWrite.split()
+            textTokens = textToWrite.splitlines()
             textLines = []
             line = ""
             for token in textTokens:
@@ -312,6 +402,7 @@ class Annotation:
                 painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)
 
             self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + optX, targetPos[1] + optY)
+            
         elif self.type == AnnotationType.Click:
             bottomRight = [targetPos[0] + targetSize[0],
                            targetPos[1] + targetSize[1]]
@@ -821,6 +912,15 @@ class TutorialGUI(qt.QMainWindow):
                             "fontSize": 14,
                             "direction_draw" : [ float(info["offset"][0]), float(info["offset"][1]), float(info["optional"][0]), float(info["optional"][1])] #Enrique Line
                         }
+                    elif annotationC.type == AnnotationType.ArrowText:
+                        annotation = {
+                            "path": info["widgetPath"],
+                            "type": "arrow",
+                            "color": color_rgb,
+                            "labelText": "",
+                            "fontSize": 14,
+                            "direction_draw" : [ float(info["offset"][0]), float(info["offset"][1]), float(info["optional"][0]), float(info["optional"][1])] #Enrique Line
+                        }
                     else:
                         annotation = {}
                     annotations.append(annotation)
@@ -1138,6 +1238,8 @@ class TutorialGUI(qt.QMainWindow):
             self.selectedAnnotationType = AnnotationType.Circle
         elif self.arrow.isChecked():
             self.selectedAnnotationType = AnnotationType.Arrow
+        elif self.arrowText.isChecked():
+            self.selectedAnnotationType = AnnotationType.ArrowText
         elif self.textBox.isChecked():
             self.selectedAnnotationType = AnnotationType.TextBox
         elif self.icon_image.isChecked():
@@ -1158,18 +1260,34 @@ class TutorialGUI(qt.QMainWindow):
         if event.key() == qt.Qt.Key_Escape:
             self.setFocus()
             return False
+
         if self.selectedAnnotationType == AnnotationType.Selected:
             if event.key() == qt.Qt.Key_Delete:
                 self.selectedAnnotation.PERSISTENT = False
                 self.cancelCurrentAnnotation()
-            elif self.selectedAnnotation.type == AnnotationType.TextBox:
-                #TODO: Make so enter is also treated differently, would need to change the textBox draw code as well
-                if event.key() == qt.Qt.Key_Backspace:
+
+            elif self.selectedAnnotation.type in [AnnotationType.TextBox, AnnotationType.ArrowText]:
+                # Detectar Ctrl+C (Copiar)
+                if event.key() == qt.Qt.Key_C and event.modifiers() & qt.Qt.ControlModifier:
+                    qt.QApplication.clipboard().setText(self.selectedAnnotation.text)
+                
+                # Detectar Ctrl+V (Pegar)
+                elif event.key() == qt.Qt.Key_V and event.modifiers() & qt.Qt.ControlModifier:
+                    self.selectedAnnotation.text += qt.QApplication.clipboard().text()
+
+                # Detectar Enter y agregar un salto de línea
+                elif event.key() in [qt.Qt.Key_Return, qt.Qt.Key_Enter]:
+                    self.selectedAnnotation.text += "\n"
+
+                # Detectar Backspace
+                elif event.key() == qt.Qt.Key_Backspace:
                     self.selectedAnnotation.text = self.selectedAnnotation.text[:-1]
+
                 else:
                     self.selectedAnnotation.text += event.text()
 
             return True
+
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
                 self.selectorParentDelta(-1)
@@ -1178,7 +1296,8 @@ class TutorialGUI(qt.QMainWindow):
                 self.selectorParentDelta(1)
                 return True
 
-        pass
+        return False
+
 
     def selectorParentDelta(self, delta : int):
         self.selectorParentCount += delta
@@ -1315,6 +1434,10 @@ class TutorialGUI(qt.QMainWindow):
         self.arrow.setCheckable(True)
         toolbar.addAction(self.arrow)
 
+        self.arrowText = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png'), _("Arrow text"), self)
+        self.arrowText.setCheckable(True)
+        toolbar.addAction(self.arrowText)
+
         self.textBox = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png'), _("Text Box"), self)
         self.textBox.setCheckable(True)
         toolbar.addAction(self.textBox)
@@ -1348,6 +1471,10 @@ class TutorialGUI(qt.QMainWindow):
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_enabled.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_disabled.png')
             },
+            self.arrowText:{
+                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3_p.png'),
+                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png')
+            },
             self.textBox: {
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_enabled.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png')
@@ -1362,7 +1489,7 @@ class TutorialGUI(qt.QMainWindow):
             }
         }
 
-        self.toolbar_actions = [self.select, self.square, self.circle, self.clck, self.arrow, self.icon_image, self.in_text, self.textBox]
+        self.toolbar_actions = [self.select, self.square, self.circle, self.clck, self.arrow, self.arrowText ,self.icon_image, self.in_text, self.textBox]
         for a in self.toolbar_actions:
             a.triggered.connect(lambda checked, a=a: self.on_action_triggered(a))
 
