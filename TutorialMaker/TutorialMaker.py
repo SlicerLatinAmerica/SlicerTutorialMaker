@@ -3,7 +3,7 @@ import os
 import slicer
 import importlib
 import Lib.utils
-import TutorialMaker.Lib.TutorialPainter as AnnotationPainter
+import Lib.TutorialPainter as AnnotationPainter
 import Lib.GitTools as GitTools
 
 from slicer.ScriptedLoadableModule import * # noqa: F403
@@ -110,10 +110,10 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
 
         #Static Tutorial Handlers
         self.ui.pushButtonAnnotate.connect('clicked(bool)', self.annotateButton)
+        self.ui.pushButtonTestPainter.connect('clicked(bool)', self.testPainterButton)
         if self.isDebug != True: # noqa: E712
             self.ui.CollapsibleButtonTutorialMaking.setVisible(0)
             self.ui.pushButtonNewTutorial.setVisible(0)
-            self.ui.pushButtonTestPainter.connect('clicked(bool)', self.testPainterButton)
             self.ui.pushButtonTestPainter.setVisible(0)
             self.logic.loadTutorialsFromRepos()
 
@@ -249,7 +249,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def TestPainter(self, tutorialName):
-        AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName+".json")
+        AnnotationPainter.TutorialPainter().GenerateHTMLfromAnnotatedTutorial(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/annotations.json")
         pass
 
     def CreateNewTutorial(self):
