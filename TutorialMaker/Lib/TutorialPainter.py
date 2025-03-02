@@ -1,8 +1,13 @@
 import qt
 import slicer
 import os
-from slicer.i18n import tr as _
 import math
+import json
+from slicer.i18n import tr as _
+from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide
+from Lib.utils import Tutorial, TutorialScreenshot
+import Lib.TutorialExporter as Exporter
+
 
 class ImageDrawer:
     def __init__(self):
@@ -711,5 +716,147 @@ class ImageDrawer:
 
         return justified_line
 
-class Paiter:
-    
+class TutorialPainter:
+    def __init__(self):
+        settings = slicer.app.userSettings()
+        self.slides = [AnnotatorSlide]
+        self.imagePaths = [str] #TODO: Improve this part
+        self.TutorialInfo = {}
+        self.currentLanguage = settings.value("language")
+
+        # TODO: Get a better way to get the module position
+        self.outputFolder = f"{os.path.dirname(__file__)}/../Outputs"
+        pass
+
+    def LoadAnnotatedTutorial(self, path):
+        self.slides = []
+        textDict = self.GetLocalizedDict(self.currentLanguage)
+        with open(path, encoding='utf-8') as file:
+            rawData = json.load(file)
+        self.TutorialInfo = {
+            "title": rawData["title"],
+            "author": rawData["author"],
+            "date": rawData["date"],
+            "desc": rawData["desc"],
+        }
+        rawDataOffsetCounter = 0
+        for slideData in rawData["slides"]:
+            slideStep, slideImg = slideData['SlideCode'].split("/")
+            slideStep = str(int(slideStep) - rawDataOffsetCounter)
+            rawStepPath = f"{self.outputFolder}/raw/{slideStep}/{slideImg}"
+            slideMetadata = []
+            slideImage : qt.QImage = None
+
+            tsParser = TutorialScreenshot()
+            if slideData["SlideLayout"] == "Screenshot":
+                try:
+                    tsParser.metadata = rawStepPath + ".json"
+                    slideMetadata = tsParser.getWidgets()
+
+                    slideImage = qt.QImage(rawStepPath + ".png")
+                except FileNotFoundError:
+                    stepPath = f"{self.outputFolder}/raw/{slideStep}"
+                    slideMetadata = []
+                    test_contents = os.listdir(stepPath)
+                    for content in test_contents:
+                        if(".json" not in content):
+                            continue
+                        tsParser.metadata = f"{stepPath}/{content}"
+                        slideMetadata.extend(tsParser.getWidgets())
+
+                    slideImage = qt.QImage(f"{self.outputFolder}/Annotations/{slideData['ImagePath']}")
+            else:
+                rawDataOffsetCounter += 1
+                slideImage = qt.QImage(f"{self.outputFolder}/Annotations/{slideData['ImagePath']}")
+            
+            annotations = []
+            for annotationData in slideData["Annotations"]:
+                targetWidget = {
+                    "position": [0,0],
+                    "size": [1,1]
+                }
+                for widget in slideMetadata:
+                    if annotationData["widgetPath"] == widget["path"]:
+                        targetWidget = widget
+                annotation = Annotation(
+                    targetWidget,
+                    *annotationData["offset"],
+                    *annotationData["optional"],
+                    textDict[annotationData["text"]],
+                    AnnotationType[annotationData["type"]]
+                )
+                annotation.penConfig(
+                    qt.QColor(annotationData["penSettings"]["color"]),
+                    annotationData["penSettings"]["fontSize"],
+                    annotationData["penSettings"]["thickness"]
+                )
+                annotation.PERSISTENT = True
+                annotations.append(annotation)
+            annotatedSlide = AnnotatorSlide(slideImage, slideMetadata, annotations)
+            annotatedSlide.SlideTitle = textDict[slideData["SlideTitle"]]
+            annotatedSlide.SlideBody = textDict[slideData["SlideDesc"]]
+            annotatedSlide.SlideLayout = slideData["SlideLayout"]
+
+            self.imagePaths.append(slideData["ImagePath"])
+            self.slides.append(annotatedSlide)
+        pass
+
+    def SaveLocalizedScreenshots(self, path):
+        if not os.path.exists(path):
+            os.mkdir(path)
+        print(len(self.slides))
+        for slideIndex, slide in enumerate(self.slides):
+            slide.Draw()
+            slideImage = slide.outputImage
+            slideImage.save(f"{path}/{self.imagePaths[slideIndex]}")
+        pass
+
+    def GenerateHTMLfromAnnotatedTutorial(self, path):
+        self.LoadAnnotatedTutorial(path)
+        localizedScreenshotsPath = f"{self.outputFolder}/{self.TutorialInfo['title']}_{self.currentLanguage}"
+        self.SaveLocalizedScreenshots(localizedScreenshotsPath)
+
+        # If we are going to have a exporter lib then it should handle this itself
+        pages = [Exporter.SlidePage]
+        for slideIndex, slide in enumerate(self.slides):
+            page = None
+            # This doesn't parse what was entered in the 'Cover Page' slide inside annotator itself
+            if slide.SlideLayout == "CoverPage":
+                page = Exporter.CoverSlide(
+                    self.TutorialInfo['title'],
+                    self.TutorialInfo['author'],
+                    self.TutorialInfo['date'],
+                    self.TutorialInfo['desc'],
+                    )
+            # This doesn't parse the Acknowledgements correctly
+            elif slide.SlideLayout == "Acknowledgement":
+                page = Exporter.BackCoverSlide(
+                    slide.SlideTitle,
+                    {"0": slide.SlideBody}
+                )
+            elif slide.SlideLayout == "Screenshot":
+                page = Exporter.SimpleSlide(
+                    slide.SlideTitle,
+                    slide.SlideBody,
+                    self.imagePaths[slideIndex]
+                )
+            else:
+                continue
+            pass
+            pages.append(Exporter.SlidePage(page))
+        
+        
+        tutorialPath = localizedScreenshotsPath + f"/{self.TutorialInfo['title']}"
+
+        export = Exporter.TutorialExporter(pages, self.TutorialInfo["title"])
+        html = export.ToHtml()
+        with open(tutorialPath + ".html", "w") as fd:
+            fd.write(html)
+        pass
+
+    def GetLocalizedDict(self, lang, tutorialName = ""):
+        dictPath = self.outputFolder + "/Annotations/text_dict_default.json"
+        textDict = {}
+        with open(dictPath, encoding='utf-8') as file:
+                textDict = json.load(file)
+        return textDict
