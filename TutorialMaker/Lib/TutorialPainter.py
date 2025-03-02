@@ -719,8 +719,8 @@ class ImageDrawer:
 class TutorialPainter:
     def __init__(self):
         settings = slicer.app.userSettings()
-        self.slides = [AnnotatorSlide]
-        self.imagePaths = [str] #TODO: Improve this part
+        self.slides : list[AnnotatorSlide] = []
+        self.imagePaths : list[str] = [] #TODO: Improve this part
         self.TutorialInfo = {}
         self.currentLanguage = settings.value("language")
 
@@ -817,7 +817,7 @@ class TutorialPainter:
         self.SaveLocalizedScreenshots(localizedScreenshotsPath)
 
         # If we are going to have a exporter lib then it should handle this itself
-        pages = [Exporter.SlidePage]
+        pages : list[Exporter.SlidePage] = []
         for slideIndex, slide in enumerate(self.slides):
             page = None
             # This doesn't parse what was entered in the 'Cover Page' slide inside annotator itself
