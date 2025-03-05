@@ -40,7 +40,7 @@ class TutorialEditor(qt.QWidget):
 
         # Connections
         self.ui.pushButtonStartStopRecord.clicked.connect(self.logic.StopStartRecording)
-        self.ui.pushButtonAnnotate.clicked.connect(self.OnClickedAnnotate)
+        self.ui.pushButtonCapture.clicked.connect(self.OnClickedAnnotate)
         self.ui.tableWidgetStates.cellClicked.connect(self.onCellClicked)
 
         pass
