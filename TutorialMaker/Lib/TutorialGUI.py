@@ -47,10 +47,6 @@ class DraggableLabel(qt.QLabel):
                     pos = self.parent().mapFromGlobal(sPos)
                     self.SetCenter(pos.x(), pos.y())
 
-
-
-
-
 class tmLabel(qt.QLabel):
     clicked = qt.Signal()
 
@@ -203,9 +199,6 @@ class AnnotatorStepWidget(qt.QWidget):
             drag.exec_(qt.Qt.MoveAction)
         pass
 
-
-
-
 class TutorialGUI(qt.QMainWindow):
     def __init__(self, parent=None):
         super().__init__()
@@ -294,7 +287,7 @@ class TutorialGUI(qt.QMainWindow):
 
         # Configure Main Window
         self.setFixedSize(*self.windowSize)
-        self.setWindowTitle("TutorialMaker - Annotator")
+        self.setWindowTitle(_("TutorialMaker - Annotator"))
 
         # Left Scroll Area
         self.scrollAreaWidgetContents = qt.QWidget()
@@ -320,11 +313,11 @@ class TutorialGUI(qt.QMainWindow):
         self.slideTitleWidget = self.uiWidget.findChild(qt.QLineEdit, "lineEdit")
         self.slideTitleWidget.setMinimumWidth(self.selectedSlideSize[0])
         self.slideTitleWidget.setMaximumWidth(self.selectedSlideSize[0])
-        self.slideTitleWidget.placeholderText = "Title for the slide"
+        self.slideTitleWidget.placeholderText = _("Title for the slide")
 
         self.slideBodyWidget = self.uiWidget.findChild(qt.QTextEdit, "myTextEdit")
         self.slideBodyWidget.setFixedSize(self.selectedSlideSize[0], 150)
-        self.slideBodyWidget.placeholderText = "Write a description for the slide"
+        self.slideBodyWidget.placeholderText = _("Write a description for the slide")
 
         # Load Used Resources
         resourceFolder = os.path.dirname(__file__) + '/../Resources'
@@ -401,8 +394,6 @@ class TutorialGUI(qt.QMainWindow):
 
         # >>>>>>> this will be removed in the next few versions, the painter should conform to the new version <<<<<<<
 
-
-
         for stepIndex, step in enumerate(self.steps):
             for slideIndex, slide in enumerate(step.Slides):
                 if not slide.Active:
@@ -450,6 +441,8 @@ class TutorialGUI(qt.QMainWindow):
 
         with open(file= f"{self.outputFolder}/annotations_old.json", mode='w', encoding="utf-8") as fd:
             json.dump(outputFileOld, fd, ensure_ascii=False, indent=4)
+        
+        qt.QMessageBox.information(self, _("Information"), _("Annotations saved successfully"))
 
 
     def deleteSelectedAnnotation(self):
@@ -652,10 +645,7 @@ class TutorialGUI(qt.QMainWindow):
         _offsetPos = self.selectedAnnotator.MapImageToScreen(qt.QPointF(selectedAnnotation.target["position"][0] + selectedAnnotation.offsetX,
                                                                        selectedAnnotation.target["position"][1] + selectedAnnotation.offsetY), self.selectedSlide)
 
-
-
         self.OffsetHelperWidget.SetCenter(*_offsetPos)
-
 
         self.on_action_triggered(None) #TODO: This is needed because this affects the selectiontype every mouse movement event and makes the selection process very janky
         self.selectedAnnotation = selectedAnnotation

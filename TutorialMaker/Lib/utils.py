@@ -431,8 +431,6 @@ class Widget():
 
         return virtualChildren
 
-
-
 class SignalManager(qt.QObject):
     received = qt.Signal(object)
     def __init__(self):
@@ -480,7 +478,6 @@ class ScreenshotTools():
         pass
         return windows
 
-
     def getPixmap(self, window):
         slicer.app.processEvents(qt.QEventLoop.AllEvents, 69)
         pixmap = window.grab()
@@ -523,7 +520,6 @@ class Tutorial:
 
         self.steps = []
 
-
     def beginTutorial(self):
         screenshotTools = ScreenshotTools()
         #Screenshot counter
@@ -546,6 +542,10 @@ class Tutorial:
         pass
 
     def nextScreenshot(self, overwriteName=None):
+        qt.QTimer.singleShot(1000, lambda: self.nextScreenshotLogic(overwriteName))
+    pass
+
+    def nextScreenshotLogic(self, overwriteName=None):
         if type(overwriteName) is str:
             self.steps.append(self.screenshottools.saveScreenshotMetadata(overwriteName))
             self.nSteps = self.nSteps + 1

@@ -2,6 +2,7 @@ import os
 import qt
 import copy
 import math
+from slicer.i18n import tr as _
 from enum import Flag, auto
 from Lib.utils import util
 
@@ -27,7 +28,7 @@ class Annotation:
         Type : AnnotationType = None):
 
         if Type is None or TargetWidget is None :
-            raise Exception("Annotation needs a widget reference and a valid type")
+            raise Exception(_("Annotation needs a widget reference and a valid type"))
 
         self.optX = OptX
         self.optY = OptY
@@ -237,7 +238,7 @@ class Annotation:
 
             textToWrite = self.text
             if textToWrite == "":
-                textToWrite = "Sample Text To See Breaks"
+                textToWrite = _("Write something here")
 
             textTokens = textToWrite.split()
             textLines = []

@@ -366,10 +366,7 @@ class ImageDrawer:
             # Obtener los límites de la imagen en la escena
             pixmap_rect = self.view.rect  # Obtiene el rectángulo de la imagen en la escena
 
-            print(pixmap_rect)
             if not pixmap_rect.contains(text_bounding_rect):
-                print("Fuera")
-                print(text_bounding_rect)
                 # If the text is outside, reposition it within visible bounds
                 screen_height = self.view.height
                 screen_width = self.view.width
@@ -415,9 +412,6 @@ class ImageDrawer:
                     qt.Qt.black
                 )
             else:
-                print("Dentro")
-                print(text_bounding_rect)
-
                 p1 = qt.QPointF(start_x, start_y)
                 p2 = qt.QPointF(end_x, end_y)
                 arrow_path = self.arrowPath(p1, p2)
@@ -804,7 +798,6 @@ class TutorialPainter:
     def SaveLocalizedScreenshots(self, path):
         if not os.path.exists(path):
             os.mkdir(path)
-        print(len(self.slides))
         for slideIndex, slide in enumerate(self.slides):
             slide.Draw()
             slideImage = slide.outputImage
@@ -844,7 +837,6 @@ class TutorialPainter:
                 continue
             pass
             pages.append(Exporter.SlidePage(page))
-        
         
         tutorialPath = localizedScreenshotsPath + f"/{self.TutorialInfo['title']}"
 

@@ -44,8 +44,8 @@ class GitTools:
         contents = response.json()
         if not isinstance(contents, list) or not isinstance(contents[0], dict):
             if 'message' in contents:
-                raise Exception(_("Message from {endpoint}: {message}".format(endpoint=endpoint, message=contents['message'])))
-            raise Exception(_(f"Malformed Response from {endpoint}"))
+                raise Exception(_("Message from {endpoint}: {message}").format(endpoint=endpoint, message=contents['message']))
+            raise Exception(_("Malformed Response from {endpoint}").format(endpoint=endpoint))
 
         root = GitFile("dir", "")
         for data in contents:
@@ -65,8 +65,8 @@ class GitTools:
         contents = response.json()
         if not isinstance(contents, list) or not isinstance(contents[0], dict):
             if 'message' in contents:
-                raise Exception(_("Message from {endpoint}: {message}".format(endpoint=endpoint, message=contents['message'])))
-            raise Exception(_(f"Malformed Response from {endpoint}"))
+                raise Exception(_("Message from {endpoint}: {message}").format(endpoint=endpoint, message=contents['message']))
+            raise Exception(_("Malformed Response from {endpoint}").format(endpoint=endpoint))
 
         files = {}
         for data in contents:

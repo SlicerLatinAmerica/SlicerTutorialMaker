@@ -83,22 +83,29 @@
     <widget class="QListWidget" name="listWidgetTutorials"/>
    </item>
    <item>
-    <widget class="QPushButton" name="pushButtonAnnotate">
+    <widget class="QPushButton" name="pushButtonCapture">
      <property name="enabled">
       <bool>false</bool>
      </property>
      <property name="text">
-      <string>Run and Annotate</string>
+      <string>Capture screenshots</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="pushButtonTestPainter">
+    <widget class="QPushButton" name="pushButtonOpenAnnotator">
+     <property name="text">
+      <string>Edit annotations</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="pushButtonGenerate">
      <property name="enabled">
       <bool>true</bool>
      </property>
      <property name="text">
-      <string>Test Translation</string>
+      <string>Generate output</string>
      </property>
     </widget>
    </item>
@@ -109,13 +116,6 @@
      </property>
      <property name="text">
       <string>Create a new Tutorial</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="pushButtonOpenAnnotator">
-     <property name="text">
-      <string>Open Annotator</string>
      </property>
     </widget>
    </item>

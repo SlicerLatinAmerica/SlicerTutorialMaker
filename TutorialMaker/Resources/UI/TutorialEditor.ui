@@ -24,7 +24,7 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
-       <widget class="QPushButton" name="pushButtonAnnotate">
+       <widget class="QPushButton" name="pushButtonCapture">
         <property name="text">
          <string>Annotate</string>
         </property>
