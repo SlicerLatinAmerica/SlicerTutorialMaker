@@ -542,10 +542,6 @@ class Tutorial:
         pass
 
     def nextScreenshot(self, overwriteName=None):
-        qt.QTimer.singleShot(1000, lambda: self.nextScreenshotLogic(overwriteName))
-    pass
-
-    def nextScreenshotLogic(self, overwriteName=None):
         if type(overwriteName) is str:
             self.steps.append(self.screenshottools.saveScreenshotMetadata(overwriteName))
             self.nSteps = self.nSteps + 1
