@@ -337,6 +337,14 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         slicer.mrmlScene.Clear()
         TutorialMakerLogic().loadTutorialsFromRepos()
 
+        Lib.utils.util.verifyOutputFolders(self)
+
+        slicer.util.mainWindow().resize(1920, 1080)
+
+        appFont = slicer.app.font()
+        appFont.setPointSize(14)
+        slicer.app.setFont(appFont)
+
     def runTest(self):
         """Run as few or as many tests as needed here.
         """
@@ -365,39 +373,3 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
             pass
         if tutorials_failed > 0:
             raise Exception(_("{tutorials_failed} tutorials failed to execute").format(tutorials_failed=tutorials_failed))
-
-    def delayDisplay(self, message, requestedDelay=None, msec=None):
-        """
-        Display messages to the user/tester during testing.
-
-        By default, the delay is 50ms.
-
-        The function accepts the keyword arguments ``requestedDelay`` or ``msec``. If both
-        are specified, the value associated with ``msec`` is used.
-
-        This method can be temporarily overridden to allow tests running
-        with longer or shorter message display time.
-
-        Displaying a dialog and waiting does two things:
-        1) it lets the event loop catch up to the state of the test so
-        that rendering and widget updates have all taken place before
-        the test continues and
-        2) it shows the user/developer/tester the state of the test
-        so that we'll know when it breaks.
-
-        Note:
-        Information that might be useful (but not important enough to show
-        to the user) can be logged using logging.info() function
-        (printed to console and application log) or logging.debug()
-        function (printed to application log only).
-        Error messages should be logged by logging.error() function
-        and displayed to user by slicer.util.errorDisplay function.
-        """
-        if hasattr(self, "messageDelay"):
-            msec = self.messageDelay
-        if msec is None:
-            msec = requestedDelay
-        if msec is None:
-            msec = 100
-
-        slicer.util.delayDisplay(message, msec)
