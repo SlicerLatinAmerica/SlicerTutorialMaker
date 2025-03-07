@@ -4,14 +4,13 @@ set(MODULE_NAME TutorialMaker)
 #-----------------------------------------------------------------------------
 set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}.py
-  Lib/Anotations.py
+  Lib/Annotations.py
   Lib/CreateTutorial.py
-  Lib/FileMDHTML.py
   Lib/GitTools.py
-  Lib/painter.py
-  Lib/tmLabel.py
   Lib/TutorialEditor.py
+  Lib/TutorialExporter.py
   Lib/TutorialGUI.py
+  Lib/TutorialPainter.py
   Lib/utils.py
   )
 
