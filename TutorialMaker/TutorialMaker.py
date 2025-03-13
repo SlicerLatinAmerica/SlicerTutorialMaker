@@ -353,6 +353,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         #Screencapture test
         #Then run all the tutorials
         tutorials_failed = 0
+        error_message = ""
         testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
         test_tutorials = os.listdir(testingFolder)
         for unit_tutorials in test_tutorials:
@@ -365,11 +366,11 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
                 # Paint Screenshots with annotations
                 #AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
             except Exception as e:
-                logging.error(_("Tutorial Execution Failed: {unit_tutorials} - Error: {e}").format(unit_tutorials=unit_tutorials, e=e))
+                error_message += _("Tutorial Execution Failed: {unit_tutorials} - Error: {e}. \n").format(unit_tutorials=unit_tutorials, e=e)
                 tutorials_failed = tutorials_failed + 1
                 pass
             finally:
                 self.delayDisplay(_("Tutorial Tested"))
             pass
         if tutorials_failed > 0:
-            raise Exception(_("{tutorials_failed} tutorials failed to execute").format(tutorials_failed=tutorials_failed))
+            raise Exception(_("{tutorials_failed} tutorials failed to execute. Errors: {error_message}").format(tutorials_failed=tutorials_failed, error_message=error_message))
