@@ -303,7 +303,7 @@ class Annotation:
 
             textToWrite = self.text
             if textToWrite == "":
-                textToWrite = "Sample Text To See Breaks"
+                textToWrite = "Write your text here"
             textLines = textToWrite.splitlines()
 
             # Calculate text size
@@ -323,7 +323,7 @@ class Annotation:
             for lineIndex, line in enumerate(textLines):
                 painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight * lineIndex, line)
 
-            self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + textWidth, targetPos[1] + textHeight)
+            self.setSelectionBoundingBox(arrowHead[0], arrowHead[1], arrowTail[0], arrowTail[1])
 
 
             pass
@@ -875,66 +875,6 @@ class TutorialGUI(qt.QMainWindow):
         with open(file= f"{self.outputFolder}/text_dict_default.json", mode='w', encoding="utf-8") as fd:
             json.dump(outputFileTextDict, fd, ensure_ascii=False, indent=4)
 
-        # >>>>>>> this will be removed in the next few versions, the painter should conform to the new version <<<<<<<
-
-
-
-        for stepIndex, step in enumerate(self.steps):
-            for slideIndex, slide in enumerate(step.Slides):
-                if not slide.Active:
-                    continue
-
-                annotations = []
-                for annIndex, annotationC in enumerate(slide.annotations):
-                    info = annotationC.toDict()
-                    color_rgb = f"{annotationC.color.red()}, {annotationC.color.green()}, {annotationC.color.blue()}"
-                    if annotationC.type == AnnotationType.Rectangle:
-                        annotation = { #Convert all to string
-                            "path": info["widgetPath"],
-                            "type": "rectangle",
-                            "color": color_rgb, # (r,g,b)
-                            "labelText":"", #text on annotation
-                            "fontSize": "14", # size of text on annotions 14px
-                        }
-                    elif annotationC.type == AnnotationType.Click:
-                        annotation = {
-                            "path": info["widgetPath"],
-                            "type": "clickMark",
-                            "labelText":"", #text on annotation
-                            "fontSize": "14", # size of text on annotions 14px
-                        }
-                    elif annotationC.type == AnnotationType.Arrow:
-                        annotation = {
-                            "path": info["widgetPath"],
-                            "type": "arrow",
-                            "color": color_rgb,
-                            "labelText": "",
-                            "fontSize": 14,
-                            "direction_draw" : [ float(info["offset"][0]), float(info["offset"][1]), float(info["optional"][0]), float(info["optional"][1])] #Enrique Line
-                        }
-                    elif annotationC.type == AnnotationType.ArrowText:
-                        annotation = {
-                            "path": info["widgetPath"],
-                            "type": "arrow",
-                            "color": color_rgb,
-                            "labelText": "",
-                            "fontSize": 14,
-                            "direction_draw" : [ float(info["offset"][0]), float(info["offset"][1]), float(info["optional"][0]), float(info["optional"][1])] #Enrique Line
-                        }
-                    else:
-                        annotation = {}
-                    annotations.append(annotation)
-                    pass
-                slideInfo = {
-                    "slide_title": slide.SlideTitle,
-                    "slide_text": slide.SlideBody,
-                    "annotations":annotations
-                }
-                outputFileOld.append(slideInfo)
-            pass
-
-        with open(file= f"{self.outputFolder}/annotations_old.json", mode='w', encoding="utf-8") as fd:
-            json.dump(outputFileOld, fd, ensure_ascii=False, indent=4)
 
 
     def deleteSelectedAnnotation(self):
@@ -1267,19 +1207,19 @@ class TutorialGUI(qt.QMainWindow):
                 self.cancelCurrentAnnotation()
 
             elif self.selectedAnnotation.type in [AnnotationType.TextBox, AnnotationType.ArrowText]:
-                # Detectar Ctrl+C (Copiar)
+                # Detect command Ctrl+C copy text
                 if event.key() == qt.Qt.Key_C and event.modifiers() & qt.Qt.ControlModifier:
                     qt.QApplication.clipboard().setText(self.selectedAnnotation.text)
                 
-                # Detectar Ctrl+V (Pegar)
+                # Detect command Ctl+v page text
                 elif event.key() == qt.Qt.Key_V and event.modifiers() & qt.Qt.ControlModifier:
                     self.selectedAnnotation.text += qt.QApplication.clipboard().text()
 
-                # Detectar Enter y agregar un salto de línea
+                # Detect Enter to add a line break
                 elif event.key() in [qt.Qt.Key_Return, qt.Qt.Key_Enter]:
                     self.selectedAnnotation.text += "\n"
 
-                # Detectar Backspace
+                # Detect Backspace
                 elif event.key() == qt.Qt.Key_Backspace:
                     self.selectedAnnotation.text = self.selectedAnnotation.text[:-1]
 
