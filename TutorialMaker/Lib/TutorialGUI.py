@@ -494,6 +494,7 @@ class TutorialGUI(qt.QMainWindow):
         # Insert Dummy Pages for Title, Acknowledgements
         self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png', type_="CoverPage")
         self.addBlankPage(False, 1, self.dir_path + '/../Resources/NewSlide/Acknowledgments.png', type_="Acknowledgement")
+        #self.tutorial2 = tutorial
 
         pass
 
@@ -550,7 +551,9 @@ class TutorialGUI(qt.QMainWindow):
         stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
         stepWidget.swapRequest.connect(self.swapStepPosition)
         if backgroundPath == "":
-            backgroundPath = self.dir_path+'/../Resources/NewSlide/white.png'
+            self.images_selector(self.tutorial2,index) 
+            print('Hola')
+            #backgroundPath = self.dir_path+'/../Resources/NewSlide/white.png'
         if metadata is None:
             metadata = {}
         annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
@@ -579,6 +582,48 @@ class TutorialGUI(qt.QMainWindow):
             return
         InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
         pass
+    
+    def add_selected_image(self):
+        insert_index = self.selectedIndexes[0]+1
+        print(insert_index)
+        if self.selected_image:
+            try:
+                screenshot = self.selected_image[0]
+                image_pixmap = screenshot.getImage()
+                image_widgets = screenshot.getWidgets()
+                annotatorSlide = AnnotatorSlide(image_pixmap, image_widgets)
+
+            
+                if not image_pixmap or image_pixmap.isNull():
+                    print("Image pixmap is null")
+                    return
+
+                stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
+                stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
+                stepWidget.swapRequest.connect(self.swapStepPosition)            
+                stepWidget.AddStepWindows(annotatorSlide) #Agrega el step
+
+                self.steps.insert(insert_index, stepWidget)  # noqa: F821
+                while self.gridLayout.count():
+                    item = self.gridLayout.takeAt(0)
+                    widget = item.widget()
+                    if widget is not None:
+                        widget.setParent(None)
+                for idx, step in enumerate(self.steps):
+                    step.stepIndex =idx
+                    self.gridLayout.addWidget(step, idx, 0)  # noqa: F821 #coloca las imagenes del lado izquierdo ordenadas
+               
+                self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
+                self.selected_image = None
+             
+                    
+
+            except Exception as e:
+                print(f"❌ ERROR al agregar la imagen: {str(e)}")
+        
+       
+
+
 
     def copy_page(self):
         pass
@@ -828,6 +873,19 @@ class TutorialGUI(qt.QMainWindow):
                 screenshotList.append(wScreenshot)
             tutorial.steps.append(screenshotList)
         self.loadImagesAndMetadata(tutorial)
+        self.tutorial2 = tutorial
+        
+        new_image_path = self.dir_path+'/../Resources/NewSlide/white.png'
+        new_metadata_path = self.dir_path+'/../Resources/NewSlide/white.json'
+        new_screenshot = TutorialScreenshot(new_image_path, new_metadata_path)
+        if self.tutorial2.steps:
+            self.tutorial2.steps[-1].append(new_screenshot)  # Se añade a la lista existente
+        else:
+            self.tutorial2.steps.append([new_screenshot])  # Se crea una nueva lista con la imagen
+
+       
+
+
 
     def eventFilter(self, obj, event):
         if obj == self.selectedSlide:
@@ -1041,3 +1099,134 @@ class TutorialGUI(qt.QMainWindow):
             else:
                 action.setChecked(False)
                 action.setIcon(icons['inactive'])
+
+    def images_selector(self, tutorialDara,index):
+        self.dialog = qt.QDialog()
+        self.dialog.setWindowTitle("Select the images")
+        self.dialog.setGeometry(100, 100, 800, 600) 
+        
+        self.listWidget = qt.QListWidget()
+        self.listWidget.setSelectionMode(qt.QAbstractItemView.NoSelection) 
+        self.listWidget.setIconSize(qt.QSize(300, 300))
+        self.listWidget.setViewMode(qt.QListWidget.IconMode) 
+        self.listWidget.setResizeMode(qt.QListWidget.Adjust)  
+        self.listWidget.setSpacing(10)
+        
+        self.final_selected_images = []
+        self.selected_image = None
+        self.image_buttons = {}
+        grouped_steps = {}  #Groups for images in each step
+        
+        for stepIndex, screenshots in enumerate(self.tutorial2.steps):
+            if stepIndex not in grouped_steps:
+                grouped_steps[stepIndex] = []  
+            for screenshotIndex, screenshot in enumerate(screenshots):
+                try:
+                    pixmap = screenshot.getImage()
+                    if not pixmap or pixmap.isNull():
+                        print(f"ERROR:")
+                        continue
+
+                    grouped_steps[stepIndex].append((pixmap, screenshot))  #Save the image in each group (step)
+
+                except Exception as e:
+                    print(f"ERROR")
+        has_widgets = False
+    
+        for stepIndex, screenshots in grouped_steps.items():
+            if not screenshots:
+                continue 
+
+            container_widget = qt.QWidget()
+            layout = qt.QVBoxLayout(container_widget)
+
+            main_pixmap, main_screenshot = screenshots[0]
+            main_button = qt.QPushButton()
+            main_button.setIcon(qt.QIcon(main_pixmap))
+            main_button.setIconSize(qt.QSize(300, 200))
+            main_button.setCheckable(True)
+            if len(screenshots[1:])>0:
+                main_button.setStyleSheet("border: 2px solid #FFFF00;")
+            else:
+                main_button.setStyleSheet("border: 2px solid transparent;")
+            main_button.clicked.connect(lambda _, img=main_screenshot, btn=main_button: self.select_single_image(img, btn))
+            if len(screenshots[1:])>0:
+                toggle_button = qt.QPushButton()
+                toggle_button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_down.png'))  
+                toggle_button.setIconSize(qt.QSize(32, 32))
+                toggle_button.setCheckable(True)
+
+                secondary_container = qt.QWidget()
+                secondary_layout = qt.QVBoxLayout(secondary_container)
+
+                for pixmap, screenshot in screenshots[1:]:
+                    if not pixmap:
+                        continue 
+                    sec_button = qt.QPushButton()
+                    sec_button.setIcon(qt.QIcon(pixmap))
+                    sec_button.setIconSize(qt.QSize(250, 150))
+                    sec_button.setCheckable(True)
+                    sec_button.setStyleSheet("border: 2px solid transparent;")  
+                    
+                    if hasattr(screenshot, 'widgets') and screenshot.widgets:
+                        has_widgets = True
+
+                    sec_button.clicked.connect(lambda _, img=screenshot, btn=sec_button: self.select_single_image(img, btn))
+                    secondary_layout.addWidget(sec_button)
+
+                secondary_container.setVisible(False)  
+
+                def toggle_secondary_images(checked, container=secondary_container, button=toggle_button):
+                    container.setVisible(checked)
+                    if checked:
+                        button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_up.png'))
+                    else:
+                        button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_down.png')) 
+
+                toggle_button.toggled.connect(toggle_secondary_images)
+
+            layout.addWidget(main_button)
+            if len(screenshots[1:])>0:
+                layout.addWidget(toggle_button)
+                layout.addWidget(secondary_container)         
+
+            
+            item = qt.QListWidgetItem(self.listWidget)
+            item.setSizeHint(qt.QSize(320, 220))  
+
+            self.listWidget.addItem(item)
+            self.listWidget.setItemWidget(item, container_widget)  
+            
+        scroll_area = qt.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.listWidget)
+
+        
+        addButton = qt.QPushButton("Add Image")
+        addButton.clicked.connect(self.add_selected_image)
+
+        button_layout = qt.QHBoxLayout()
+        button_layout.addWidget(addButton)
+
+        button_widget = qt.QWidget()
+        button_widget.setLayout(button_layout)
+
+        
+        main_layout = qt.QVBoxLayout()
+        main_layout.addWidget(scroll_area)  
+        main_layout.addWidget(button_widget)  
+
+        self.dialog.setLayout(main_layout)
+        result = self.dialog.exec_()
+        
+
+    def select_single_image(self, screenshot, button):
+        
+        if self.selected_image:
+            self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
+
+        self.selected_image = (screenshot, button)
+        #print(self.selected_image)
+        button.setStyleSheet("border: 2px solid blue;")
+
+                
