@@ -879,9 +879,10 @@ class TutorialGUI(qt.QMainWindow):
         new_metadata_path = self.dir_path+'/../Resources/NewSlide/white.json'
         new_screenshot = TutorialScreenshot(new_image_path, new_metadata_path)
         if self.tutorial2.steps:
-            self.tutorial2.steps[-1].append(new_screenshot)  # Se añade a la lista existente
+            self.tutorial2.steps.append([new_screenshot])  #The white image is added
         else:
-            self.tutorial2.steps.append([new_screenshot])  # Se crea una nueva lista con la imagen
+            self.tutorial2.steps.append([new_screenshot]) 
+
 
        
 
@@ -1124,7 +1125,7 @@ class TutorialGUI(qt.QMainWindow):
                 try:
                     pixmap = screenshot.getImage()
                     if not pixmap or pixmap.isNull():
-                        print(f"ERROR:")
+                        print(f"ERROR: pixmap Null")
                         continue
 
                     grouped_steps[stepIndex].append((pixmap, screenshot))  #Save the image in each group (step)
@@ -1226,7 +1227,7 @@ class TutorialGUI(qt.QMainWindow):
             self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
 
         self.selected_image = (screenshot, button)
-        #print(self.selected_image)
+        
         button.setStyleSheet("border: 2px solid blue;")
 
                 
