@@ -494,7 +494,6 @@ class TutorialGUI(qt.QMainWindow):
         # Insert Dummy Pages for Title, Acknowledgements
         self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png', type_="CoverPage")
         self.addBlankPage(False, 1, self.dir_path + '/../Resources/NewSlide/Acknowledgments.png', type_="Acknowledgement")
-        #self.tutorial2 = tutorial
 
         pass
 
@@ -552,40 +551,38 @@ class TutorialGUI(qt.QMainWindow):
         stepWidget.swapRequest.connect(self.swapStepPosition)
         if backgroundPath == "":
             self.images_selector(self.tutorial2,index) 
-            print('Hola')
-            #backgroundPath = self.dir_path+'/../Resources/NewSlide/white.png'
-        if metadata is None:
-            metadata = {}
-        annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
-        if type_ != "":
-             annotatorSlide.SlideLayout = type_
-        stepWidget.AddStepWindows(annotatorSlide)
-        stepWidget.CreateMergedWindow()
+        else: 
+            if metadata is None:
+                metadata = {}
+            annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
+            if type_ != "":
+                annotatorSlide.SlideLayout = type_
+            stepWidget.AddStepWindows(annotatorSlide)
+            stepWidget.CreateMergedWindow()
 
-        def InsertWidget(_nWidget, _index):
+            def InsertWidget(_nWidget, _index):
 
-            #To make the lists bigger
-            self.steps.append(_nWidget)
-            self.gridLayout.addWidget(_nWidget)
+                #To make the lists bigger
+                self.steps.append(_nWidget)
+                self.gridLayout.addWidget(_nWidget)
 
-            for stepIndex in range(len(self.steps) - 1, _index, -1):
-                self.steps[stepIndex] = self.steps[stepIndex - 1]
-                self.steps[stepIndex].stepIndex = stepIndex
-                self.gridLayout.addWidget(self.steps[stepIndex], stepIndex, 0)
+                for stepIndex in range(len(self.steps) - 1, _index, -1):
+                    self.steps[stepIndex] = self.steps[stepIndex - 1]
+                    self.steps[stepIndex].stepIndex = stepIndex
+                    self.gridLayout.addWidget(self.steps[stepIndex], stepIndex, 0)
 
-            self.steps[_index] = _nWidget
-            _nWidget.stepIndex = _index
-            self.gridLayout.addWidget(_nWidget, _index, 0)
+                self.steps[_index] = _nWidget
+                _nWidget.stepIndex = _index
+                self.gridLayout.addWidget(_nWidget, _index, 0)
 
-        if index is not None:
-            InsertWidget(stepWidget, index)
-            return
-        InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
-        pass
-    
+            if index is not None:
+                InsertWidget(stepWidget, index)
+                return
+            InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
+            pass
+        
     def add_selected_image(self):
         insert_index = self.selectedIndexes[0]+1
-        print(insert_index)
         if self.selected_image:
             try:
                 screenshot = self.selected_image[0]
@@ -601,9 +598,9 @@ class TutorialGUI(qt.QMainWindow):
                 stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
                 stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
                 stepWidget.swapRequest.connect(self.swapStepPosition)            
-                stepWidget.AddStepWindows(annotatorSlide) #Agrega el step
+                stepWidget.AddStepWindows(annotatorSlide) 
 
-                self.steps.insert(insert_index, stepWidget)  # noqa: F821
+                self.steps.insert(insert_index, stepWidget) 
                 while self.gridLayout.count():
                     item = self.gridLayout.takeAt(0)
                     widget = item.widget()
@@ -611,7 +608,7 @@ class TutorialGUI(qt.QMainWindow):
                         widget.setParent(None)
                 for idx, step in enumerate(self.steps):
                     step.stepIndex =idx
-                    self.gridLayout.addWidget(step, idx, 0)  # noqa: F821 #coloca las imagenes del lado izquierdo ordenadas
+                    self.gridLayout.addWidget(step, idx, 0)  
                
                 self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
                 self.selected_image = None
@@ -619,7 +616,7 @@ class TutorialGUI(qt.QMainWindow):
                     
 
             except Exception as e:
-                print(f"❌ ERROR al agregar la imagen: {str(e)}")
+                print(f"Error: {str(e)}")
         
        
 
@@ -1203,7 +1200,7 @@ class TutorialGUI(qt.QMainWindow):
         scroll_area.setWidget(self.listWidget)
 
         
-        addButton = qt.QPushButton("Add Image")
+        addButton = qt.QPushButton(_("Add Image"))
         addButton.clicked.connect(self.add_selected_image)
 
         button_layout = qt.QHBoxLayout()
