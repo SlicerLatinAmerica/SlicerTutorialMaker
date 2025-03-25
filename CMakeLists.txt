@@ -14,7 +14,8 @@ set(EXTENSION_CONTRIBUTORS "Douglas Gonçalves (Universidade de São Paulo), Enr
                                     Mohamed Alalli Bilal (University Cheikh Anta Diop), Steve Pieper (Isomics Inc.),
                                     Adriana Vilchis-Gonzalez (Universidad Autónoma del Estado de México), Luiz Otavio Murta Junior (Universidade de São Paulo),
                                     Andras Lasso (Queen’s University), Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)")
-set(EXTENSION_DESCRIPTION "Tools for creating tutorials for 3D Slicer that can be automatically translated to multiple languages.")
+set(EXTENSION_DESCRIPTION "The Tutorial Maker is still under development and is in an experimental phase.
+                           Tools for creating tutorials for 3D Slicer that can be automatically translated to multiple languages.")
 set(EXTENSION_ICONURL "https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/TutorialMaker.png")
 set(EXTENSION_SCREENSHOTURLS "https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/DOCS/annotations.png https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/DOCS/annotations2.png https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/DOCS/GUIdeveloped.png https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/DOCS/pdf.png")
 set(EXTENSION_DEPENDS "NA") # Specified as a list or "NA" if no dependencies
