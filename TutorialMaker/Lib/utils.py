@@ -1,6 +1,8 @@
 import slicer
 import qt
 import os
+import re
+import copy
 
 class util():
 
@@ -273,6 +275,78 @@ class Shapes(qt.QWidget):
         painter.setPen(pen)
         painter.drawEllipse(pos.x() - (200/2) + widget.rect.width()/2, pos.y() - (200/2) + widget.rect.height()/2, 200, 200)
 
+class SelfTestTutorialLayer():
+
+    directives = {
+        "id" : "TUTORIALMAKER",
+        "begin" : "BEGIN",
+        "end" : "END",
+        "metadata_author" : "AUTHOR",
+        "metadata_date" : "DATE",
+        "metadata_desc" : "DESC",
+        "takeScreenshot" : "SCREENSHOT",
+    }
+
+
+    def ParseTutorial(path):
+        if path == "" or path == None:
+            raise Exception()
+
+        counter = NextCounter()
+
+        code_contents = ""
+        with open(path) as fd:
+            code_contents = fd.read()
+
+        _tutorialBeginString = f"# {SelfTestTutorialLayer.directives['id']} {SelfTestTutorialLayer.directives['begin']}"
+        _tutorialEndString = f"# {SelfTestTutorialLayer.directives['id']} {SelfTestTutorialLayer.directives['end']}"
+        _tutorialTakeScreenshot = f"# {SelfTestTutorialLayer.directives['id']} {SelfTestTutorialLayer.directives['takeScreenshot']}"
+
+        tutorialMatcher = rf"(?s)(?<={_tutorialBeginString}).*?(?={_tutorialEndString})"
+        functionMatcher = rf"(?s).+?(?={_tutorialTakeScreenshot})"
+
+        tutorial_tests = []
+        for test_module in re.findall(tutorialMatcher, code_contents):
+            tutorial_functions = []
+            for idx, test_function in enumerate(re.findall(functionMatcher, test_module)):
+                _functionSignature = f"def TUTORIAL_SCREENSHOT_{idx}(_locals):\n"
+                lines = test_function.split("\n")
+                _indentation = lines[0].count(" ") # THIS DOESN'T WORK
+                _indentation = 8 #TODO: NEED TO FIND A FAST WAY TO GET THIS DINAMICALLY
+
+                _newFunction = "\n" + " "*_indentation + _functionSignature
+                _newFunction += " "*(_indentation + 4) + "locals().update(_locals)\n"
+
+                for line in lines:
+                    _newFunction += " "*4 + line + "\n"
+                
+                _newFunction += " "*(_indentation + 4) + "return locals()\n"
+
+                tutorial_functions.append(_newFunction)
+                pass
+            counter.count = 0
+            tutorial_tests.append(re.sub(functionMatcher, lambda match : tutorial_functions[counter.next()], test_module))
+        counter.count = 0
+        finalFile = re.sub(tutorialMatcher, lambda match : tutorial_tests[counter.next()], code_contents)
+
+        path = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
+
+        with open(path + "_temp.py", "w") as fd:
+            fd .write(finalFile)
+        pass
+    
+    def TakeScreenshot():
+
+        pass
+
+class NextCounter():
+    def __init__(self, count=0):
+        self.count = count
+    def next(self):
+        self.count += 1
+        return self.count - 1
+
+
 class Widget():
     def __init__(self, widgetData) -> None:
         self.__widgetData = widgetData
@@ -508,6 +582,7 @@ class ScreenshotTools():
                 pass
         self.handler.saveScreenshotMetadata(data, filename)
 
+# TODO: REMOVE THIS, DEPRECATED
 class Tutorial:
     def __init__(self,
             title,
@@ -575,7 +650,7 @@ class TutorialScreenshot:
             widgets.append(nWidgets[keys])
         return widgets
 
-
+# TODO: REMOVE THIS, DEPRECATED
 class JSONHandler:
     def __init__(self):
         self.path = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/"
