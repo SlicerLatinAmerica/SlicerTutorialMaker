@@ -392,57 +392,6 @@ class TutorialGUI(qt.QMainWindow):
         with open(file= f"{self.outputFolder}/text_dict_default.json", mode='w', encoding="utf-8") as fd:
             json.dump(outputFileTextDict, fd, ensure_ascii=False, indent=4)
 
-        # >>>>>>> this will be removed in the next few versions, the painter should conform to the new version <<<<<<<
-
-        for stepIndex, step in enumerate(self.steps):
-            for slideIndex, slide in enumerate(step.Slides):
-                if not slide.Active:
-                    continue
-
-                annotations = []
-                for annIndex, annotationC in enumerate(slide.annotations):
-                    info = annotationC.toDict()
-                    color_rgb = f"{annotationC.color.red()}, {annotationC.color.green()}, {annotationC.color.blue()}"
-                    if annotationC.type == AnnotationType.Rectangle:
-                        annotation = { #Convert all to string
-                            "path": info["widgetPath"],
-                            "type": "rectangle",
-                            "color": color_rgb, # (r,g,b)
-                            "labelText":"", #text on annotation
-                            "fontSize": "14", # size of text on annotions 14px
-                        }
-                    elif annotationC.type == AnnotationType.Click:
-                        annotation = {
-                            "path": info["widgetPath"],
-                            "type": "clickMark",
-                            "labelText":"", #text on annotation
-                            "fontSize": "14", # size of text on annotions 14px
-                        }
-                    elif annotationC.type == AnnotationType.Arrow:
-                        annotation = {
-                            "path": info["widgetPath"],
-                            "type": "arrow",
-                            "color": color_rgb,
-                            "labelText": "",
-                            "fontSize": 14,
-                            "direction_draw" : [ float(info["offset"][0]), float(info["offset"][1]), float(info["optional"][0]), float(info["optional"][1])] #Enrique Line
-                        }
-                    else:
-                        annotation = {}
-                    annotations.append(annotation)
-                    pass
-                slideInfo = {
-                    "slide_title": slide.SlideTitle,
-                    "slide_text": slide.SlideBody,
-                    "annotations":annotations
-                }
-                outputFileOld.append(slideInfo)
-            pass
-
-        with open(file= f"{self.outputFolder}/annotations_old.json", mode='w', encoding="utf-8") as fd:
-            json.dump(outputFileOld, fd, ensure_ascii=False, indent=4)
-        
-        qt.QMessageBox.information(self, _("Information"), _("Annotations saved successfully"))
 
 
     def deleteSelectedAnnotation(self):
@@ -785,6 +734,8 @@ class TutorialGUI(qt.QMainWindow):
             self.selectedAnnotationType = AnnotationType.Circle
         elif self.arrow.isChecked():
             self.selectedAnnotationType = AnnotationType.Arrow
+        elif self.arrowText.isChecked():
+            self.selectedAnnotationType = AnnotationType.ArrowText
         elif self.textBox.isChecked():
             self.selectedAnnotationType = AnnotationType.TextBox
         elif self.icon_image.isChecked():
@@ -805,18 +756,34 @@ class TutorialGUI(qt.QMainWindow):
         if event.key() == qt.Qt.Key_Escape:
             self.setFocus()
             return False
+
         if self.selectedAnnotationType == AnnotationType.Selected:
             if event.key() == qt.Qt.Key_Delete:
                 self.selectedAnnotation.PERSISTENT = False
                 self.cancelCurrentAnnotation()
-            elif self.selectedAnnotation.type == AnnotationType.TextBox:
-                #TODO: Make so enter is also treated differently, would need to change the textBox draw code as well
-                if event.key() == qt.Qt.Key_Backspace:
+
+            elif self.selectedAnnotation.type in [AnnotationType.TextBox, AnnotationType.ArrowText]:
+                # Detect command Ctrl+C copy text
+                if event.key() == qt.Qt.Key_C and event.modifiers() & qt.Qt.ControlModifier:
+                    qt.QApplication.clipboard().setText(self.selectedAnnotation.text)
+                
+                # Detect command Ctl+v page text
+                elif event.key() == qt.Qt.Key_V and event.modifiers() & qt.Qt.ControlModifier:
+                    self.selectedAnnotation.text += qt.QApplication.clipboard().text()
+
+                # Detect Enter to add a line break
+                elif event.key() in [qt.Qt.Key_Return, qt.Qt.Key_Enter]:
+                    self.selectedAnnotation.text += "\n"
+
+                # Detect Backspace
+                elif event.key() == qt.Qt.Key_Backspace:
                     self.selectedAnnotation.text = self.selectedAnnotation.text[:-1]
+
                 else:
                     self.selectedAnnotation.text += event.text()
 
             return True
+
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
                 self.selectorParentDelta(-1)
@@ -825,7 +792,8 @@ class TutorialGUI(qt.QMainWindow):
                 self.selectorParentDelta(1)
                 return True
 
-        pass
+        return False
+
 
     def selectorParentDelta(self, delta : int):
         self.selectorParentCount += delta
@@ -976,6 +944,10 @@ class TutorialGUI(qt.QMainWindow):
         self.arrow.setCheckable(True)
         toolbar.addAction(self.arrow)
 
+        self.arrowText = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png'), _("Arrow text"), self)
+        self.arrowText.setCheckable(True)
+        toolbar.addAction(self.arrowText)
+
         self.textBox = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png'), _("Text Box"), self)
         self.textBox.setCheckable(True)
         toolbar.addAction(self.textBox)
@@ -1009,6 +981,10 @@ class TutorialGUI(qt.QMainWindow):
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_enabled.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_disabled.png')
             },
+            self.arrowText:{
+                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3_p.png'),
+                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png')
+            },
             self.textBox: {
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_enabled.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png')
@@ -1023,7 +999,7 @@ class TutorialGUI(qt.QMainWindow):
             }
         }
 
-        self.toolbar_actions = [self.select, self.square, self.circle, self.clck, self.arrow, self.icon_image, self.in_text, self.textBox]
+        self.toolbar_actions = [self.select, self.square, self.circle, self.clck, self.arrow, self.arrowText ,self.icon_image, self.in_text, self.textBox]
         for a in self.toolbar_actions:
             a.triggered.connect(lambda checked, a=a: self.on_action_triggered(a))
 
