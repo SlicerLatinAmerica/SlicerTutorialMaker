@@ -392,57 +392,6 @@ class TutorialGUI(qt.QMainWindow):
         with open(file= f"{self.outputFolder}/text_dict_default.json", mode='w', encoding="utf-8") as fd:
             json.dump(outputFileTextDict, fd, ensure_ascii=False, indent=4)
 
-        # >>>>>>> this will be removed in the next few versions, the painter should conform to the new version <<<<<<<
-
-        for stepIndex, step in enumerate(self.steps):
-            for slideIndex, slide in enumerate(step.Slides):
-                if not slide.Active:
-                    continue
-
-                annotations = []
-                for annIndex, annotationC in enumerate(slide.annotations):
-                    info = annotationC.toDict()
-                    color_rgb = f"{annotationC.color.red()}, {annotationC.color.green()}, {annotationC.color.blue()}"
-                    if annotationC.type == AnnotationType.Rectangle:
-                        annotation = { #Convert all to string
-                            "path": info["widgetPath"],
-                            "type": "rectangle",
-                            "color": color_rgb, # (r,g,b)
-                            "labelText":"", #text on annotation
-                            "fontSize": "14", # size of text on annotions 14px
-                        }
-                    elif annotationC.type == AnnotationType.Click:
-                        annotation = {
-                            "path": info["widgetPath"],
-                            "type": "clickMark",
-                            "labelText":"", #text on annotation
-                            "fontSize": "14", # size of text on annotions 14px
-                        }
-                    elif annotationC.type == AnnotationType.Arrow:
-                        annotation = {
-                            "path": info["widgetPath"],
-                            "type": "arrow",
-                            "color": color_rgb,
-                            "labelText": "",
-                            "fontSize": 14,
-                            "direction_draw" : [ float(info["offset"][0]), float(info["offset"][1]), float(info["optional"][0]), float(info["optional"][1])] #Enrique Line
-                        }
-                    else:
-                        annotation = {}
-                    annotations.append(annotation)
-                    pass
-                slideInfo = {
-                    "slide_title": slide.SlideTitle,
-                    "slide_text": slide.SlideBody,
-                    "annotations":annotations
-                }
-                outputFileOld.append(slideInfo)
-            pass
-
-        with open(file= f"{self.outputFolder}/annotations_old.json", mode='w', encoding="utf-8") as fd:
-            json.dump(outputFileOld, fd, ensure_ascii=False, indent=4)
-        
-        qt.QMessageBox.information(self, _("Information"), _("Annotations saved successfully"))
 
 
     def deleteSelectedAnnotation(self):
@@ -550,35 +499,77 @@ class TutorialGUI(qt.QMainWindow):
         stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
         stepWidget.swapRequest.connect(self.swapStepPosition)
         if backgroundPath == "":
-            backgroundPath = self.dir_path+'/../Resources/NewSlide/white.png'
-        if metadata is None:
-            metadata = {}
-        annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
-        if type_ != "":
-             annotatorSlide.SlideLayout = type_
-        stepWidget.AddStepWindows(annotatorSlide)
-        stepWidget.CreateMergedWindow()
+            self.images_selector(self.tutorial2,index) 
+        else: 
+            if metadata is None:
+                metadata = {}
+            annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
+            if type_ != "":
+                annotatorSlide.SlideLayout = type_
+            stepWidget.AddStepWindows(annotatorSlide)
+            stepWidget.CreateMergedWindow()
 
-        def InsertWidget(_nWidget, _index):
+            def InsertWidget(_nWidget, _index):
 
-            #To make the lists bigger
-            self.steps.append(_nWidget)
-            self.gridLayout.addWidget(_nWidget)
+                #To make the lists bigger
+                self.steps.append(_nWidget)
+                self.gridLayout.addWidget(_nWidget)
 
-            for stepIndex in range(len(self.steps) - 1, _index, -1):
-                self.steps[stepIndex] = self.steps[stepIndex - 1]
-                self.steps[stepIndex].stepIndex = stepIndex
-                self.gridLayout.addWidget(self.steps[stepIndex], stepIndex, 0)
+                for stepIndex in range(len(self.steps) - 1, _index, -1):
+                    self.steps[stepIndex] = self.steps[stepIndex - 1]
+                    self.steps[stepIndex].stepIndex = stepIndex
+                    self.gridLayout.addWidget(self.steps[stepIndex], stepIndex, 0)
 
-            self.steps[_index] = _nWidget
-            _nWidget.stepIndex = _index
-            self.gridLayout.addWidget(_nWidget, _index, 0)
+                self.steps[_index] = _nWidget
+                _nWidget.stepIndex = _index
+                self.gridLayout.addWidget(_nWidget, _index, 0)
 
-        if index is not None:
-            InsertWidget(stepWidget, index)
-            return
-        InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
-        pass
+            if index is not None:
+                InsertWidget(stepWidget, index)
+                return
+            InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
+            pass
+        
+    def add_selected_image(self):
+        insert_index = self.selectedIndexes[0]+1
+        if self.selected_image:
+            try:
+                screenshot = self.selected_image[0]
+                image_pixmap = screenshot.getImage()
+                image_widgets = screenshot.getWidgets()
+                annotatorSlide = AnnotatorSlide(image_pixmap, image_widgets)
+
+            
+                if not image_pixmap or image_pixmap.isNull():
+                    print("Image pixmap is null")
+                    return
+
+                stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
+                stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
+                stepWidget.swapRequest.connect(self.swapStepPosition)            
+                stepWidget.AddStepWindows(annotatorSlide) 
+
+                self.steps.insert(insert_index, stepWidget) 
+                while self.gridLayout.count():
+                    item = self.gridLayout.takeAt(0)
+                    widget = item.widget()
+                    if widget is not None:
+                        widget.setParent(None)
+                for idx, step in enumerate(self.steps):
+                    step.stepIndex =idx
+                    self.gridLayout.addWidget(step, idx, 0)  
+               
+                self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
+                self.selected_image = None
+             
+                    
+
+            except Exception as e:
+                print(f"Error: {str(e)}")
+        
+       
+
+
 
     def copy_page(self):
         pass
@@ -743,6 +734,8 @@ class TutorialGUI(qt.QMainWindow):
             self.selectedAnnotationType = AnnotationType.Circle
         elif self.arrow.isChecked():
             self.selectedAnnotationType = AnnotationType.Arrow
+        elif self.arrowText.isChecked():
+            self.selectedAnnotationType = AnnotationType.ArrowText
         elif self.textBox.isChecked():
             self.selectedAnnotationType = AnnotationType.TextBox
         elif self.icon_image.isChecked():
@@ -763,18 +756,34 @@ class TutorialGUI(qt.QMainWindow):
         if event.key() == qt.Qt.Key_Escape:
             self.setFocus()
             return False
+
         if self.selectedAnnotationType == AnnotationType.Selected:
             if event.key() == qt.Qt.Key_Delete:
                 self.selectedAnnotation.PERSISTENT = False
                 self.cancelCurrentAnnotation()
-            elif self.selectedAnnotation.type == AnnotationType.TextBox:
-                #TODO: Make so enter is also treated differently, would need to change the textBox draw code as well
-                if event.key() == qt.Qt.Key_Backspace:
+
+            elif self.selectedAnnotation.type in [AnnotationType.TextBox, AnnotationType.ArrowText]:
+                # Detect command Ctrl+C copy text
+                if event.key() == qt.Qt.Key_C and event.modifiers() & qt.Qt.ControlModifier:
+                    qt.QApplication.clipboard().setText(self.selectedAnnotation.text)
+                
+                # Detect command Ctl+v page text
+                elif event.key() == qt.Qt.Key_V and event.modifiers() & qt.Qt.ControlModifier:
+                    self.selectedAnnotation.text += qt.QApplication.clipboard().text()
+
+                # Detect Enter to add a line break
+                elif event.key() in [qt.Qt.Key_Return, qt.Qt.Key_Enter]:
+                    self.selectedAnnotation.text += "\n"
+
+                # Detect Backspace
+                elif event.key() == qt.Qt.Key_Backspace:
                     self.selectedAnnotation.text = self.selectedAnnotation.text[:-1]
+
                 else:
                     self.selectedAnnotation.text += event.text()
 
             return True
+
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
                 self.selectorParentDelta(-1)
@@ -783,7 +792,8 @@ class TutorialGUI(qt.QMainWindow):
                 self.selectorParentDelta(1)
                 return True
 
-        pass
+        return False
+
 
     def selectorParentDelta(self, delta : int):
         self.selectorParentCount += delta
@@ -828,6 +838,20 @@ class TutorialGUI(qt.QMainWindow):
                 screenshotList.append(wScreenshot)
             tutorial.steps.append(screenshotList)
         self.loadImagesAndMetadata(tutorial)
+        self.tutorial2 = tutorial
+        
+        new_image_path = self.dir_path+'/../Resources/NewSlide/white.png'
+        new_metadata_path = self.dir_path+'/../Resources/NewSlide/white.json'
+        new_screenshot = TutorialScreenshot(new_image_path, new_metadata_path)
+        if self.tutorial2.steps:
+            self.tutorial2.steps.append([new_screenshot])  #The white image is added
+        else:
+            self.tutorial2.steps.append([new_screenshot]) 
+
+
+       
+
+
 
     def eventFilter(self, obj, event):
         if obj == self.selectedSlide:
@@ -920,6 +944,10 @@ class TutorialGUI(qt.QMainWindow):
         self.arrow.setCheckable(True)
         toolbar.addAction(self.arrow)
 
+        self.arrowText = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png'), _("Arrow text"), self)
+        self.arrowText.setCheckable(True)
+        toolbar.addAction(self.arrowText)
+
         self.textBox = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png'), _("Text Box"), self)
         self.textBox.setCheckable(True)
         toolbar.addAction(self.textBox)
@@ -953,6 +981,10 @@ class TutorialGUI(qt.QMainWindow):
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_enabled.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/arrow_disabled.png')
             },
+            self.arrowText:{
+                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3_p.png'),
+                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act3.png')
+            },
             self.textBox: {
                 'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_enabled.png'),
                 'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/textBox_disabled.png')
@@ -967,7 +999,7 @@ class TutorialGUI(qt.QMainWindow):
             }
         }
 
-        self.toolbar_actions = [self.select, self.square, self.circle, self.clck, self.arrow, self.icon_image, self.in_text, self.textBox]
+        self.toolbar_actions = [self.select, self.square, self.circle, self.clck, self.arrow, self.arrowText ,self.icon_image, self.in_text, self.textBox]
         for a in self.toolbar_actions:
             a.triggered.connect(lambda checked, a=a: self.on_action_triggered(a))
 
@@ -1041,3 +1073,134 @@ class TutorialGUI(qt.QMainWindow):
             else:
                 action.setChecked(False)
                 action.setIcon(icons['inactive'])
+
+    def images_selector(self, tutorialDara,index):
+        self.dialog = qt.QDialog()
+        self.dialog.setWindowTitle("Select the images")
+        self.dialog.setGeometry(100, 100, 800, 600) 
+        
+        self.listWidget = qt.QListWidget()
+        self.listWidget.setSelectionMode(qt.QAbstractItemView.NoSelection) 
+        self.listWidget.setIconSize(qt.QSize(300, 300))
+        self.listWidget.setViewMode(qt.QListWidget.IconMode) 
+        self.listWidget.setResizeMode(qt.QListWidget.Adjust)  
+        self.listWidget.setSpacing(10)
+        
+        self.final_selected_images = []
+        self.selected_image = None
+        self.image_buttons = {}
+        grouped_steps = {}  #Groups for images in each step
+        
+        for stepIndex, screenshots in enumerate(self.tutorial2.steps):
+            if stepIndex not in grouped_steps:
+                grouped_steps[stepIndex] = []  
+            for screenshotIndex, screenshot in enumerate(screenshots):
+                try:
+                    pixmap = screenshot.getImage()
+                    if not pixmap or pixmap.isNull():
+                        print(f"ERROR: pixmap Null")
+                        continue
+
+                    grouped_steps[stepIndex].append((pixmap, screenshot))  #Save the image in each group (step)
+
+                except Exception as e:
+                    print(f"ERROR")
+        has_widgets = False
+    
+        for stepIndex, screenshots in grouped_steps.items():
+            if not screenshots:
+                continue 
+
+            container_widget = qt.QWidget()
+            layout = qt.QVBoxLayout(container_widget)
+
+            main_pixmap, main_screenshot = screenshots[0]
+            main_button = qt.QPushButton()
+            main_button.setIcon(qt.QIcon(main_pixmap))
+            main_button.setIconSize(qt.QSize(300, 200))
+            main_button.setCheckable(True)
+            if len(screenshots[1:])>0:
+                main_button.setStyleSheet("border: 2px solid #FFFF00;")
+            else:
+                main_button.setStyleSheet("border: 2px solid transparent;")
+            main_button.clicked.connect(lambda _, img=main_screenshot, btn=main_button: self.select_single_image(img, btn))
+            if len(screenshots[1:])>0:
+                toggle_button = qt.QPushButton()
+                toggle_button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_down.png'))  
+                toggle_button.setIconSize(qt.QSize(32, 32))
+                toggle_button.setCheckable(True)
+
+                secondary_container = qt.QWidget()
+                secondary_layout = qt.QVBoxLayout(secondary_container)
+
+                for pixmap, screenshot in screenshots[1:]:
+                    if not pixmap:
+                        continue 
+                    sec_button = qt.QPushButton()
+                    sec_button.setIcon(qt.QIcon(pixmap))
+                    sec_button.setIconSize(qt.QSize(250, 150))
+                    sec_button.setCheckable(True)
+                    sec_button.setStyleSheet("border: 2px solid transparent;")  
+                    
+                    if hasattr(screenshot, 'widgets') and screenshot.widgets:
+                        has_widgets = True
+
+                    sec_button.clicked.connect(lambda _, img=screenshot, btn=sec_button: self.select_single_image(img, btn))
+                    secondary_layout.addWidget(sec_button)
+
+                secondary_container.setVisible(False)  
+
+                def toggle_secondary_images(checked, container=secondary_container, button=toggle_button):
+                    container.setVisible(checked)
+                    if checked:
+                        button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_up.png'))
+                    else:
+                        button.setIcon(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/chevron_down.png')) 
+
+                toggle_button.toggled.connect(toggle_secondary_images)
+
+            layout.addWidget(main_button)
+            if len(screenshots[1:])>0:
+                layout.addWidget(toggle_button)
+                layout.addWidget(secondary_container)         
+
+            
+            item = qt.QListWidgetItem(self.listWidget)
+            item.setSizeHint(qt.QSize(320, 220))  
+
+            self.listWidget.addItem(item)
+            self.listWidget.setItemWidget(item, container_widget)  
+            
+        scroll_area = qt.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.listWidget)
+
+        
+        addButton = qt.QPushButton(_("Add Image"))
+        addButton.clicked.connect(self.add_selected_image)
+
+        button_layout = qt.QHBoxLayout()
+        button_layout.addWidget(addButton)
+
+        button_widget = qt.QWidget()
+        button_widget.setLayout(button_layout)
+
+        
+        main_layout = qt.QVBoxLayout()
+        main_layout.addWidget(scroll_area)  
+        main_layout.addWidget(button_widget)  
+
+        self.dialog.setLayout(main_layout)
+        result = self.dialog.exec_()
+        
+
+    def select_single_image(self, screenshot, button):
+        
+        if self.selected_image:
+            self.selected_image[1].setStyleSheet("border: 2px solid transparent;")
+
+        self.selected_image = (screenshot, button)
+        
+        button.setStyleSheet("border: 2px solid blue;")
+
+                

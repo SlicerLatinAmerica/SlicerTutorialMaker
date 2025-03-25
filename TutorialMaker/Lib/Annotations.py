@@ -9,13 +9,13 @@ from Lib.utils import util
 class AnnotationType(Flag):
     Nil = auto() # Not for saving
     Arrow = auto()
+    ArrowText = auto()
     Rectangle = auto()
     Circle = auto()
     TextBox = auto()
     Click = auto()
     Selecting = auto()
     Selected = auto()  # Not for saving
-
 
 class Annotation:
     def __init__(self,
@@ -70,7 +70,7 @@ class Annotation:
         return [self.boundingBoxBottomRight[0] - self.boundingBoxTopLeft[0], self.boundingBoxBottomRight[1] - self.boundingBoxTopLeft[1]]
 
     def wantsOptHelper(self):
-        return self.type in AnnotationType.Arrow | AnnotationType.TextBox
+        return self.type in AnnotationType.Arrow | AnnotationType.TextBox | AnnotationType.ArrowText
 
     def wantsOffsetHelper(self):
         return self.type in AnnotationType.Click | AnnotationType.TextBox
@@ -181,6 +181,95 @@ class Annotation:
 
             self.setSelectionBoundingBox(*arrowTail, *arrowHead)
             pass
+        elif self.type == AnnotationType.ArrowText:
+            # So the arrow will be filled
+            brush.setStyle(qt.Qt.SolidPattern)
+            painter.setBrush(brush)
+
+            arrowRatio = 3 # defined as > 1 (bigger than one) and changes the arrow head angle
+            arrowHeadSize = 40
+            arrowSize = 200
+
+            optX =  self.optX - targetCenter[0]
+            optY = self.optY - targetCenter[1]
+
+            # To better the user experience of moving the helper element
+            optX = util.mapFromTo(optX, -targetSize[0], targetSize[0], -1, 1)
+            optY = util.mapFromTo(optY, -targetSize[1], targetSize[1], -1, 1)
+
+            # Clamp optional values between -1 and 1
+            optX = min(max(-1, optX), 1)
+            optY = min(max(-1, optY), 1)
+
+            arrowHead = [targetCenter[0] + optX*targetSize[0]/2,
+                         targetCenter[1] + optY*targetSize[1]/2]
+
+            arrowTail = [arrowHead[0] + arrowSize*optX,
+                         arrowHead[1] + arrowSize*optY]
+
+            arrowLine = qt.QLineF(qt.QPointF(*arrowHead), qt.QPointF(*arrowTail))
+
+            arrowAngle = math.atan2(-arrowLine.dy(), arrowLine.dx())
+
+            arrowP1 = arrowLine.p1() + qt.QPointF(math.sin(arrowAngle + math.pi / arrowRatio) * arrowHeadSize,
+                                                  math.cos(arrowAngle + math.pi / arrowRatio) * arrowHeadSize)
+
+            arrowP2 = arrowLine.p1() + qt.QPointF(math.sin(arrowAngle + math.pi - math.pi / arrowRatio) * arrowHeadSize,
+                                                  math.cos(arrowAngle + math.pi - math.pi / arrowRatio) * arrowHeadSize)
+
+            arrowHeadPolygon = qt.QPolygonF()
+            arrowHeadPolygon.clear()
+
+            arrowHeadPolygon.append(arrowLine.p1())
+            arrowHeadPolygon.append(arrowP1)
+            arrowHeadPolygon.append(arrowP2)
+
+            painter.drawLine(arrowLine)
+            painter.drawPolygon(arrowHeadPolygon)
+
+
+            self.setSelectionBoundingBox(*arrowTail, *arrowHead)
+
+            # Text section
+            yPadding = -6
+            xPadding = 0
+            lineSpacing = 2
+
+            font = qt.QFont("Arial", self.fontSize)
+            painter.setFont(font)
+            pen.setColor(qt.Qt.black)
+            painter.setPen(pen)
+
+            fontMetrics = qt.QFontMetrics(font)
+            fHeight = fontMetrics.height()
+
+            textToWrite = self.text
+            if textToWrite == "":
+                textToWrite = _("Write your text here")
+            textLines = textToWrite.splitlines()
+
+            # Calculate text size
+            textHeight = len(textLines) * fHeight + (len(textLines) - 1) * lineSpacing
+            textWidth = max(fontMetrics.width(line) for line in textLines)
+
+            # Calcule the position of the text box (center)
+            topLeft = qt.QPoint(arrowTail[0] - textWidth // 2, arrowTail[1] - textHeight // 2)
+            bottomRight = qt.QPoint(arrowTail[0] + textWidth // 2, arrowTail[1] + textHeight // 2)
+            rectToDraw = qt.QRect(topLeft, bottomRight)
+            painter.drawRect(rectToDraw)
+
+            # Ajust text to the center box
+            textStart = [topLeft.x() + xPadding, topLeft.y() + yPadding + fHeight]
+
+
+            for lineIndex, line in enumerate(textLines):
+                painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight * lineIndex, line)
+
+            self.setSelectionBoundingBox(arrowHead[0], arrowHead[1], arrowTail[0], arrowTail[1])
+
+
+            pass
+
         elif self.type == AnnotationType.Rectangle:
             topLeft = qt.QPoint(targetPos[0], targetPos[1])
             bottomRight = qt.QPoint(targetPos[0] + targetSize[0],targetPos[1] + targetSize[1])
@@ -240,7 +329,7 @@ class Annotation:
             if textToWrite == "":
                 textToWrite = _("Write something here")
 
-            textTokens = textToWrite.split()
+            textTokens = textToWrite.splitlines()
             textLines = []
             line = ""
             for token in textTokens:
@@ -255,6 +344,7 @@ class Annotation:
                 painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)
 
             self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + optX, targetPos[1] + optY)
+
         elif self.type == AnnotationType.Click:
             bottomRight = [targetPos[0] + targetSize[0],
                            targetPos[1] + targetSize[1]]
@@ -295,6 +385,100 @@ class Annotation:
 
 
 class AnnotatorSlide:
+    def __init__(self, BackgroundImage : qt.QPixmap, Metadata : dict, Annotations : list[Annotation] = None, WindowOffset : list[int] = None):
+
+        self.image = BackgroundImage
+        self.outputImage = self.image.copy()
+        self.metadata = Metadata
+        if Annotations is None:
+            Annotations = []
+        if WindowOffset is None:
+            WindowOffset = [0,0]
+        self.windowOffset = WindowOffset
+        self.annotations = Annotations
+        self.Active = True
+
+        self.SlideLayout = "Screenshot"
+        self.SlideTitle = ""
+        self.SlideBody = ""
+        pass
+
+    def AddAnnotation(self, annotation : Annotation):
+        annotation.setOffset(self.windowOffset)
+        self.annotations.append(annotation)
+        pass
+
+    def FindWidgetsAtPos(self, posX, posY):
+        results = []
+
+        posX += self.windowOffset[0]
+        posY += self.windowOffset[1]
+
+        for widget in self.metadata:
+            rectX, rectY = widget["position"]
+            rectWidth, rectHeight = widget["size"]
+            if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
+                results.append(widget)
+        return results
+
+    def FindAnnotationsAtPos(self, posX, posY):
+        results = []
+
+        for annotation in self.annotations:
+            rectX, rectY = annotation.boundingBoxTopLeft
+            rectWidth, rectHeight = annotation.getSelectionBoundingBoxSize()
+            if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
+                results.append(annotation)
+
+        results.sort(reverse=True, key= lambda x: x.getSelectionBoundingBoxSize()[0]*x.getSelectionBoundingBoxSize()[1])
+        return results
+
+
+    def MapScreenToImage(self, qPos : qt.QPoint, qLabel : qt.QLabel):
+        imageSizeX = self.image.width()
+        imageSizeY = self.image.height()
+
+        labelWidth = qLabel.width
+        labelHeight = qLabel.height
+
+        x = util.mapFromTo(qPos.x(), 0, labelWidth, 0, imageSizeX)
+        y = util.mapFromTo(qPos.y(), 0, labelHeight, 0, imageSizeY)
+
+        return [x,y]
+
+    def MapImageToScreen(self, qPos : qt.QPoint, qLabel : qt.QLabel):
+        imageSizeX = self.image.width()
+        imageSizeY = self.image.height()
+
+        labelWidth = qLabel.width
+        labelHeight = qLabel.height
+
+        x = util.mapFromTo(qPos.x(), 0, imageSizeX, 0, labelWidth)
+        y = util.mapFromTo(qPos.y(), 0, imageSizeY, 0, labelHeight)
+
+        return [x,y]
+
+    def GetResized(self, resizeX : float = 0, resizeY : float = 0, keepAspectRatio=False) -> qt.QPixmap:
+        if resizeX <= 0 or resizeY <= 0:
+            return self.outputImage
+        if keepAspectRatio:
+            self.outputImage.scaled(resizeX, resizeY, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+        return self.outputImage.scaled(resizeX, resizeY,qt.Qt.IgnoreAspectRatio, qt.Qt.SmoothTransformation)
+
+    def ReDraw(self):
+        del self.outputImage
+        self.outputImage = self.image.copy()
+        self.Draw()
+
+    def Draw(self):
+        painter = qt.QPainter(self.outputImage)
+        painter.setRenderHint(qt.QPainter.Antialiasing, True)
+        pen = qt.QPen()
+        brush = qt.QBrush()
+        for annotation in self.annotations:
+            annotation.draw(painter, pen, brush)
+        painter.end()
+
     def __init__(self, BackgroundImage : qt.QPixmap, Metadata : dict, Annotations : list[Annotation] = None, WindowOffset : list[int] = None):
 
         self.image = BackgroundImage
