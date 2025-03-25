@@ -2,39 +2,36 @@ import slicer
 import qt
 import os
 
-class util():
+class WidgetUtility:
 
     def __init__(self) -> None:
-        #self.listOnScreenWidgets()
-        self.mw = Widget(slicer.util.mainWindow())
-        pass
+        self.mainWindowWidget = Widget(slicer.util.mainWindow())
 
     __shortcutDict = {
-        "Scene3D"     : "CentralWidget/CentralWidgetLayoutFrame/ThreeDWidget1",
-        "SceneRed"    : "CentralWidget/CentralWidgetLayoutFrame/qMRMLSliceWidgetRed",
-        "SceneYellow" : "CentralWidget/CentralWidgetLayoutFrame/qMRMLSliceWidgetYellow",
-        "SceneGreen"  : "CentralWidget/CentralWidgetLayoutFrame/qMRMLSliceWidgetGreen",
-        "Module"      : "PanelDockWidget/dockWidgetContents/ModulePanel/ScrollArea/qt_scrollarea_viewport/scrollAreaWidgetContents"
+        "Scene3D": "CentralWidget/CentralWidgetLayoutFrame/ThreeDWidget1",
+        "SceneRed": "CentralWidget/CentralWidgetLayoutFrame/qMRMLSliceWidgetRed",
+        "SceneYellow": "CentralWidget/CentralWidgetLayoutFrame/qMRMLSliceWidgetYellow",
+        "SceneGreen": "CentralWidget/CentralWidgetLayoutFrame/qMRMLSliceWidgetGreen",
+        "Module": "PanelDockWidget/dockWidgetContents/ModulePanel/ScrollArea/qt_scrollarea_viewport/scrollAreaWidgetContents"
     }
 
     def listOnScreenWidgets(self):
-        print(self.mw.className, end=", ")
-        print(self.mw.name)
-        self.__listWidgetsRecursive(self.mw, 1)
+        print(self.mainWindowWidget.className, end=", ")
+        print(self.mainWindowWidget.name)
+        self.__listWidgetsRecursive(self.mainWindowWidget, 1)
 
     def __listWidgetsRecursive(self, widget, depth):
         children = widget.getChildren()
         for child in children:
             if child.name != "":
-                for i in range(depth):
-                    print("\t", end="")
+                print("\t" * depth, end="")
                 print(child.className, end=", ")
                 print(child.name)
                 self.__listWidgetsRecursive(child, depth + 1)
 
     def getOnScreenWidgets(self, window=None):
         if window is None:
-            window = self.mw
+            window = self.mainWindowWidget
         window = Widget(window)
         widgets = self.__getWidgetsRecursive(window, 1)
         return widgets
@@ -44,40 +41,39 @@ class util():
         children = widget.getChildren()
         for child in children:
             widgets.append(child)
-            widgets = widgets + self.__getWidgetsRecursive(child, depth + 1)
+            widgets.extend(self.__getWidgetsRecursive(child, depth + 1))
         return widgets
 
     def getNamedWidget(self, path, widget=None):
         if path == "":
-            return
+            return None
         if not widget:
-            widget = self.mw
-        wNames = path.split("/")
-        extendedPath = self.widgetShortcuts(wNames[0])
-        extendedPath.extend(wNames[1:])
-        for name in extendedPath:
-            _widget = widget.getNamedChild(name)
-            if not _widget:
+            widget = self.mainWindowWidget
+        widgetNames = path.split("/")
+        fullPath = self.resolveWidgetShortcut(widgetNames[0])
+        fullPath.extend(widgetNames[1:])
+        for name in fullPath:
+            currentWidget = widget.getNamedChild(name)
+            if not currentWidget:
                 temp = name.split(":", 1)
                 if len(temp) < 2:
                     return None
-                wList = self.getWidgetsByClassName(widget, temp[0])
-                _widget = wList[int(temp[1])]
-                if not _widget:
+                widgetList = self.getWidgetsByClassName(widget, temp[0])
+                currentWidget = widgetList[int(temp[1])]
+                if not currentWidget:
                     return None
-            widget = _widget
+            widget = currentWidget
         return widget
 
-    def widgetShortcuts(self, shortcut):
-        if shortcut in self.__shortcutDict.keys():
+    def resolveWidgetShortcut(self, shortcut):
+        if shortcut in self.__shortcutDict:
             return self.__shortcutDict[shortcut].split("/")
-        else:
-            return [shortcut]
+        return [shortcut]
 
     def getWidgetsByToolTip(self, parent, tooltip):
         widgets = []
         if not parent:
-            parent = self.mw
+            parent = self.mainWindowWidget
         if tooltip == "":
             return widgets
         for child in parent.getChildren():
@@ -85,67 +81,62 @@ class util():
                 widgets.append(child)
         return widgets
 
-    def getWidgetsByClassName(self, parent, classname):
+    def getWidgetsByClassName(self, parent, className):
         widgets = []
         if not parent:
-            parent = self.mw
-        if classname == "":
+            parent = self.mainWindowWidget
+        if className == "":
             return widgets
         for child in parent.getChildren():
-            if child.className == classname:
+            if child.className == className:
                 widgets.append(child)
         return widgets
 
-    def uniqueWidgetPath(self, widgetToID):
-        path = widgetToID.name
-        parent = widgetToID
+    def getUniqueWidgetPath(self, widget):
+        path = widget.name
+        currentWidget = widget
         if path == "":
-            path = self.__classtoname(widgetToID)
-            pass
+            path = self.__generateClassName(widget)
 
-        while(True):
-            parent = parent.parent()
-            if not parent:
+        while True:
+            currentWidget = currentWidget.parent()
+            if not currentWidget:
                 break
-            if parent.name != "":
-                path = parent.name + "/" + path
+            if currentWidget.name != "":
+                path = currentWidget.name + "/" + path
             else:
-                _name = self.__classtoname(parent)
-                path = _name + "/" + path
-                pass
+                className = self.__generateClassName(currentWidget)
+                path = className + "/" + path
         return path
 
-    def __classtoname(self, widget):
-        classname = widget.className
-        _widgets = self.getWidgetsByClassName(widget.parent(), classname)
+    def __generateClassName(self, widget):
+        className = widget.className
+        siblings = self.getWidgetsByClassName(widget.parent(), className)
         index = 0
-        for _w in _widgets:
-            if id(widget.inner()) == id(_w.inner()) and widget.text == _w.text:
+        for sibling in siblings:
+            if id(widget.inner()) == id(sibling.inner()) and widget.text == sibling.text:
                 break
-            pass
             index += 1
-        name = classname + ":" + str(index)
-        if index + 1 > len(_widgets):
+        name = f"{className}:{index}"
+        if index + 1 > len(siblings):
             name = "?"
         return name
 
     def verifyOutputFolders(self):
-        basePath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))+ "/Outputs/"
+        basePath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
         if not os.path.exists(basePath):
             os.mkdir(basePath)
             os.mkdir(basePath + "Raw")
             os.mkdir(basePath + "Annotations")
             os.mkdir(basePath + "Translation")
 
-        # Verify if Testing folder exists
         testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
-        # Check if testing folder exists
         if not os.path.exists(testingFolder):
             os.mkdir(testingFolder)
 
-    def mapFromTo(value : float, inputMin : float, inputMax : float, outputMin : float, outputMax : float) -> float:
-        result=(value-inputMin)/(inputMax-inputMin)*(outputMax-outputMin)+outputMin
-        return result
+    @staticmethod
+    def mapValueRange(value: float, inputMin: float, inputMax: float, outputMin: float, outputMax: float) -> float:
+        return (value - inputMin) / (inputMax - inputMin) * (outputMax - outputMin) + outputMin
 
 
 class WidgetFinder(qt.QWidget):
