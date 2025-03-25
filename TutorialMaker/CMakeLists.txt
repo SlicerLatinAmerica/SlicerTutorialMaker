@@ -15,9 +15,9 @@ set(MODULE_PYTHON_SCRIPTS
   )
 
 file(GLOB_RECURSE MODULE_PYTHON_RESOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/Resources/Icons/*
-  ${PROJECT_SOURCE_DIR}/Resources/UI/*
-  ${PROJECT_SOURCE_DIR}/Resources/NewSlide/*
+  /Resources/Icons/*
+  /Resources/UI/*
+  /Resources/NewSlide/*
 )
 
 #-----------------------------------------------------------------------------
