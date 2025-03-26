@@ -961,8 +961,8 @@ class TutorialGUI(qt.QMainWindow):
         self.icons = {
             #TODO:Create an icon for the select tool
             self.select: {
-                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1_p.png'),
-                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png')
+                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/actselect.png'),
+                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/select.png')
             },
 
             self.square: {
