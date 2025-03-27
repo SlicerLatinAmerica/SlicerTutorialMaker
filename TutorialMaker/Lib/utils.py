@@ -3,7 +3,7 @@ import qt
 import os
 
 
-class WidgetUtility:
+class util():
 
     def __init__(self) -> None:
         self.mainWindowWidget = Widget(slicer.util.mainWindow())
