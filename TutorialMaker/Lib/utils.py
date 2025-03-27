@@ -281,13 +281,15 @@ class SelfTestTutorialLayer():
         "id" : "TUTORIALMAKER",
         "begin" : "BEGIN",
         "end" : "END",
+        "metadata" : "INFO",
+        "metadata_title" : "TITLE",
         "metadata_author" : "AUTHOR",
         "metadata_date" : "DATE",
         "metadata_desc" : "DESC",
         "takeScreenshot" : "SCREENSHOT",
     }
 
-
+    @staticmethod
     def ParseTutorial(path):
         if path == "" or path == None:
             raise Exception()
@@ -298,32 +300,61 @@ class SelfTestTutorialLayer():
         with open(path) as fd:
             code_contents = fd.read()
 
+        # GENERATE FUNCTIONS FOR EACH TUTORIAL DIRECTIVE
         _tutorialBeginString = f"# {SelfTestTutorialLayer.directives['id']} {SelfTestTutorialLayer.directives['begin']}"
         _tutorialEndString = f"# {SelfTestTutorialLayer.directives['id']} {SelfTestTutorialLayer.directives['end']}"
         _tutorialTakeScreenshot = f"# {SelfTestTutorialLayer.directives['id']} {SelfTestTutorialLayer.directives['takeScreenshot']}"
 
         tutorialMatcher = rf"(?s)(?<={_tutorialBeginString}).*?(?={_tutorialEndString})"
         functionMatcher = rf"(?s).+?(?={_tutorialTakeScreenshot})"
+        infoMatcher = rf"(?m)(?<=# {SelfTestTutorialLayer.directives['id']} {SelfTestTutorialLayer.directives['metadata']} )([A-z]+)( )(.*)\n"
 
         tutorial_tests = []
         for test_module in re.findall(tutorialMatcher, code_contents):
+            tutorial_title = ""
+            tutorial_author = ""
+            tutorial_date = ""
+            tutorial_desc = ""
+
+            for info in re.findall(infoMatcher, test_module):
+                if info[0] == SelfTestTutorialLayer.directives['metadata_title']:
+                    tutorial_title = info[2]
+                    pass
+                elif info[0] == SelfTestTutorialLayer.directives['metadata_author']:
+                    tutorial_author = info[2]
+                    pass
+                elif info[0] == SelfTestTutorialLayer.directives['metadata_date']:
+                    tutorial_date = info[2]
+                    pass
+                elif info[0] == SelfTestTutorialLayer.directives['metadata_desc']:
+                    tutorial_desc = info[2]
+                    pass
+            
+            info_func = (
+                "\n"
+                f"{' '*8}def TUTORIAL_GETINFO():\n"
+                f"{' '*12}return ['{tutorial_title}','{tutorial_author}', '{tutorial_date}', '{tutorial_desc}']\n"
+            )
+            
             tutorial_functions = []
             for idx, test_function in enumerate(re.findall(functionMatcher, test_module)):
                 _functionSignature = f"def TUTORIAL_SCREENSHOT_{idx}(_locals):\n"
                 lines = test_function.split("\n")
                 _indentation = lines[0].count(" ") # THIS DOESN'T WORK
                 _indentation = 8 #TODO: NEED TO FIND A FAST WAY TO GET THIS DINAMICALLY
-
+                lines[0] = ""
                 _newFunction = "\n" + " "*_indentation + _functionSignature
-                _newFunction += " "*(_indentation + 4) + "locals().update(_locals)\n"
+                _newFunction += " "*(_indentation + 4) + "globals().update(_locals)\n"
 
                 for line in lines:
                     _newFunction += " "*4 + line + "\n"
                 
-                _newFunction += " "*(_indentation + 4) + "return locals()\n"
+                _newFunction += " "*(_indentation + 4) + "_locals.update(locals())\n"
 
                 tutorial_functions.append(_newFunction)
                 pass
+            tutorial_functions[0] = info_func + tutorial_functions[0]
+            tutorial_functions[len(tutorial_functions) - 1] = tutorial_functions[len(tutorial_functions) - 1] + f"{' '*8}return locals()\n"
             counter.count = 0
             tutorial_tests.append(re.sub(functionMatcher, lambda match : tutorial_functions[counter.next()], test_module))
         counter.count = 0
@@ -331,13 +362,48 @@ class SelfTestTutorialLayer():
 
         path = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
 
-        with open(path + "_temp.py", "w") as fd:
+        with open(path + "CurrentParsedTutorial.py", "w") as fd:
             fd .write(finalFile)
         pass
-    
-    def TakeScreenshot():
 
-        pass
+    @staticmethod
+    def ScreenshotCallable(tutorial, callback, _locals):
+        callback(_locals)
+        tutorial.nextScreenshot()
+        
+
+    @staticmethod
+    def RunTutorial(tutorialClass, callback = None):
+        import inspect
+        import functools
+
+        tutorialSource = inspect.getsource(tutorialClass.runTest)
+        funcMatcher = rf"(?m)(?<=self\.).+(?=\()"
+        
+        for funcName in re.findall(funcMatcher, tutorialSource):
+            func = getattr(tutorialClass, funcName)
+            _locals = func()
+            if _locals is None:
+                continue
+            if not type(_locals) == dict:
+                continue
+            if _locals["TUTORIAL_GETINFO"] is not None:
+                info = _locals["TUTORIAL_GETINFO"]()
+                tutorial = Tutorial(*info)
+                tutorial.clearTutorial()
+                tutorial.beginTutorial()
+                functionIndex = 0
+                while True:
+                    try:
+                        timerCallback = functools.partial(SelfTestTutorialLayer.ScreenshotCallable, tutorial, _locals[f"TUTORIAL_SCREENSHOT_{functionIndex}"], _locals)
+                        qt.QTimer.singleShot(2000*functionIndex, timerCallback)
+                        functionIndex += 1
+                    except Exception as e:
+                        break
+                qt.QTimer.singleShot(2000*functionIndex, tutorial.endTutorial)
+                
+        if callback is not None:
+            qt.QTimer.singleShot(2000*(functionIndex + 1), callback)
 
 class NextCounter():
     def __init__(self, count=0):
@@ -424,7 +490,7 @@ class Widget():
     def click(self):
         result = self.__widgetData.click()
         self.__widgetData.update()
-        slicer.app.processEvents(qt.QEventLoop.AllEvents, 70)
+        #slicer.app.processEvents(qt.QEventLoop.AllEvents, 70)
         return result
 
     def getGlobalPos(self):
@@ -556,7 +622,7 @@ class ScreenshotTools():
 
 
     def getPixmap(self, window):
-        slicer.app.processEvents(qt.QEventLoop.AllEvents, 69)
+        #slicer.app.processEvents(qt.QEventLoop.AllEvents, 70)
         pixmap = window.grab()
         return pixmap
 
@@ -582,7 +648,6 @@ class ScreenshotTools():
                 pass
         self.handler.saveScreenshotMetadata(data, filename)
 
-# TODO: REMOVE THIS, DEPRECATED
 class Tutorial:
     def __init__(self,
             title,
