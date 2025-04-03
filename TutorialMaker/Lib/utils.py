@@ -401,7 +401,7 @@ class SelfTestTutorialLayer():
                     except Exception as e:
                         break
                 qt.QTimer.singleShot(2000*functionIndex, tutorial.endTutorial)
-                
+        # This needs to happen only after every possible tutorial is ran
         if callback is not None:
             qt.QTimer.singleShot(2000*(functionIndex + 1), callback)
 
@@ -498,12 +498,12 @@ class Widget():
         windowPos = mw.mapToGlobal(mw.rect.topLeft())
 
         globalPosTopLeft = self.__widgetData.mapToGlobal(self.__widgetData.rect.topLeft())
-        return [globalPosTopLeft.x() - windowPos.x(), globalPosTopLeft.y() - windowPos.y()]
+        return [(globalPosTopLeft.x() - windowPos.x())*slicer.app.desktop().devicePixelRatioF(), (globalPosTopLeft.y() - windowPos.y())*slicer.app.desktop().devicePixelRatioF()]
 
     def getSize(self):
         posTopLeft = self.__widgetData.rect.topLeft()
         posBotRight = self.__widgetData.rect.bottomRight()
-        return [posBotRight.x() - posTopLeft.x(), posBotRight.y() - posTopLeft.y()]
+        return [(posBotRight.x() - posTopLeft.x())*slicer.app.desktop().devicePixelRatioF(), (posBotRight.y() - posTopLeft.y())*slicer.app.desktop().devicePixelRatioF()]
 
     def __listWidgetAsChildren(self):
         from types import SimpleNamespace
