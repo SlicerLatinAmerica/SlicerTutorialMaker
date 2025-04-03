@@ -4,14 +4,13 @@ set(MODULE_NAME TutorialMaker)
 #-----------------------------------------------------------------------------
 set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}.py
-  Lib/Anotations.py
+  Lib/Annotations.py
   Lib/CreateTutorial.py
-  Lib/FileMDHTML.py
   Lib/GitTools.py
-  Lib/painter.py
-  Lib/tmLabel.py
   Lib/TutorialEditor.py
+  Lib/TutorialExporter.py
   Lib/TutorialGUI.py
+  Lib/TutorialPainter.py
   Lib/utils.py
   )
 
@@ -33,9 +32,14 @@ set(MODULE_PYTHON_RESOURCES
   Resources/Icons/ScreenshotAnnotator/act5.png
   Resources/Icons/ScreenshotAnnotator/act5_p.png
   Resources/Icons/ScreenshotAnnotator/add.png
+  Resources/Icons/ScreenshotAnnotator/arrow_disabled.png
+  Resources/Icons/ScreenshotAnnotator/arrow_down.png
+  Resources/Icons/ScreenshotAnnotator/arrow_enabled.png
   Resources/Icons/ScreenshotAnnotator/arrow.png
   Resources/Icons/ScreenshotAnnotator/back.png
   Resources/Icons/ScreenshotAnnotator/cancel.png
+  Resources/Icons/ScreenshotAnnotator/chevron_down.png
+  Resources/Icons/ScreenshotAnnotator/chevron_up.png
   Resources/Icons/ScreenshotAnnotator/clean.png
   Resources/Icons/ScreenshotAnnotator/color.png
   Resources/Icons/ScreenshotAnnotator/copy.png
@@ -53,6 +57,9 @@ set(MODULE_PYTHON_RESOURCES
   Resources/Icons/ScreenshotAnnotator/selec.png
   Resources/Icons/ScreenshotAnnotator/selec_p.png
   Resources/Icons/ScreenshotAnnotator/size.png
+  Resources/Icons/ScreenshotAnnotator/textBox_disabled.png
+  Resources/Icons/ScreenshotAnnotator/textBox_enabled.png
+  Resources/NewSlide/Acknowledgments.png
   Resources/NewSlide/cover_page.png
   Resources/NewSlide/white.png
   Resources/UI/CreateNewTutorial.ui

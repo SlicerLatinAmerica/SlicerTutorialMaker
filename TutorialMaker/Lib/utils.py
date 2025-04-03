@@ -570,8 +570,6 @@ class Widget():
 
         return virtualChildren
 
-
-
 class SignalManager(qt.QObject):
     received = qt.Signal(object)
     def __init__(self):
@@ -619,7 +617,6 @@ class ScreenshotTools():
         pass
         return windows
 
-
     def getPixmap(self, window):
         #slicer.app.processEvents(qt.QEventLoop.AllEvents, 70)
         pixmap = window.grab()
@@ -661,7 +658,6 @@ class Tutorial:
         self.metadata["desc"] = description
 
         self.steps = []
-
 
     def beginTutorial(self):
         screenshotTools = ScreenshotTools()

@@ -2,8 +2,9 @@ import logging
 import os
 import slicer
 import importlib
+import qt
 import Lib.utils
-import Lib.painter as AnnotationPainter
+import Lib.TutorialPainter as AnnotationPainter
 import Lib.GitTools as GitTools
 
 from slicer.ScriptedLoadableModule import * # noqa: F403
@@ -66,7 +67,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.__selectedTutorial = None
         self.isDebug = slicer.app.settings().value("Developer/DeveloperMode")
 
-        print("Version Date: 2025/02/06-07:00PM")
+        print(_("Version Date: {}").format("2025/03/25-09:00PM"))
 
         #PROTOTYPE FOR PLAYBACK
 
@@ -110,12 +111,11 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.ui.listWidgetTutorials.itemSelectionChanged.connect(self.tutorialSelectionChanged)
 
         #Static Tutorial Handlers
-        self.ui.pushButtonAnnotate.connect('clicked(bool)', self.annotateButton)
+        self.ui.pushButtonCapture.connect('clicked(bool)', self.captureButton)
+        self.ui.pushButtonGenerate.connect('clicked(bool)', self.generateButton)
         if self.isDebug != True: # noqa: E712
             self.ui.CollapsibleButtonTutorialMaking.setVisible(0)
             self.ui.pushButtonNewTutorial.setVisible(0)
-            self.ui.pushButtonTestPainter.connect('clicked(bool)', self.testPainterButton)
-            self.ui.pushButtonTestPainter.setVisible(0)
             self.logic.loadTutorialsFromRepos()
 
         # Make sure parameter node is initialized (needed for module reload)
@@ -166,20 +166,19 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         """
         return
 
-    def testPainterButton(self):
-        self.logic.TestPainter(self.__selectedTutorial)
+    def generateButton(self):
+        self.logic.Generate(self.__selectedTutorial)
 
     def CreateTutorialButton(self):
         self.logic.CreateNewTutorial()
 
-    def annotateButton(self):
-        self.logic.Annotate(self.__selectedTutorial)
+    def captureButton(self):
+        self.logic.Capture(self.__selectedTutorial)
 
     def tutorialSelectionChanged(self):
         self.__selectedTutorial = self.ui.listWidgetTutorials.selectedItems()[0].data(0)
-        self.ui.pushButtonAnnotate.setEnabled(self.__selectedTutorial is not None)
-        if self.isDebug:
-            self.ui.pushButtonTestPainter.setEnabled(self.__selectedTutorial is not None)
+        self.ui.pushButtonCapture.setEnabled(self.__selectedTutorial is not None)
+        self.ui.pushButtonGenerate.setEnabled(self.__selectedTutorial is not None)
 
     def getFromGithub(self):
         self.logic.loadTutorialsFromRepos()
@@ -215,7 +214,6 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
             "SlicerLatinAmerica/TestSlicerTutorials"
         ]
 
-
     def setDefaultParameters(self, parameterNode):
         """
         Initialize parameter node with default settings.
@@ -240,6 +238,15 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         screenshot.saveScreenshotMetadata(0)
         pass
 
+    def Capture(self, tutorialName):
+        try:
+            TutorialMakerLogic.runTutorialTestCases(tutorialName)
+            slicer.util.mainWindow().moduleSelector().selectModule('TutorialMaker')
+            qt.QMessageBox.information(slicer.util.mainWindow(), _("Tutorial Captured"), _("Captured Tutorial: {tutorialName}").format(tutorialName=tutorialName))
+        except Exception as e:
+            qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to capture tutorial: {e}").format(e=e))
+        pass
+    
     def Annotate(self, tutorialName):
         def OpenAnnotator():
             Annotator = Lib.TutorialGUI.TutorialGUI()
@@ -250,8 +257,13 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         TutorialMakerLogic.runTutorialTestCases(tutorialName, OpenAnnotator)
         pass
 
-    def TestPainter(self, tutorialName):
-        AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/"+tutorialName+".json")
+    def Generate(self, tutorialName):
+        try:
+            AnnotationPainter.TutorialPainter().GenerateHTMLfromAnnotatedTutorial(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/annotations.json")
+            os.startfile(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/")
+            qt.QMessageBox.information(slicer.util.mainWindow(), _("Tutorial Generated"), _("Generated Tutorial: {tutorialName}").format(tutorialName=tutorialName))
+        except Exception as e:
+            qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to generate tutorial: {e}".format(e=e)))
         pass
 
     def CreateNewTutorial(self):
@@ -274,7 +286,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
                 files = GitTools.GitTools.ParseRepo(repo)
             except Exception as e:
                 print(e)
-                print(_("Please try again later."))
+                qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to fetch tutorials from {repo}. Please try again later.").format(repo=repo))
                 continue
             for TutorialRoot in files.dir("Tutorials"):
                 for TutorialFile in files.dir(f"Tutorials/{TutorialRoot}"):
@@ -285,7 +297,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
                             fd.write(pyRaw)
                             fd.close()
                         except Exception as e:
-                            print(f"Failed to Fetch {TutorialFile} from {repo}")
+                            qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to fetch {TutorialFile} from {repo}".format(TutorialFile=TutorialFile, repo=repo)))
                             print(e)
         pass
 
@@ -323,7 +335,6 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         logging.error(_(f"No tests found in {tutorial_name}"))
         raise Exception(_("No Tests Found"))
 
-
 #
 # TutorialMakerTest
 #
@@ -340,6 +351,14 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         slicer.mrmlScene.Clear()
         TutorialMakerLogic().loadTutorialsFromRepos()
 
+        Lib.utils.util.verifyOutputFolders(self)
+
+        slicer.util.mainWindow().resize(1920, 1080)
+
+        appFont = slicer.app.font()
+        appFont.setPointSize(14)
+        slicer.app.setFont(appFont)
+
     def runTest(self):
         """Run as few or as many tests as needed here.
         """
@@ -348,6 +367,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         #Screencapture test
         #Then run all the tutorials
         tutorials_failed = 0
+        error_message = ""
         testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
         test_tutorials = os.listdir(testingFolder)
         for unit_tutorials in test_tutorials:
@@ -360,47 +380,11 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
                 # Paint Screenshots with annotations
                 #AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
             except Exception as e:
-                logging.error(_(f"Tutorial Execution Failed: {unit_tutorials} - Error: {e}"))
+                error_message += _("Tutorial Execution Failed: {unit_tutorials} - Error: {e}. \n").format(unit_tutorials=unit_tutorials, e=e)
                 tutorials_failed = tutorials_failed + 1
                 pass
             finally:
                 self.delayDisplay(_("Tutorial Tested"))
             pass
         if tutorials_failed > 0:
-            raise Exception(_(f"{tutorials_failed} tutorials failed to execute"))
-
-    def delayDisplay(self, message, requestedDelay=None, msec=None):
-        """
-        Display messages to the user/tester during testing.
-
-        By default, the delay is 50ms.
-
-        The function accepts the keyword arguments ``requestedDelay`` or ``msec``. If both
-        are specified, the value associated with ``msec`` is used.
-
-        This method can be temporarily overridden to allow tests running
-        with longer or shorter message display time.
-
-        Displaying a dialog and waiting does two things:
-        1) it lets the event loop catch up to the state of the test so
-        that rendering and widget updates have all taken place before
-        the test continues and
-        2) it shows the user/developer/tester the state of the test
-        so that we'll know when it breaks.
-
-        Note:
-        Information that might be useful (but not important enough to show
-        to the user) can be logged using logging.info() function
-        (printed to console and application log) or logging.debug()
-        function (printed to application log only).
-        Error messages should be logged by logging.error() function
-        and displayed to user by slicer.util.errorDisplay function.
-        """
-        if hasattr(self, "messageDelay"):
-            msec = self.messageDelay
-        if msec is None:
-            msec = requestedDelay
-        if msec is None:
-            msec = 100
-
-        slicer.util.delayDisplay(message, msec)
+            raise Exception(_("{tutorials_failed} tutorials failed to execute. Errors: {error_message}").format(tutorials_failed=tutorials_failed, error_message=error_message))
