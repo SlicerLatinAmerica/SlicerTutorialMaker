@@ -31,6 +31,7 @@ set(MODULE_PYTHON_RESOURCES
   Resources/Icons/ScreenshotAnnotator/act4_p.png
   Resources/Icons/ScreenshotAnnotator/act5.png
   Resources/Icons/ScreenshotAnnotator/act5_p.png
+  Resources/Icons/ScreenshotAnnotator/actselect.png
   Resources/Icons/ScreenshotAnnotator/add.png
   Resources/Icons/ScreenshotAnnotator/arrow_disabled.png
   Resources/Icons/ScreenshotAnnotator/arrow_down.png
