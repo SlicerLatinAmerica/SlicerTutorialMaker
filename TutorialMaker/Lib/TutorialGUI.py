@@ -924,7 +924,7 @@ class TutorialGUI(qt.QMainWindow):
     def create_toolbar_actions(self):
         toolbar = qt.QToolBar("Actions", self)
         #TODO: Make icon for the selection action
-        self.select = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png'), _("Select"), self)
+        self.select = qt.QAction(qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/select.png'), _("Select"), self)
         self.select.setCheckable(True)
         toolbar.addAction(self.select)
 
@@ -961,8 +961,8 @@ class TutorialGUI(qt.QMainWindow):
         self.icons = {
             #TODO:Create an icon for the select tool
             self.select: {
-                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1_p.png'),
-                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/act1.png')
+                'active': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/actselect.png'),
+                'inactive': qt.QIcon(self.dir_path+'/../Resources/Icons/ScreenshotAnnotator/select.png')
             },
 
             self.square: {

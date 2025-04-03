@@ -56,6 +56,7 @@ set(MODULE_PYTHON_RESOURCES
   Resources/Icons/ScreenshotAnnotator/save.png
   Resources/Icons/ScreenshotAnnotator/selec.png
   Resources/Icons/ScreenshotAnnotator/selec_p.png
+  Resources/Icons/ScreenshotAnnotator/select.png
   Resources/Icons/ScreenshotAnnotator/size.png
   Resources/Icons/ScreenshotAnnotator/textBox_disabled.png
   Resources/Icons/ScreenshotAnnotator/textBox_enabled.png
