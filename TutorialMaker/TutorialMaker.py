@@ -239,22 +239,14 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def Capture(self, tutorialName):
-        try:
-            TutorialMakerLogic.runTutorialTestCases(tutorialName)
+        def FinishTutorial():
             slicer.util.mainWindow().moduleSelector().selectModule('TutorialMaker')
             qt.QMessageBox.information(slicer.util.mainWindow(), _("Tutorial Captured"), _("Captured Tutorial: {tutorialName}").format(tutorialName=tutorialName))
+        
+        try:
+            TutorialMakerLogic.runTutorialTestCases(tutorialName, FinishTutorial)
         except Exception as e:
             qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to capture tutorial: {e}").format(e=e))
-        pass
-    
-    def Annotate(self, tutorialName):
-        def OpenAnnotator():
-            Annotator = Lib.TutorialGUI.TutorialGUI()
-            Annotator.open_json_file(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/Tutorial.json")
-            Annotator.forceTutorialOutputName(tutorialName)
-            Annotator.show()
-
-        TutorialMakerLogic.runTutorialTestCases(tutorialName, OpenAnnotator)
         pass
 
     def Generate(self, tutorialName):
