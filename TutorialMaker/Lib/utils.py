@@ -379,7 +379,7 @@ class SelfTestTutorialLayer():
 
         tutorialSource = inspect.getsource(tutorialClass.runTest)
         funcMatcher = rf"(?m)(?<=self\.).+(?=\()"
-        
+        functionIndex = 0
         for funcName in re.findall(funcMatcher, tutorialSource):
             func = getattr(tutorialClass, funcName)
             _locals = func()
@@ -392,7 +392,6 @@ class SelfTestTutorialLayer():
                 tutorial = Tutorial(*info)
                 tutorial.clearTutorial()
                 tutorial.beginTutorial()
-                functionIndex = 0
                 while True:
                     try:
                         timerCallback = functools.partial(SelfTestTutorialLayer.ScreenshotCallable, tutorial, _locals[f"TUTORIAL_SCREENSHOT_{functionIndex}"], _locals)
