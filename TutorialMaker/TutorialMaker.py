@@ -14,6 +14,7 @@ from slicer.i18n import translate
 from Lib.TutorialEditor import TutorialEditor
 import Lib.TutorialGUI
 from Lib.CreateTutorial import CreateTutorial
+from Lib.utils import SelfTestTutorialLayer
 
 #
 # TutorialMaker
@@ -238,10 +239,12 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def Capture(self, tutorialName):
-        try:
-            TutorialMakerLogic.runTutorialTestCases(tutorialName)
+        def FinishTutorial():
             slicer.util.mainWindow().moduleSelector().selectModule('TutorialMaker')
             qt.QMessageBox.information(slicer.util.mainWindow(), _("Tutorial Captured"), _("Captured Tutorial: {tutorialName}").format(tutorialName=tutorialName))
+        
+        try:
+            TutorialMakerLogic.runTutorialTestCases(tutorialName, FinishTutorial)
         except Exception as e:
             qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to capture tutorial: {e}").format(e=e))
         pass
@@ -300,7 +303,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         return test_tutorials
 
     @staticmethod
-    def runTutorialTestCases(tutorial_name):
+    def runTutorialTestCases(tutorial_name, callback=None):
         """ Ideally you should have several levels of tests.  At the lowest level
         tests should exercise the functionality of the logic with different inputs
         (both valid and invalid).  At higher levels your tests should emulate the
@@ -311,13 +314,15 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         module.  For example, if a developer removes a feature that you depend on,
         your test should break so they know that the feature is needed.
         """
-        TutorialModule = importlib.import_module("Testing." + tutorial_name)
+        tPath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + f"/Testing/{tutorial_name}.py"
+        SelfTestTutorialLayer.ParseTutorial(tPath)
+        TutorialModule = importlib.import_module("Outputs.CurrentParsedTutorial")
         for className in TutorialModule.__dict__:
             if("Test" not in className or className == "ScriptedLoadableModuleTest"):
                 continue
             testClass = getattr(TutorialModule, className)
             tutorial = testClass()
-            tutorial.runTest()
+            SelfTestTutorialLayer.RunTutorial(tutorial, callback)
             return
         logging.error(_(f"No tests found in {tutorial_name}"))
         raise Exception(_("No Tests Found"))
