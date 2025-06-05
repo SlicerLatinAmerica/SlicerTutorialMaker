@@ -1,7 +1,7 @@
 import qt
 import slicer
 import os
-import Lib.utils as utils
+import Lib.TutorialUtils as TutorialUtils
 from slicer.i18n import tr as _
 
 #
@@ -84,7 +84,7 @@ class TutorialEditor(qt.QWidget):
 class TutorialEditorLogic():
     def __init__(self, gui=None):
         self.stateManager = StateManager()
-        self.widgetFinder = utils.WidgetFinder(slicer.util.mainWindow())
+        self.widgetFinder = TutorialUtils.WidgetFinder(slicer.util.mainWindow())
         self.widgetFinder.sinalManager.connect(self.NextWidget)
         self.isRecording = False
         self.gui = gui
@@ -161,8 +161,8 @@ class Annotator(qt.QWidget):
         self.setLayout(self.boxLayout)
 
         self._parent = parent
-        self.widgetFinder = utils.WidgetFinder(slicer.util.mainWindow())
-        self.painter = utils.Shapes(slicer.util.mainWindow())
+        self.widgetFinder = TutorialUtils.WidgetFinder(slicer.util.mainWindow())
+        self.painter = TutorialUtils.Shapes(slicer.util.mainWindow())
         self.widgetFinder.sinalManager.connect(self.AnnotateWidget)
 
         pass

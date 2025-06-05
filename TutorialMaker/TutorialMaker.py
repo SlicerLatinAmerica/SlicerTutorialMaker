@@ -3,7 +3,7 @@ import os
 import slicer
 import importlib
 import qt
-import Lib.utils
+import Lib.TutorialUtils
 import Lib.TutorialPainter as AnnotationPainter
 import Lib.GitTools as GitTools
 
@@ -14,7 +14,7 @@ from slicer.i18n import translate
 from Lib.TutorialEditor import TutorialEditor
 import Lib.TutorialGUI
 from Lib.CreateTutorial import CreateTutorial
-from Lib.utils import SelfTestTutorialLayer
+from Lib.TutorialUtils import SelfTestTutorialLayer
 
 #
 # TutorialMaker
@@ -79,7 +79,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         """
         import importlib
         importlib.reload(Lib.TutorialGUI)
-        importlib.reload(Lib.utils)
+        importlib.reload(Lib.TutorialUtils)
 
         ScriptedLoadableModuleWidget.setup(self) # noqa: F405
 
@@ -90,7 +90,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
         #Verify if the folders to manipulate the tutorials are created
-        Lib.utils.util.verifyOutputFolders(self)
+        Lib.TutorialUtils.Util.verifyOutputFolders(self)
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = TutorialMakerLogic()
@@ -234,7 +234,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def ExportScreenshots(self):
-        screenshot = Lib.utils.ScreenshotTools()
+        screenshot = Lib.TutorialUtils.ScreenshotTools()
         screenshot.saveScreenshotMetadata(0)
         pass
 
@@ -343,7 +343,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         slicer.mrmlScene.Clear()
         TutorialMakerLogic().loadTutorialsFromRepos()
 
-        Lib.utils.util.verifyOutputFolders(self)
+        Lib.TutorialUtils.Util.verifyOutputFolders(self)
 
         slicer.util.mainWindow().resize(1920, 1080)
 

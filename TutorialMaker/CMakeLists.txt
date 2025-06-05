@@ -11,7 +11,7 @@ set(MODULE_PYTHON_SCRIPTS
   Lib/TutorialExporter.py
   Lib/TutorialGUI.py
   Lib/TutorialPainter.py
-  Lib/utils.py
+  Lib/TutorialUtils.py
   )
 
 set(MODULE_PYTHON_RESOURCES

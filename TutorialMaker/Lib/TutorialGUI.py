@@ -4,7 +4,7 @@ import json
 import os
 import copy
 from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide
-from Lib.utils import Tutorial, TutorialScreenshot
+from Lib.TutorialUtils import Tutorial, TutorialScreenshot
 from slicer.i18n import tr as _
 
 class DraggableLabel(qt.QLabel):

@@ -4,7 +4,7 @@ import copy
 import math
 from slicer.i18n import tr as _
 from enum import Flag, auto
-from Lib.utils import util
+from Lib.TutorialUtils import Util
 
 class AnnotationType(Flag):
     Nil = auto() # Not for saving
@@ -146,8 +146,8 @@ class Annotation:
             optY = self.optY - targetCenter[1]
 
             # To better the user experience of moving the helper element
-            optX = util.mapFromTo(optX, -targetSize[0], targetSize[0], -1, 1)
-            optY = util.mapFromTo(optY, -targetSize[1], targetSize[1], -1, 1)
+            optX = Util.mapFromTo(optX, -targetSize[0], targetSize[0], -1, 1)
+            optY = Util.mapFromTo(optY, -targetSize[1], targetSize[1], -1, 1)
 
             # Clamp optional values between -1 and 1
             optX = min(max(-1, optX), 1)
@@ -194,8 +194,8 @@ class Annotation:
             optY = self.optY - targetCenter[1]
 
             # To better the user experience of moving the helper element
-            optX = util.mapFromTo(optX, -targetSize[0], targetSize[0], -1, 1)
-            optY = util.mapFromTo(optY, -targetSize[1], targetSize[1], -1, 1)
+            optX = Util.mapFromTo(optX, -targetSize[0], targetSize[0], -1, 1)
+            optY = Util.mapFromTo(optY, -targetSize[1], targetSize[1], -1, 1)
 
             # Clamp optional values between -1 and 1
             optX = min(max(-1, optX), 1)
@@ -441,8 +441,8 @@ class AnnotatorSlide:
         labelWidth = qLabel.width
         labelHeight = qLabel.height
 
-        x = util.mapFromTo(qPos.x(), 0, labelWidth, 0, imageSizeX)
-        y = util.mapFromTo(qPos.y(), 0, labelHeight, 0, imageSizeY)
+        x = Util.mapFromTo(qPos.x(), 0, labelWidth, 0, imageSizeX)
+        y = Util.mapFromTo(qPos.y(), 0, labelHeight, 0, imageSizeY)
 
         return [x,y]
 
@@ -453,8 +453,8 @@ class AnnotatorSlide:
         labelWidth = qLabel.width
         labelHeight = qLabel.height
 
-        x = util.mapFromTo(qPos.x(), 0, imageSizeX, 0, labelWidth)
-        y = util.mapFromTo(qPos.y(), 0, imageSizeY, 0, labelHeight)
+        x = Util.mapFromTo(qPos.x(), 0, imageSizeX, 0, labelWidth)
+        y = Util.mapFromTo(qPos.y(), 0, imageSizeY, 0, labelHeight)
 
         return [x,y]
 
@@ -535,8 +535,8 @@ class AnnotatorSlide:
         labelWidth = qLabel.width
         labelHeight = qLabel.height
 
-        x = util.mapFromTo(qPos.x(), 0, labelWidth, 0, imageSizeX)
-        y = util.mapFromTo(qPos.y(), 0, labelHeight, 0, imageSizeY)
+        x = Util.mapFromTo(qPos.x(), 0, labelWidth, 0, imageSizeX)
+        y = Util.mapFromTo(qPos.y(), 0, labelHeight, 0, imageSizeY)
 
         return [x,y]
 
@@ -547,8 +547,8 @@ class AnnotatorSlide:
         labelWidth = qLabel.width
         labelHeight = qLabel.height
 
-        x = util.mapFromTo(qPos.x(), 0, imageSizeX, 0, labelWidth)
-        y = util.mapFromTo(qPos.y(), 0, imageSizeY, 0, labelHeight)
+        x = Util.mapFromTo(qPos.x(), 0, imageSizeX, 0, labelWidth)
+        y = Util.mapFromTo(qPos.y(), 0, imageSizeY, 0, labelHeight)
 
         return [x,y]
 
