@@ -90,7 +90,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
         #Verify if the folders to manipulate the tutorials are created
-        Lib.TutorialUtils.Util.verifyOutputFolders(self)
+        Lib.TutorialUtils.Util.verifyOutputFolders()
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = TutorialMakerLogic()
@@ -125,7 +125,8 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.populateTutorialList()
 
     def cleanup(self):
-        self.logic.exitTutorialEditor()
+        # that will make an exception: AttributeError: 'NoneType' object has no attribute 'exitTutorialEditor'
+        # self.logic.exitTutorialEditor()
         """
         Called when the application closes and the module widget is destroyed.
         """

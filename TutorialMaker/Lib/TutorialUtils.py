@@ -637,7 +637,7 @@ class ScreenshotTools():
             try:
                 if hasattr(widgets[index].inner(), "isVisible") and not widgets[index].inner().isVisible():
                     continue
-                data[index] = {"name": widgets[index].name, "path": tool.uniqueWidgetPath(widgets[index]), "text": widgets[index].text, "position": widgets[index].getGlobalPos(), "size": widgets[index].getSize()}
+                data[index] = {"name": widgets[index].name, "path": Util.uniqueWidgetPath(widgets[index]), "text": widgets[index].text, "position": widgets[index].getGlobalPos(), "size": widgets[index].getSize()}
                 pass
             except AttributeError:
                 #Working as expected, so to not save QObjects that are not QWidgets

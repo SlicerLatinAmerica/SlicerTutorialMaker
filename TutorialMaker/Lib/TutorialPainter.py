@@ -604,7 +604,7 @@ class ImageDrawer:
         """
 
         # Initialize ImageDrawer and JSONHandler instances
-        import TutorialMaker.Lib.TutorialUtils as TutorialUtils
+        import Lib.TutorialUtils as TutorialUtils
         image_drawer = ImageDrawer()
         jsonHandler = TutorialUtils.JSONHandler()
         tutorial = jsonHandler.parseTutorial(True)
