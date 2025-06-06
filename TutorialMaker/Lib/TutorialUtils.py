@@ -163,7 +163,7 @@ class Widget():
         return virtualChildren
 
 class Util():
-    mw = Widget(slicer.util.mainWindow())
+    mw = None
 
     __shortcutDict = {
         "Scene3D"     : "CentralWidget/CentralWidgetLayoutFrame/ThreeDWidget1",
@@ -174,13 +174,21 @@ class Util():
     }
     
     @staticmethod
+    def loadMainWindow():
+        Util.mw = Widget(slicer.util.mainWindow())
+        
+    @staticmethod
     def listOnScreenWidgets():
+        if Util.mw is None:
+            Util.loadMainWindow()
         print(Util.mw.className, end=", ")
         print(Util.mw.name)
         Util.__listWidgetsRecursive(Util.mw, 1)
 
     @staticmethod
     def __listWidgetsRecursive(widget, depth):
+        if Util.mw is None:
+            Util.loadMainWindow()
         children = widget.getChildren()
         for child in children:
             if child.name != "":
@@ -192,6 +200,8 @@ class Util():
 
     @staticmethod
     def getOnScreenWidgets(window=None):
+        if Util.mw is None:
+            Util.loadMainWindow()
         if window is None:
             window = Util.mw
         window = Widget(window)
@@ -199,6 +209,8 @@ class Util():
 
     @staticmethod
     def __getWidgetsRecursive(widget, depth):
+        if Util.mw is None:
+            Util.loadMainWindow()
         widgets = []
         children = widget.getChildren()
         for child in children:
@@ -208,6 +220,8 @@ class Util():
 
     @staticmethod
     def getNamedWidget(path, widget=None):
+        if Util.mw is None:
+            Util.loadMainWindow()
         if path == "":
             return
         if not widget:
@@ -230,6 +244,8 @@ class Util():
 
     @staticmethod
     def widgetShortcuts(shortcut):
+        if Util.mw is None:
+            Util.loadMainWindow()
         if shortcut in Util.__shortcutDict.keys():
             return Util.__shortcutDict[shortcut].split("/")
         else:
@@ -237,6 +253,8 @@ class Util():
 
     @staticmethod
     def getWidgetsByToolTip(parent, tooltip):
+        if Util.mw is None:
+            Util.loadMainWindow()
         widgets = []
         if not parent:
             parent = Util.mw
@@ -249,6 +267,8 @@ class Util():
 
     @staticmethod
     def getWidgetsByClassName(parent, classname):
+        if Util.mw is None:
+            Util.loadMainWindow()
         widgets = []
         if not parent:
             parent = Util.mw
@@ -261,6 +281,8 @@ class Util():
 
     @staticmethod
     def uniqueWidgetPath(widgetToID):
+        if Util.mw is None:
+            Util.loadMainWindow()
         path = widgetToID.name
         parent = widgetToID
         if path == "":
@@ -281,6 +303,8 @@ class Util():
 
     @staticmethod
     def __classtoname(widget):
+        if Util.mw is None:
+            Util.loadMainWindow()
         classname = widget.className
         _widgets = Util.getWidgetsByClassName(widget.parent(), classname)
         index = 0
@@ -296,6 +320,8 @@ class Util():
 
     @staticmethod
     def verifyOutputFolders():
+        if Util.mw is None:
+            Util.loadMainWindow()
         basePath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
         if not os.path.exists(basePath):
             os.mkdir(basePath)
@@ -311,6 +337,8 @@ class Util():
 
     @staticmethod
     def mapFromTo(value : float, inputMin : float, inputMax : float, outputMin : float, outputMax : float) -> float:
+        if Util.mw is None:
+            Util.loadMainWindow()
         result=(value-inputMin)/(inputMax-inputMin)*(outputMax-outputMin)+outputMin
         return result
 
