@@ -442,7 +442,7 @@ class TutorialGUI(qt.QMainWindow):
         #TODO: use widget annotation infrastructure to make these pages more on the fly interactable
         # Insert Dummy Pages for Title, Acknowledgements
         self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png', type_="CoverPage")
-        self.addBlankPage(False, 1, self.dir_path + '/../Resources/NewSlide/Acknowledgments.png', type_="Acknowledgement")
+        self.addBlankPage(False, stepIndex + 2, self.dir_path + '/../Resources/NewSlide/Acknowledgments.png', type_="Acknowledgement")
 
         pass
 
