@@ -807,6 +807,9 @@ class TutorialPainter:
     def GenerateHTMLfromAnnotatedTutorial(self, path):
         self.LoadAnnotatedTutorial(path)
         localizedScreenshotsPath = f"{self.outputFolder}/{self.TutorialInfo['title']}_{self.currentLanguage}"
+        clean_title = self.TutorialInfo["title"].strip().replace(" ", "_").replace("\t", "_").replace("\n", "_").replace("\r", "_")
+        clean_folder = f"{os.path.dirname(os.path.dirname(__file__))}/Outputs"
+        localizedScreenshotsPath = f"{clean_folder}/{clean_title}_{self.currentLanguage}"
         self.SaveLocalizedScreenshots(localizedScreenshotsPath)
 
         # If we are going to have a exporter lib then it should handle this itself
@@ -825,9 +828,10 @@ class TutorialPainter:
             elif slide.SlideLayout == "Acknowledgement":
                 page = Exporter.BackCoverSlide(
                     slide.SlideTitle,
-                    {"0": slide.SlideBody}
+                    {"": slide.SlideBody}
                 )
             elif slide.SlideLayout == "Screenshot":
+                title = slide.SlideTitle 
                 page = Exporter.SimpleSlide(
                     slide.SlideTitle,
                     slide.SlideBody,
@@ -838,12 +842,18 @@ class TutorialPainter:
             pass
             pages.append(Exporter.SlidePage(page))
         
-        tutorialPath = localizedScreenshotsPath + f"/{self.TutorialInfo['title']}"
+        tutorialPath = localizedScreenshotsPath + f"/{clean_title}"
 
         export = Exporter.TutorialExporter(pages, self.TutorialInfo["title"])
         html = export.ToHtml()
+        markdown = export.ToMarkdown()
+
         with open(tutorialPath + ".html", "w") as fd:
             fd.write(html)
+
+        with open(tutorialPath + ".md", "w") as fd:
+            fd.write(markdown)
+            
         pass
 
     def GetLocalizedDict(self, lang, tutorialName = ""):

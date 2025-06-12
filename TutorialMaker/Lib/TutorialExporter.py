@@ -16,11 +16,14 @@ class CoverSlide():
                     <h3 class="coverDescription">{}</h3>
                 </div>
                 """.format(self.Title, self.Author, self.Description)
+    
+    def ToMarkdown(self):
+        return f"# {self.Title}\n**Autor:** {self.Author}\n\n{self.Description}\n"
 
 class BackCoverSlide():
-    def __init__(self, Title: str, Acknowledgements: dict[str, str]):
-        self.Title = Title
-        self.Acknowledgements = Acknowledgements
+    def __init__(self, title: str, acknowledgements: str):
+        self.Title = title
+        self.Acknowledgements = acknowledgements
     
     def ToHtml(self):
         aknowledgements = ""
@@ -34,7 +37,13 @@ class BackCoverSlide():
                         {}
                     </ul>
                 </div>
-                """.format(self.Title, aknowledgements)  
+                """.format(self.Title, aknowledgements)
+    
+    def ToMarkdown(self):
+        md = f"# {self.Title}\n"
+        for key, value in self.Acknowledgements.items():
+            md += f"- **{key}**\n  {value}\n"
+        return md + "\n"  
 
 class SimpleSlide():
     def __init__(self, Title: str, Description: str, ImagePath: str):
@@ -52,6 +61,10 @@ class SimpleSlide():
                         <h3 class="slideDescription">{}</h3>
                     </div>
                 """.format(self.Title, self.ImagePath, self.Description)
+    
+    def ToMarkdown(self):
+        title_html = f"""<div style="background-color:#003366; color:white; padding:10px; text-align:center; font-size:24px; font-weight:bold;">{self.Title}</div>"""
+        return f"{title_html}\n\n![Imagen]({self.ImagePath})\n\n{self.Description}\n"
 
 class SlideModel():
     Cover= CoverSlide
@@ -87,8 +100,11 @@ class TutorialExporter():
         body = "".join([slide.Model.ToHtml() for slide in self.Slides])
         return self.Html.format(self.Title, body, self.htmlStyle)
     
-    def ToMarkdown():
-        pass
+    def ToMarkdown(self):
+        md = f"# {self.Title}\n\n"
+        md += "\n".join([slide.Model.ToMarkdown() for slide in self.Slides])
+        self.Markdown = md
+        return md
     
     def ToPdf(self):
         printer = qt.QPrinter(qt.QPrinter.PrinterResolution)
@@ -107,6 +123,12 @@ class TutorialExporter():
     htmlStyle = """               
                 .slide, .cover, .backCover {
                     align-content: center;
+                    display: block;
+                    max-width: 100%;
+                    height: auto;
+                    margin: 10px auto;
+                    border-radius: 3px;
+                    box-shadow: 0 4px 4px rgba(0,0,0,0.2);
                 }
                 
                 .containerImage {
@@ -114,14 +136,21 @@ class TutorialExporter():
                 }
 
                 .slideImage {
-                    width: 95%;
+                    width: 85%;
                     height: auto;
                 }
 
-                .slideTitle, .coverTitle, .backCoverTitle,
-                .coverAuthor, .coverDate {
+                .slideTitle, .coverTitle, .backCoverTitle {
                     text-align: center;
                     font-size: 2.5rem;
+                    background: #003366;
+                    color: white;
+                }
+                
+                .coverAuthor, .coverDate {
+                    text-align: center;
+                    font-size: 2.0rem;
+                   
                 }
 
                 .slideDescription {
@@ -146,12 +175,12 @@ class TutorialExporter():
                         page-break-after: always;
                     }
                     body{
-                        height: 21cm;
-                        width: 29.7cm;
+                        height: 19cm;
+                        width: 28.7cm;
                     }
                 }
 
                 @page {
-                    size: 29.7cm 21cm;
+                    size: 28.7cm 20cm;
                 }
                 """
