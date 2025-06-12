@@ -562,11 +562,17 @@ class SelfTestTutorialLayer():
         import inspect
         import functools
         TUTORIAL_STEP_INTERVAL = 3000
+        TUTORIAL_STEP_DICT = {-1: True}
 
-        def ScreenshotCallable(tutorial, callback, _locals, _index=0):
+        def ScreenshotCallable(tutorial, callback, _locals, _stepdict, _index=0):
+            if not _stepdict[_index - 1]:
+                timerCallback = functools.partial(ScreenshotCallable, tutorial, callback, _locals, _stepdict, _index=_index)
+                qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL, timerCallback)
+                return
             if _index > 0:
                 tutorial.nextScreenshot()
             callback(_locals)
+            _stepdict[_index] = True
 
         def ScreenshotCallableLast(tutorial):
             tutorial.nextScreenshot()
@@ -589,8 +595,9 @@ class SelfTestTutorialLayer():
                 tutorial.beginTutorial()
                 _stepIndex = 0
                 while True:
+                    TUTORIAL_STEP_DICT[functionIndex] = False
                     try:
-                        timerCallback = functools.partial(ScreenshotCallable, tutorial, _locals[f"TUTORIAL_SCREENSHOT_{functionIndex}"], _locals, _index=_stepIndex)
+                        timerCallback = functools.partial(ScreenshotCallable, tutorial, _locals[f"TUTORIAL_SCREENSHOT_{functionIndex}"], _locals, TUTORIAL_STEP_DICT, _index=_stepIndex)
                         qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL*functionIndex, timerCallback)
                         functionIndex += 1
                         _stepIndex += 1
