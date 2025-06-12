@@ -574,7 +574,11 @@ class SelfTestTutorialLayer():
             callback(_locals)
             _stepdict[_index] = True
 
-        def ScreenshotCallableLast(tutorial):
+        def ScreenshotCallableLast(tutorial, _index=0):
+            if not TUTORIAL_STEP_DICT[_index - 1]:
+                endCallback = functools.partial(ScreenshotCallableLast, tutorial, _index)
+                qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL, endCallback)
+                return
             tutorial.nextScreenshot()
             tutorial.endTutorial()
 
@@ -604,7 +608,7 @@ class SelfTestTutorialLayer():
                     except Exception as e:
                         print(e)
                         break
-                endCallback = functools.partial(ScreenshotCallableLast, tutorial)
+                endCallback = functools.partial(ScreenshotCallableLast, tutorial, _stepIndex)
                 qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL*functionIndex, endCallback)
         # This needs to happen only after every possible tutorial is ran
         if callback is not None:
