@@ -562,7 +562,10 @@ class SelfTestTutorialLayer():
         import inspect
         import functools
         TUTORIAL_STEP_INTERVAL = 3000
-        TUTORIAL_STEP_DICT = {-1: True}
+        TUTORIAL_STEP_DICT = {
+            -1: True,
+            "FINISHED": False
+        }
 
         def ScreenshotCallable(tutorial, callback, _locals, _stepdict, _index=0):
             if not _stepdict[_index - 1]:
@@ -574,9 +577,14 @@ class SelfTestTutorialLayer():
             callback(_locals)
             _stepdict[_index] = True
 
-        def ScreenshotCallableLast(tutorial):
+        def ScreenshotCallableLast(tutorial, _index=0):
+            if not TUTORIAL_STEP_DICT[_index - 1]:
+                endCallback = functools.partial(ScreenshotCallableLast, tutorial, _index)
+                qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL, endCallback)
+                return
             tutorial.nextScreenshot()
             tutorial.endTutorial()
+            TUTORIAL_STEP_DICT["FINISHED"] = True
 
         tutorialSource = inspect.getsource(tutorialClass.runTest)
         funcMatcher = rf"(?m)(?<=self\.).+(?=\()"
@@ -604,11 +612,19 @@ class SelfTestTutorialLayer():
                     except Exception as e:
                         print(e)
                         break
-                endCallback = functools.partial(ScreenshotCallableLast, tutorial)
+                endCallback = functools.partial(ScreenshotCallableLast, tutorial, _stepIndex)
                 qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL*functionIndex, endCallback)
         # This needs to happen only after every possible tutorial is ran
         if callback is not None:
-            qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL*(functionIndex + 1), callback)
+            def FinishCallback(callback):
+                if not TUTORIAL_STEP_DICT["FINISHED"]:
+                    finishCallback = functools.partial(FinishCallback, callback)
+                    qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL, finishCallback)
+                    return
+                callback()
+
+            finishCallback = functools.partial(FinishCallback, callback)
+            qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL*(functionIndex + 1), finishCallback)
 
 class NextCounter():
     def __init__(self, count=0):
