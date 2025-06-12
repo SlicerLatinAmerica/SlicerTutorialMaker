@@ -4,12 +4,166 @@ import os
 import re
 import copy
 
-class util():
-
-    def __init__(self) -> None:
-        #self.listOnScreenWidgets()
-        self.mw = Widget(slicer.util.mainWindow())
+class Widget():
+    def __init__(self, widgetData) -> None:
+        self.__widgetData = widgetData
+        self.name = widgetData.name
+        self.className = widgetData.className()
+        if not hasattr(self.__widgetData, 'toolTip'):
+            self.toolTip = "None"
+        else:
+            self.toolTip = widgetData.toolTip
+        if not hasattr(self.__widgetData, 'text'):
+            self.text = "None"
+        else:
+            self.text = widgetData.text
         pass
+        if not hasattr(self.__widgetData, "actions"):
+            self.actions = []
+        else:
+            self.actions = self.__widgetData.actions()
+
+    def __str__(self):
+        string = "Widget:\n"
+        string += "\tName:      " + self.name + "\n"
+        string += "\tText:      " + self.text + "\n"
+        string += "\tToolTip:   " + self.toolTip + "\n"
+        string += "\tClassName: " + self.className + "\n"
+        string += "\tID:        " + hex(id(self.__widgetData)) + "\n"
+        string += "\tAction:    " + str(self.actions)+ "\n"
+        string += "\tPath:      " + Util.uniqueWidgetPath(self)
+        return string
+
+    def __dict__(self):
+        dict = {
+            "name": self.name,
+            "text": self.text,
+            "toolTip": self.toolTip,
+            "className": self.className,
+            "id": hex(id(self.__widgetData))
+        }
+        return dict
+
+    def inner(self):
+        return self.__widgetData
+
+    def parent(self):
+        parent = self.__widgetData.parent()
+        if not parent:
+            return None
+        return Widget(parent)
+
+    def getNamedChild(self, childName):
+        if not hasattr(self.__widgetData, 'children'):
+            return None
+        for child in self.__widgetData.children():
+            if child.name == childName:
+                return Widget(child)
+        return None
+
+    def getChildren(self):
+        children = []
+        if not hasattr(self.__widgetData, 'children'):
+            return children
+        for child in self.__widgetData.children():
+            children.append(Widget(child))
+        if self.className == "QListWidget":
+            children.extend(self.__listWidgetAsChildren())
+        elif self.className == "qMRMLSubjectHierarchyTreeView":
+            children.extend(self.__MRMLTreeViewAsChildren())
+        return children
+
+    def childrenDetails(self):
+        children = self.getChildren()
+        for child in children:
+            print(child)
+
+    def click(self):
+        result = self.__widgetData.click()
+        self.__widgetData.update()
+        #slicer.app.processEvents(qt.QEventLoop.AllEvents, 70)
+        return result
+
+    def getGlobalPos(self):
+        mw = slicer.util.mainWindow()
+        windowPos = mw.mapToGlobal(mw.rect.topLeft())
+
+        globalPosTopLeft = self.__widgetData.mapToGlobal(self.__widgetData.rect.topLeft())
+        return [(globalPosTopLeft.x() - windowPos.x())*slicer.app.desktop().devicePixelRatioF(), (globalPosTopLeft.y() - windowPos.y())*slicer.app.desktop().devicePixelRatioF()]
+
+    def getSize(self):
+        posTopLeft = self.__widgetData.rect.topLeft()
+        posBotRight = self.__widgetData.rect.bottomRight()
+        return [(posBotRight.x() - posTopLeft.x())*slicer.app.desktop().devicePixelRatioF(), (posBotRight.y() - posTopLeft.y())*slicer.app.desktop().devicePixelRatioF()]
+
+    def __listWidgetAsChildren(self):
+        from types import SimpleNamespace
+        virtualChildren = []
+        for ItemIndex in range(self.__widgetData.count):
+            item = self.__widgetData.item(ItemIndex)
+            __itemData = SimpleNamespace(name= f"XlistWidgetItem_{ItemIndex}",
+            className= lambda:"XlistWidgetItem",
+            text= item.text(),
+            mapToGlobal= self.__widgetData.mapToGlobal,
+            rect= self.__widgetData.visualItemRect(item),
+            parent=lambda: self.__widgetData,
+            isVisible= self.__widgetData.isVisible)
+            virtualChildren.append(Widget(__itemData))
+        return virtualChildren
+
+    def __MRMLTreeViewAsChildren(self):
+        from types import SimpleNamespace
+        virtualChildren = []
+        model = None
+        if self.__widgetData.sortFilterProxyModel() is not None:
+            model = self.__widgetData.sortFilterProxyModel()
+        else:
+            model = self.__widgetData.model()
+        if model is None:
+            return virtualChildren
+
+        NodeIndex = 0
+        def nodeTreeTraverser(_node):
+            nonlocal NodeIndex
+            if hasattr(_node, "child"):
+                xIndex = 0
+                while True:
+                    yIndex = 0
+                    if _node.child(xIndex, yIndex) is None or not _node.child(xIndex, yIndex).isValid():
+                        break
+                    while True:
+                        if _node.child(xIndex, yIndex) is None or not _node.child(xIndex, yIndex).isValid():
+                            break
+                        nodeTreeTraverser(_node.child(xIndex, yIndex))
+                        yIndex += 1
+                    xIndex += 1
+
+            #Create fake widgets to represent the nodes in the list
+            _fRect = self.__widgetData.visualRect(_node)
+            if (_fRect.size().height() == 0 or _fRect.size().width() == 0):
+                return
+
+            _fText = ""
+            if _node.data(0) is not None:
+                _fText = _node.data(0)
+
+            __itemData = SimpleNamespace(name= f"XtreeViewWidget_{NodeIndex}",
+            className= lambda:"XtreeViewWidget",
+            text= _fText,
+            mapToGlobal= self.__widgetData.viewport().mapToGlobal,
+            rect= _fRect,
+            parent=lambda: self.__widgetData,
+            isVisible= self.__widgetData.isVisible)
+            virtualChildren.append(Widget(__itemData))
+
+            NodeIndex += 1
+
+        nodeTreeTraverser(model.index(0,0))
+
+        return virtualChildren
+
+class Util():
+    mw = None
 
     __shortcutDict = {
         "Scene3D"     : "CentralWidget/CentralWidgetLayoutFrame/ThreeDWidget1",
@@ -18,13 +172,23 @@ class util():
         "SceneGreen"  : "CentralWidget/CentralWidgetLayoutFrame/qMRMLSliceWidgetGreen",
         "Module"      : "PanelDockWidget/dockWidgetContents/ModulePanel/ScrollArea/qt_scrollarea_viewport/scrollAreaWidgetContents"
     }
+    
+    @staticmethod
+    def loadMainWindow():
+        Util.mw = Widget(slicer.util.mainWindow())
+        
+    @staticmethod
+    def listOnScreenWidgets():
+        if Util.mw is None:
+            Util.loadMainWindow()
+        print(Util.mw.className, end=", ")
+        print(Util.mw.name)
+        Util.__listWidgetsRecursive(Util.mw, 1)
 
-    def listOnScreenWidgets(self):
-        print(self.mw.className, end=", ")
-        print(self.mw.name)
-        self.__listWidgetsRecursive(self.mw, 1)
-
-    def __listWidgetsRecursive(self, widget, depth):
+    @staticmethod
+    def __listWidgetsRecursive(widget, depth):
+        if Util.mw is None:
+            Util.loadMainWindow()
         children = widget.getChildren()
         for child in children:
             if child.name != "":
@@ -32,30 +196,38 @@ class util():
                     print("\t", end="")
                 print(child.className, end=", ")
                 print(child.name)
-                self.__listWidgetsRecursive(child, depth + 1)
+                Util.__listWidgetsRecursive(child, depth + 1)
 
-    def getOnScreenWidgets(self, window=None):
+    @staticmethod
+    def getOnScreenWidgets(window=None):
+        if Util.mw is None:
+            Util.loadMainWindow()
         if window is None:
-            window = self.mw
+            window = Util.mw
         window = Widget(window)
-        widgets = self.__getWidgetsRecursive(window, 1)
-        return widgets
+        return Util.__getWidgetsRecursive(window, 1)
 
-    def __getWidgetsRecursive(self, widget, depth):
+    @staticmethod
+    def __getWidgetsRecursive(widget, depth):
+        if Util.mw is None:
+            Util.loadMainWindow()
         widgets = []
         children = widget.getChildren()
         for child in children:
             widgets.append(child)
-            widgets = widgets + self.__getWidgetsRecursive(child, depth + 1)
+            widgets = widgets + Util.__getWidgetsRecursive(child, depth + 1)
         return widgets
 
-    def getNamedWidget(self, path, widget=None):
+    @staticmethod
+    def getNamedWidget(path, widget=None):
+        if Util.mw is None:
+            Util.loadMainWindow()
         if path == "":
             return
         if not widget:
-            widget = self.mw
+            widget = Util.mw
         wNames = path.split("/")
-        extendedPath = self.widgetShortcuts(wNames[0])
+        extendedPath = Util.widgetShortcuts(wNames[0])
         extendedPath.extend(wNames[1:])
         for name in extendedPath:
             _widget = widget.getNamedChild(name)
@@ -63,23 +235,29 @@ class util():
                 temp = name.split(":", 1)
                 if len(temp) < 2:
                     return None
-                wList = self.getWidgetsByClassName(widget, temp[0])
+                wList = Util.getWidgetsByClassName(widget, temp[0])
                 _widget = wList[int(temp[1])]
                 if not _widget:
                     return None
             widget = _widget
         return widget
 
-    def widgetShortcuts(self, shortcut):
-        if shortcut in self.__shortcutDict.keys():
-            return self.__shortcutDict[shortcut].split("/")
+    @staticmethod
+    def widgetShortcuts(shortcut):
+        if Util.mw is None:
+            Util.loadMainWindow()
+        if shortcut in Util.__shortcutDict.keys():
+            return Util.__shortcutDict[shortcut].split("/")
         else:
             return [shortcut]
 
-    def getWidgetsByToolTip(self, parent, tooltip):
+    @staticmethod
+    def getWidgetsByToolTip(parent, tooltip):
+        if Util.mw is None:
+            Util.loadMainWindow()
         widgets = []
         if not parent:
-            parent = self.mw
+            parent = Util.mw
         if tooltip == "":
             return widgets
         for child in parent.getChildren():
@@ -87,10 +265,13 @@ class util():
                 widgets.append(child)
         return widgets
 
-    def getWidgetsByClassName(self, parent, classname):
+    @staticmethod
+    def getWidgetsByClassName(parent, classname):
+        if Util.mw is None:
+            Util.loadMainWindow()
         widgets = []
         if not parent:
-            parent = self.mw
+            parent = Util.mw
         if classname == "":
             return widgets
         for child in parent.getChildren():
@@ -98,13 +279,16 @@ class util():
                 widgets.append(child)
         return widgets
 
-    def uniqueWidgetPath(self, widgetToID):
+    @staticmethod
+    def uniqueWidgetPath(widgetToID):
+        if Util.mw is None:
+            Util.loadMainWindow()
         path = widgetToID.name
         parent = widgetToID
         if path == "":
-            path = self.__classtoname(widgetToID)
+            path = Util.__classtoname(widgetToID)
             pass
-
+     
         while(True):
             parent = parent.parent()
             if not parent:
@@ -112,14 +296,17 @@ class util():
             if parent.name != "":
                 path = parent.name + "/" + path
             else:
-                _name = self.__classtoname(parent)
+                _name = Util.__classtoname(parent)
                 path = _name + "/" + path
                 pass
         return path
 
-    def __classtoname(self, widget):
+    @staticmethod
+    def __classtoname(widget):
+        if Util.mw is None:
+            Util.loadMainWindow()
         classname = widget.className
-        _widgets = self.getWidgetsByClassName(widget.parent(), classname)
+        _widgets = Util.getWidgetsByClassName(widget.parent(), classname)
         index = 0
         for _w in _widgets:
             if id(widget.inner()) == id(_w.inner()) and widget.text == _w.text:
@@ -131,8 +318,11 @@ class util():
             name = "?"
         return name
 
-    def verifyOutputFolders(self):
-        basePath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))+ "/Outputs/"
+    @staticmethod
+    def verifyOutputFolders():
+        if Util.mw is None:
+            Util.loadMainWindow()
+        basePath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
         if not os.path.exists(basePath):
             os.mkdir(basePath)
             os.mkdir(basePath + "Raw")
@@ -145,10 +335,12 @@ class util():
         if not os.path.exists(testingFolder):
             os.mkdir(testingFolder)
 
+    @staticmethod
     def mapFromTo(value : float, inputMin : float, inputMax : float, outputMin : float, outputMax : float) -> float:
+        if Util.mw is None:
+            Util.loadMainWindow()
         result=(value-inputMin)/(inputMax-inputMin)*(outputMax-outputMin)+outputMin
         return result
-
 
 class WidgetFinder(qt.QWidget):
     def __init__(self, parent=None):
@@ -232,7 +424,6 @@ class WidgetFinder(qt.QWidget):
         #we need to work on this
         self.setFixedSize(self.aux.size)
         self.pos = self.aux.pos
-
 
 class Shapes(qt.QWidget):
     def __init__(self, parent=None):
@@ -419,165 +610,6 @@ class NextCounter():
         self.count += 1
         return self.count - 1
 
-
-class Widget():
-    def __init__(self, widgetData) -> None:
-        self.__widgetData = widgetData
-        self.name = widgetData.name
-        self.className = widgetData.className()
-        if not hasattr(self.__widgetData, 'toolTip'):
-            self.toolTip = "None"
-        else:
-            self.toolTip = widgetData.toolTip
-        if not hasattr(self.__widgetData, 'text'):
-            self.text = "None"
-        else:
-            self.text = widgetData.text
-        pass
-        if not hasattr(self.__widgetData, "actions"):
-            self.actions = []
-        else:
-            self.actions = self.__widgetData.actions()
-
-    def __str__(self):
-        string = "Widget:\n"
-        string += "\tName:      " + self.name + "\n"
-        string += "\tText:      " + self.text + "\n"
-        string += "\tToolTip:   " + self.toolTip + "\n"
-        string += "\tClassName: " + self.className + "\n"
-        string += "\tID:        " + hex(id(self.__widgetData)) + "\n"
-        string += "\tAction:    " + str(self.actions)+ "\n"
-        string += "\tPath:      " + util().uniqueWidgetPath(self)
-        return string
-
-    def __dict__(self):
-        dict = {
-            "name": self.name,
-            "text": self.text,
-            "toolTip": self.toolTip,
-            "className": self.className,
-            "id": hex(id(self.__widgetData))
-        }
-        return dict
-
-    def inner(self):
-        return self.__widgetData
-
-    def parent(self):
-        parent = self.__widgetData.parent()
-        if not parent:
-            return None
-        return Widget(parent)
-
-    def getNamedChild(self, childName):
-        if not hasattr(self.__widgetData, 'children'):
-            return None
-        for child in self.__widgetData.children():
-            if child.name == childName:
-                return Widget(child)
-        return None
-
-    def getChildren(self):
-        children = []
-        if not hasattr(self.__widgetData, 'children'):
-            return children
-        for child in self.__widgetData.children():
-            children.append(Widget(child))
-        if self.className == "QListWidget":
-            children.extend(self.__listWidgetAsChildren())
-        elif self.className == "qMRMLSubjectHierarchyTreeView":
-            children.extend(self.__MRMLTreeViewAsChildren())
-        return children
-
-    def childrenDetails(self):
-        children = self.getChildren()
-        for child in children:
-            print(child)
-
-    def click(self):
-        result = self.__widgetData.click()
-        self.__widgetData.update()
-        #slicer.app.processEvents(qt.QEventLoop.AllEvents, 70)
-        return result
-
-    def getGlobalPos(self):
-        mw = slicer.util.mainWindow()
-        windowPos = mw.mapToGlobal(mw.rect.topLeft())
-
-        globalPosTopLeft = self.__widgetData.mapToGlobal(self.__widgetData.rect.topLeft())
-        return [(globalPosTopLeft.x() - windowPos.x())*slicer.app.desktop().devicePixelRatioF(), (globalPosTopLeft.y() - windowPos.y())*slicer.app.desktop().devicePixelRatioF()]
-
-    def getSize(self):
-        posTopLeft = self.__widgetData.rect.topLeft()
-        posBotRight = self.__widgetData.rect.bottomRight()
-        return [(posBotRight.x() - posTopLeft.x())*slicer.app.desktop().devicePixelRatioF(), (posBotRight.y() - posTopLeft.y())*slicer.app.desktop().devicePixelRatioF()]
-
-    def __listWidgetAsChildren(self):
-        from types import SimpleNamespace
-        virtualChildren = []
-        for ItemIndex in range(self.__widgetData.count):
-            item = self.__widgetData.item(ItemIndex)
-            __itemData = SimpleNamespace(name= f"XlistWidgetItem_{ItemIndex}",
-            className= lambda:"XlistWidgetItem",
-            text= item.text(),
-            mapToGlobal= self.__widgetData.mapToGlobal,
-            rect= self.__widgetData.visualItemRect(item),
-            parent=lambda: self.__widgetData,
-            isVisible= self.__widgetData.isVisible)
-            virtualChildren.append(Widget(__itemData))
-        return virtualChildren
-
-    def __MRMLTreeViewAsChildren(self):
-        from types import SimpleNamespace
-        virtualChildren = []
-        model = None
-        if self.__widgetData.sortFilterProxyModel() is not None:
-            model = self.__widgetData.sortFilterProxyModel()
-        else:
-            model = self.__widgetData.model()
-        if model is None:
-            return virtualChildren
-
-        NodeIndex = 0
-        def nodeTreeTraverser(_node):
-            nonlocal NodeIndex
-            if hasattr(_node, "child"):
-                xIndex = 0
-                while True:
-                    yIndex = 0
-                    if _node.child(xIndex, yIndex) is None or not _node.child(xIndex, yIndex).isValid():
-                        break
-                    while True:
-                        if _node.child(xIndex, yIndex) is None or not _node.child(xIndex, yIndex).isValid():
-                            break
-                        nodeTreeTraverser(_node.child(xIndex, yIndex))
-                        yIndex += 1
-                    xIndex += 1
-
-            #Create fake widgets to represent the nodes in the list
-            _fRect = self.__widgetData.visualRect(_node)
-            if (_fRect.size().height() == 0 or _fRect.size().width() == 0):
-                return
-
-            _fText = ""
-            if _node.data(0) is not None:
-                _fText = _node.data(0)
-
-            __itemData = SimpleNamespace(name= f"XtreeViewWidget_{NodeIndex}",
-            className= lambda:"XtreeViewWidget",
-            text= _fText,
-            mapToGlobal= self.__widgetData.viewport().mapToGlobal,
-            rect= _fRect,
-            parent=lambda: self.__widgetData,
-            isVisible= self.__widgetData.isVisible)
-            virtualChildren.append(Widget(__itemData))
-
-            NodeIndex += 1
-
-        nodeTreeTraverser(model.index(0,0))
-
-        return virtualChildren
-
 class SignalManager(qt.QObject):
     received = qt.Signal(object)
     def __init__(self):
@@ -635,14 +667,13 @@ class ScreenshotTools():
         pass
 
     def saveAllWidgetsData(self, filename, window):
-        tool = util()
         data = {}
-        widgets = tool.getOnScreenWidgets(window)
+        widgets = Util.getOnScreenWidgets(window)
         for index in range(len(widgets)):
             try:
                 if hasattr(widgets[index].inner(), "isVisible") and not widgets[index].inner().isVisible():
                     continue
-                data[index] = {"name": widgets[index].name, "path": tool.uniqueWidgetPath(widgets[index]), "text": widgets[index].text, "position": widgets[index].getGlobalPos(), "size": widgets[index].getSize()}
+                data[index] = {"name": widgets[index].name, "path": Util.uniqueWidgetPath(widgets[index]), "text": widgets[index].text, "position": widgets[index].getGlobalPos(), "size": widgets[index].getSize()}
                 pass
             except AttributeError:
                 #Working as expected, so to not save QObjects that are not QWidgets
@@ -652,7 +683,7 @@ class ScreenshotTools():
                 pass
         self.handler.saveScreenshotMetadata(data, filename)
 
-class Tutorial:
+class Tutorial():
     def __init__(self,
             title,
             author,
@@ -701,8 +732,7 @@ class Tutorial:
         handler = JSONHandler()
         handler.saveTutorial(self.metadata, self.steps)
 
-
-class TutorialScreenshot:
+class TutorialScreenshot():
     def __init__(self, screenshot="", metadata=""):
         self.screenshot = screenshot
         self.metadata = metadata

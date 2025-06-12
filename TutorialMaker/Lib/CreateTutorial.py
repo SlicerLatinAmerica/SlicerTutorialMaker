@@ -60,7 +60,7 @@ class CreateTutorial(qt.QMainWindow):
             file_path = os.path.join(self.foldername, file_name)
 
             # Define the content of the file as a string
-            content = f"""import Lib.utils as utils
+            content = f"""import Lib.TutorialUtils as utils
 
     Tutorial = utils.Tutorial("{title_text}", "{author_text}", "{formatted_date}", "{description}")
 

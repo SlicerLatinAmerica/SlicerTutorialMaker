@@ -5,7 +5,7 @@ import math
 import json
 from slicer.i18n import tr as _
 from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide
-from Lib.utils import Tutorial, TutorialScreenshot
+from Lib.TutorialUtils import Tutorial, TutorialScreenshot
 import Lib.TutorialExporter as Exporter
 
 
@@ -604,11 +604,11 @@ class ImageDrawer:
         """
 
         # Initialize ImageDrawer and JSONHandler instances
-        import Lib.utils as utils
+        import Lib.TutorialUtils as TutorialUtils
         image_drawer = ImageDrawer()
-        jsonHandler = utils.JSONHandler()
+        jsonHandler = TutorialUtils.JSONHandler()
         tutorial = jsonHandler.parseTutorial(True)
-        OutputAnnotator = utils.JSONHandler.parseJSON(path)
+        OutputAnnotator = TutorialUtils.JSONHandler.parseJSON(path)
 
         cont = 0
         imgSS = 0
