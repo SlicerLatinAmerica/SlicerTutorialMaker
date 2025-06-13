@@ -242,22 +242,16 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
     def Capture(self, tutorialName):
         def FinishTutorial():
             slicer.util.mainWindow().moduleSelector().selectModule('TutorialMaker')
-            qt.QMessageBox.information(slicer.util.mainWindow(), _("Tutorial Captured"), _("Captured Tutorial: {tutorialName}").format(tutorialName=tutorialName))
+            slicer.util.infoDisplay(_("Tutorial Captured"), _("Captured Tutorial: {tutorialName}").format(tutorialName=tutorialName))
         
-        try:
+        with slicer.util.tryWithErrorDisplay("Failed to capture tutorial"):
             TutorialMakerLogic.runTutorialTestCases(tutorialName, FinishTutorial)
-        except Exception as e:
-            qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to capture tutorial: {e}").format(e=e))
-        pass
 
     def Generate(self, tutorialName):
-        try:
+        with slicer.util.tryWithErrorDisplay(_("Failed to generate tutorial")):
             AnnotationPainter.TutorialPainter().GenerateHTMLfromAnnotatedTutorial(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/annotations.json")
             os.startfile(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/")
-            qt.QMessageBox.information(slicer.util.mainWindow(), _("Tutorial Generated"), _("Generated Tutorial: {tutorialName}").format(tutorialName=tutorialName))
-        except Exception as e:
-            qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to generate tutorial: {e}".format(e=e)))
-        pass
+            slicer.util.infoDisplay(_("Tutorial Generated"), _("Generated Tutorial: {tutorialName}").format(tutorialName=tutorialName))
 
     def CreateNewTutorial(self):
         folderName = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
@@ -276,22 +270,21 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         for repo in self.TutorialRepos:
             files = GitTools.GitFile("", "")
             try:
-                files = GitTools.GitTools.ParseRepo(repo)
-            except Exception as e:
-                print(e)
-                qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to fetch tutorials from {repo}. Please try again later.").format(repo=repo))
+                with slicer.util.tryWithErrorDisplay(_("Failed to fetch tutorials from {repo}").format(repo=repo)):
+                    files = GitTools.GitTools.ParseRepo(repo)
+            except:
                 continue
             for TutorialRoot in files.dir("Tutorials"):
                 for TutorialFile in files.dir(f"Tutorials/{TutorialRoot}"):
                     if TutorialFile.endswith(".py"):
                         try:
-                            pyRaw = files.getRaw(f"Tutorials/{TutorialRoot}/{TutorialFile}")
-                            fd = open(f"{modulePath}/Testing/{TutorialFile}", "w", encoding='utf-8')
-                            fd.write(pyRaw)
-                            fd.close()
-                        except Exception as e:
-                            qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to fetch {TutorialFile} from {repo}".format(TutorialFile=TutorialFile, repo=repo)))
-                            print(e)
+                            with slicer.util.tryWithErrorDisplay(_("Failed to fetch {TutorialFile} from {repo}".format(TutorialFile=TutorialFile, repo=repo))):
+                                pyRaw = files.getRaw(f"Tutorials/{TutorialRoot}/{TutorialFile}")
+                                fd = open(f"{modulePath}/Testing/{TutorialFile}", "w", encoding='utf-8')
+                                fd.write(pyRaw)
+                                fd.close()
+                        except:
+                            continue
         pass
 
     def loadTutorials(self):
