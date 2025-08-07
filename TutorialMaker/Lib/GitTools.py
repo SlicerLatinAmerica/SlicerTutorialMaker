@@ -37,7 +37,7 @@ class GitFile:
 class GitTools:
 
     def ParseRepo(repo:str, path="") -> GitFile:
-        endpoint = f"https://api.github.com/repos/{repo}/contents{path}"
+        endpoint = f"https://api.github.com/repos/{repo}/contents/{path}"
         response = requests.get(endpoint)
         if response.status_code != 200 and response.status_code != 403:
             raise Exception(f"{endpoint} : {response.text}")
@@ -58,7 +58,7 @@ class GitTools:
         return root
 
     def __parseRecursive__(repo:str, path=""):
-        endpoint = f"https://api.github.com/repos/{repo}/contents{path}"
+        endpoint = f"https://api.github.com/repos/{repo}/contents/{path}"
         response = requests.get(endpoint)
         if response.status_code != 200 and response.status_code != 403:
             raise Exception(f"{endpoint} : {response.text}")

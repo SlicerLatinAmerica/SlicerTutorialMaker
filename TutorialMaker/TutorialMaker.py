@@ -212,7 +212,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         ScriptedLoadableModuleLogic.__init__(self) # noqa: F405
         self.tutorialEditor = TutorialEditor()
         self.TutorialRepos = [
-            "SlicerLatinAmerica/TestSlicerTutorials"
+            "SlicerLatinAmerica/SlicerTestTutorial"
         ]
 
     def setDefaultParameters(self, parameterNode):
