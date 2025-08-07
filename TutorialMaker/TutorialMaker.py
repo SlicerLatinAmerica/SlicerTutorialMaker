@@ -259,8 +259,6 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
                 subprocess.call([opener, outputPath])
             qt.QMessageBox.information(slicer.util.mainWindow(), _("Tutorial Generated"), _("Generated Tutorial: {tutorialName}").format(tutorialName=tutorialName))
-        except Exception as e:
-            qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to generate tutorial: {e}".format(e=e)))
         pass
 
     def CreateNewTutorial(self):
