@@ -250,8 +250,18 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
     def Generate(self, tutorialName):
         with slicer.util.tryWithErrorDisplay(_("Failed to generate tutorial")):
             AnnotationPainter.TutorialPainter().GenerateHTMLfromAnnotatedTutorial(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/annotations.json")
-            os.startfile(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/")
-            slicer.util.infoDisplay(_("Tutorial Generated"), _("Generated Tutorial: {tutorialName}").format(tutorialName=tutorialName))
+            outputPath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
+            import platform
+            if platform.system() == "Windows":
+                os.startfile(outputPath)
+            else:
+                import subprocess, sys
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.call([opener, outputPath])
+            qt.QMessageBox.information(slicer.util.mainWindow(), _("Tutorial Generated"), _("Generated Tutorial: {tutorialName}").format(tutorialName=tutorialName))
+        except Exception as e:
+            qt.QMessageBox.critical(slicer.util.mainWindow(), "Error", _("Failed to generate tutorial: {e}".format(e=e)))
+        pass
 
     def CreateNewTutorial(self):
         folderName = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
