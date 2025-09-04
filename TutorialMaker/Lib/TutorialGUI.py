@@ -841,8 +841,7 @@ class TutorialGUI(qt.QMainWindow):
         self.tutorial2 = tutorial
         
         new_image_path = self.dir_path+'/../Resources/NewSlide/white.png'
-        new_metadata_path = self.dir_path+'/../Resources/NewSlide/white.json'
-        new_screenshot = TutorialScreenshot(new_image_path, new_metadata_path)
+        new_screenshot = TutorialScreenshot(new_image_path, "")
         if self.tutorial2.steps:
             self.tutorial2.steps.append([new_screenshot])  #The white image is added
         else:

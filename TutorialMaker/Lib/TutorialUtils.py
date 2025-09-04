@@ -805,6 +805,8 @@ class JSONHandler:
         return tutorial
 
     def parseJSON(path):
+        if path == "":
+            return {}
         import json
         with open(path, encoding='utf-8') as file:
             data = json.load(file)
