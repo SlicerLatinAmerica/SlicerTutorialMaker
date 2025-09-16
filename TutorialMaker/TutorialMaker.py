@@ -1,5 +1,7 @@
 import logging
 import os
+import platform
+import subprocess
 import slicer
 import importlib
 import qt
@@ -32,12 +34,13 @@ class TutorialMaker(ScriptedLoadableModule): # noqa: F405
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
         self.parent.contributors = ["Douglas Gonçalves (Universidade de São Paulo)", "Enrique Hernández (Universidad Autónoma del Estado de México)",
                                     "João Januário (Universidade de São Paulo)", "Lucas Silva (Universidade de São Paulo)",
-                                    "Paulo Pereira (Universidade de São Paulo)", "Victor Montaño (Universidad Autónoma del Estado de México)",
-                                    "Paulo Eduardo de Barros Veiga (Universidade de São Paulo)", "Valeria Gomez-Valdes (Universidad Autónoma del Estado de México)",
-                                    "Monserrat Rıos-Hernandez (Universidad Autónoma del Estado de México)", "Fatou Bintou Ndiaye (University Cheikh Anta Diop)",
-                                    "Mohamed Alalli Bilal (University Cheikh Anta Diop)", "Steve Pieper (Isomics Inc.)",
-                                    "Adriana Vilchis-Gonzalez (Universidad Autónoma del Estado de México)", "Luiz Otavio Murta Junior (Universidade de São Paulo)",
-                                    "Andras Lasso (Queen’s University)", "Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)"]
+                                    "Paulo Pereira (Universidade de São Paulo)", "Lucas Miranda Mendonça Rezende (Universidade de São Paulo)"
+                                    "Victor Montaño (Universidad Autónoma del Estado de México)", "Paulo Eduardo de Barros Veiga (Universidade de São Paulo)", 
+                                    "Valeria Gomez-Valdes (Universidad Autónoma del Estado de México)", "Monserrat Rıos-Hernandez (Universidad Autónoma del Estado de México)", 
+                                    "Fatou Bintou Ndiaye (University Cheikh Anta Diop)", "Mohamed Alalli Bilal (University Cheikh Anta Diop)", 
+                                    "Steve Pieper (Isomics Inc.)", "Adriana Vilchis-Gonzalez (Universidad Autónoma del Estado de México)", 
+                                    "Luiz Otavio Murta Junior (Universidade de São Paulo)", "Andras Lasso (Queen’s University)", 
+                                    "Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)"]
         # TODO: update with short description of the module and a link to online module documentation
         self.parent.helpText = """help text"""
         # TODO: replace with organization, grant and thanks
@@ -214,6 +217,9 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         self.TutorialRepos = [
             "SlicerLatinAmerica/SlicerTestTutorial"
         ]
+        self.LanguageRepos = [
+            "Slicer/SlicerLanguageTranslations"
+        ]
 
     def setDefaultParameters(self, parameterNode):
         """
@@ -251,7 +257,6 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         with slicer.util.tryWithErrorDisplay(_("Failed to generate tutorial")):
             AnnotationPainter.TutorialPainter().GenerateHTMLfromAnnotatedTutorial(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/annotations.json")
             outputPath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
-            import platform
             if platform.system() == "Windows":
                 os.startfile(outputPath)
             else:
@@ -275,6 +280,11 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
 
     def loadTutorialsFromRepos(self):
         modulePath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))
+        
+        os.makedirs(os.path.join(modulePath, "Testing"), exist_ok=True)
+        os.makedirs(os.path.join(modulePath, "Languages"), exist_ok=True)
+        
+        # Tutorials
         for repo in self.TutorialRepos:
             files = GitTools.GitFile("", "")
             try:
@@ -293,6 +303,46 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
                                 fd.close()
                         except:
                             continue
+                      
+        # Language Packs  
+        for repo in self.LanguageRepos:
+            files = GitTools.GitFile("", "")
+            try:
+                with slicer.util.tryWithErrorDisplay(_("Failed to fetch language packs from {repo}").format(repo=repo)):
+                    files = GitTools.GitTools.ParseRepo(repo)
+            except:
+                continue
+            for langFile in files.dir("translations"):
+                if not (langFile.endswith(".ts") or langFile.endswith(".qm")):
+                    continue
+                try:
+                    with slicer.util.tryWithErrorDisplay(_("Failed to fetch {langFile} from {repo}").format(langFile=langFile, repo=repo)):
+                        raw = files.getRaw(f"translations/{langFile}")
+                        dest_path = os.path.join(modulePath, "Languages", langFile)
+                       
+                        # Save the file
+                        if isinstance(raw, (bytes, bytearray)):
+                            with open(dest_path, "wb") as fd:
+                                fd.write(raw)
+                        else:
+                            with open(dest_path, "w", encoding='utf-8') as fd:
+                                fd.write(raw)
+
+                        # Compile .ts files to .qm files using lrelease
+                        if langFile.endswith('.ts'):
+                            try:
+                                ts_full = dest_path
+                                qm_full = os.path.splitext(ts_full)[0] + '.qm'
+                                res = subprocess.run(["lrelease", ts_full], check=False, capture_output=True)
+                                if res.returncode != 0:
+                                    logging.warning(_("lrelease failed for {ts}: {err}").format(ts=ts_full, err=res.stderr.decode('utf-8', errors='ignore')))
+                                else:
+                                    if os.path.exists(qm_full):
+                                        logging.info(_("Compiled {ts} -> {qm}").format(ts=ts_full, qm=qm_full))
+                            except Exception as e:
+                                logging.warning(_("Could not run lrelease to compile {ts}: {e}").format(ts=dest_path, e=e))
+                except:
+                    continue
         pass
 
     def loadTutorials(self):
@@ -345,7 +395,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         slicer.mrmlScene.Clear()
         TutorialMakerLogic().loadTutorialsFromRepos()
 
-        Lib.TutorialUtils.Util.verifyOutputFolders(self)
+        Lib.TutorialUtils.Util.verifyOutputFolders()
 
         slicer.util.mainWindow().resize(1920, 1080)
 
@@ -356,6 +406,8 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
     def runTest(self):
         """Run as few or as many tests as needed here.
         """
+        languages = ["en", "fr", "es", "pt_BR"]
+        
         self.setUp()
         #Annotator test
         #Screencapture test
@@ -363,22 +415,32 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         tutorials_failed = 0
         error_message = ""
         testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
-        test_tutorials = os.listdir(testingFolder)
-        for unit_tutorials in test_tutorials:
-            try:
-                if(".py" not in unit_tutorials):
-                    continue
-                unit_tutorials = unit_tutorials.replace(".py", "")
-                # Generate Screenshots and widget metadata
-                TutorialMakerLogic.runTutorialTestCases(unit_tutorials)
-                # Paint Screenshots with annotations
-                #AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
-            except Exception as e:
-                error_message += _("Tutorial Execution Failed: {unit_tutorials} - Error: {e}. \n").format(unit_tutorials=unit_tutorials, e=e)
-                tutorials_failed = tutorials_failed + 1
-                pass
-            finally:
-                self.delayDisplay(_("Tutorial Tested"))
-            pass
+        languages_dir = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Languages/"
+        test_tutorials = [f for f in os.listdir(testingFolder) if f.endswith(".py")]
+      
+        for lang in languages:
+            translators = []
+            if lang != "en":
+                lang_files = [f for f in os.listdir(languages_dir) if (f.endswith(f"_{lang}.qm") or f.endswith(f"-{lang.replace('_', '-')}.qm"))]
+                for file in lang_files:
+                    qm_path = os.path.join(languages_dir, file)
+                    translator = qt.QTranslator()
+                    if os.path.exists(qm_path) and translator.load(qm_path):
+                        slicer.app.installTranslator(translator)
+                        translators.append(translator)
+            for unit_tutorials in test_tutorials:
+                tutorial_name = unit_tutorials.replace(".py", "")
+                try:
+                    # Generate Screenshots and widget metadata
+                    TutorialMakerLogic.runTutorialTestCases(tutorial_name)
+                    # Paint Screenshots with annotations
+                    #AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
+                except Exception as e:
+                    error_message += _("Tutorial Execution Failed: {tutorial_name} in {lang} - Error: {e}. \n").format(tutorial_name=tutorial_name, lang=lang, e=e)
+                    tutorials_failed += 1
+                finally:
+                    self.delayDisplay(_("Tutorial Tested in {lang}").format(lang=lang))
+            for t in translators:
+                slicer.app.removeTranslator(t)
         if tutorials_failed > 0:
             raise Exception(_("{tutorials_failed} tutorials failed to execute. Errors: {error_message}").format(tutorials_failed=tutorials_failed, error_message=error_message))
