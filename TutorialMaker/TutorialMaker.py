@@ -409,25 +409,31 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         languages = ["en", "fr", "es", "pt_BR"]
         
         self.setUp()
-        #Annotator test
-        #Screencapture test
-        #Then run all the tutorials
+        
         tutorials_failed = 0
         error_message = ""
+        
         testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
         languages_dir = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Languages/"
+        
         test_tutorials = [f for f in os.listdir(testingFolder) if f.endswith(".py")]
-      
+    
         for lang in languages:
             translators = []
+            
             if lang != "en":
                 lang_files = [f for f in os.listdir(languages_dir) if (f.endswith(f"_{lang}.qm") or f.endswith(f"-{lang.replace('_', '-')}.qm"))]
+                
                 for file in lang_files:
                     qm_path = os.path.join(languages_dir, file)
                     translator = qt.QTranslator()
                     if os.path.exists(qm_path) and translator.load(qm_path):
                         slicer.app.installTranslator(translator)
                         translators.append(translator)
+                        
+            slicer.app.processEvents()
+            slicer.util.mainWindow().update()
+                
             for unit_tutorials in test_tutorials:
                 tutorial_name = unit_tutorials.replace(".py", "")
                 try:
@@ -440,7 +446,12 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
                     tutorials_failed += 1
                 finally:
                     self.delayDisplay(_("Tutorial Tested in {lang}").format(lang=lang))
-            for t in translators:
-                slicer.app.removeTranslator(t)
+            
+            for translator in translators:
+                slicer.app.removeTranslator(translator)
+            
+            slicer.app.processEvents()
+            slicer.util.mainWindow().update()
+        
         if tutorials_failed > 0:
             raise Exception(_("{tutorials_failed} tutorials failed to execute. Errors: {error_message}").format(tutorials_failed=tutorials_failed, error_message=error_message))
