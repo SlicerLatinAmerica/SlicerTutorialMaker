@@ -255,8 +255,8 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
 
     def Generate(self, tutorialName):
         with slicer.util.tryWithErrorDisplay(_("Failed to generate tutorial")):
-            AnnotationPainter.TutorialPainter().GenerateHTMLfromAnnotatedTutorial(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/annotations.json")
-            outputPath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
+            AnnotationPainter.TutorialPainter().GenerateHTMLfromAnnotatedTutorial(Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Outputs/Annotations/annotations.json")
+            outputPath = Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Outputs/"
             if platform.system() == "Windows":
                 os.startfile(outputPath)
             else:
@@ -267,19 +267,19 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def CreateNewTutorial(self):
-        folderName = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        folderName = Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Testing/"
         Tutorial_Win = CreateTutorial(folderName)
         Tutorial_Win.show()
         pass
 
     def OpenAnnotator(Self):
         Annotator = Lib.TutorialGUI.TutorialGUI()
-        Annotator.open_json_file(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/Tutorial.json")
+        Annotator.open_json_file(Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Outputs/Raw/Tutorial.json")
         Annotator.show()
         pass
 
     def loadTutorialsFromRepos(self):
-        modulePath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))
+        modulePath = Lib.TutorialUtils.get_module_basepath("TutorialMaker")
         
         os.makedirs(os.path.join(modulePath, "Testing"), exist_ok=True)
         os.makedirs(os.path.join(modulePath, "Languages"), exist_ok=True)
@@ -347,7 +347,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
 
     def loadTutorials(self):
         test_tutorials = []
-        test_contents = os.listdir(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/")
+        test_contents = os.listdir(Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Testing/")
         for content in test_contents:
             if(".py" not in content):
                 continue
@@ -366,7 +366,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         module.  For example, if a developer removes a feature that you depend on,
         your test should break so they know that the feature is needed.
         """
-        tPath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + f"/Testing/{tutorial_name}.py"
+        tPath = Lib.TutorialUtils.get_module_basepath("TutorialMaker") + f"/Testing/{tutorial_name}.py"
         SelfTestTutorialLayer.ParseTutorial(tPath)
         TutorialModule = importlib.import_module("Outputs.CurrentParsedTutorial")
         for className in TutorialModule.__dict__:
@@ -413,8 +413,8 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
         tutorials_failed = 0
         error_message = ""
         
-        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
-        languages_dir = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Languages/"
+        testingFolder = Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Testing/"
+        languages_dir = Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Languages/"
         
         test_tutorials = [f for f in os.listdir(testingFolder) if f.endswith(".py")]
     
@@ -440,7 +440,7 @@ class TutorialMakerTest(ScriptedLoadableModuleTest): # noqa: F405
                     # Generate Screenshots and widget metadata
                     TutorialMakerLogic.runTutorialTestCases(tutorial_name)
                     # Paint Screenshots with annotations
-                    #AnnotationPainter.ImageDrawer.StartPaint(os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Annotations/" + unit_tutorials + ".json")
+                    #AnnotationPainter.ImageDrawer.StartPaint(Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Outputs/Annotations/" + unit_tutorials + ".json")
                 except Exception as e:
                     error_message += _("Tutorial Execution Failed: {tutorial_name} in {lang} - Error: {e}. \n").format(tutorial_name=tutorial_name, lang=lang, e=e)
                     tutorials_failed += 1
