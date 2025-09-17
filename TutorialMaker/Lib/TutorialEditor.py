@@ -192,5 +192,5 @@ class Annotator(qt.QWidget):
 # There should be a better way to expose the resource path to the underlying classes of a module but I couldn't think of a clean way.
 def resourcePath(filename):
     """Return the absolute path of the module ``Resources`` directory."""
-    scriptedModulesPath = os.path.dirname(slicer.util.modulePath("TutorialMaker"))
+    scriptedModulesPath = TutorialUtils.get_module_basepath("TutorialMaker")
     return os.path.join(scriptedModulesPath, "Resources", filename)
