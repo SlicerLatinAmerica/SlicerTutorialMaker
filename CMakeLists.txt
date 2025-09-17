@@ -9,11 +9,12 @@ set(EXTENSION_CATEGORY "Developer Tools")
 set(EXTENSION_CONTRIBUTORS "Douglas Gonçalves (Universidade de São Paulo), Enrique Hernández (Universidad Autónoma del Estado de México),
                                     João Januário (Universidade de São Paulo), Lucas Silva (Universidade de São Paulo),
                                     Paulo Pereira (Universidade de São Paulo), Victor Montaño (Universidad Autónoma del Estado de México),
-                                    Paulo Eduardo de Barros Veiga (Universidade de São Paulo), Valeria Gomez-Valdes (Universidad Autónoma del Estado de México),
-                                    Monserrat Rıos-Hernandez (Universidad Autónoma del Estado de México), Fatou Bintou Ndiaye (University Cheikh Anta Diop),
-                                    Mohamed Alalli Bilal (University Cheikh Anta Diop), Steve Pieper (Isomics Inc.),
-                                    Adriana Vilchis-Gonzalez (Universidad Autónoma del Estado de México), Luiz Otavio Murta Junior (Universidade de São Paulo),
-                                    Andras Lasso (Queen’s University), Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)")
+                                    Paulo Eduardo de Barros Veiga (Universidade de São Paulo), Lucas Miranda Mendonça Rezende (Universidade de São Paulo), 
+                                    Valeria Gomez-Valdes (Universidad Autónoma del Estado de México), Monserrat Rıos-Hernandez (Universidad Autónoma del Estado de México), 
+                                    Fatou Bintou Ndiaye (University Cheikh Anta Diop),Mohamed Alalli Bilal (University Cheikh Anta Diop), 
+                                    Steve Pieper (Isomics Inc.), Adriana Vilchis-Gonzalez (Universidad Autónoma del Estado de México), 
+                                    Luiz Otavio Murta Junior (Universidade de São Paulo), Andras Lasso (Queen’s University), 
+                                    Sonia Pujol (Brigham and Women’s Hospital, Harvard Medical School)")
 set(EXTENSION_DESCRIPTION "The Tutorial Maker is still under development and is in an experimental phase.
                            Tools for creating tutorials for 3D Slicer that can be automatically translated to multiple languages.")
 set(EXTENSION_ICONURL "https://raw.githubusercontent.com/SlicerLatinAmerica/SlicerTutorialMaker/main/TutorialMaker.png")

@@ -6,6 +6,7 @@ import json
 from slicer.i18n import tr as _
 from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide
 from Lib.TutorialUtils import Tutorial, TutorialScreenshot
+import Lib.TutorialUtils as TutorialUtils
 import Lib.TutorialExporter as Exporter
 
 
@@ -461,7 +462,7 @@ class ImageDrawer:
         if self.view is None:
             print(_("Error: Load an image first."))
             return
-        path = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + '/Resources/Icons/Painter/click_icon.png'
+        path = Lib.TutorialUtils.get_module_basepath("TutorialMaker") + '/Resources/Icons/Painter/click_icon.png'
         icon_pixmap = qt.QPixmap(path).scaledToWidth(30)
         icon_item = qt.QGraphicsPixmapItem(icon_pixmap)
         icon_item.setPos(x, y)
@@ -625,8 +626,7 @@ class ImageDrawer:
                 image_drawer.painter(OutputAnnotator[annotateSteps], screenshotData, 'es')
 
                 # Save the view to a PNG file with a dynamic path
-                image_drawer.save_to_png(
-                    os.path.dirname(slicer.util.modulePath("TutorialMaker")) + '/Outputs/Translation/output_image_' + str(i) + '.png')
+                image_drawer.save_to_png(TutorialUtils.get_module_basepath("TutorialMaker") + '/Outputs/Translation/output_image_' + str(i) + '.png')
 
                 imgSS = imgSS + 1
             pass
