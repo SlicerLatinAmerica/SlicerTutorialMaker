@@ -70,7 +70,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.__selectedTutorial = None
         self.isDebug = slicer.app.settings().value("Developer/DeveloperMode")
 
-        print(_("Version Date: {}").format("2025/06/12-11:00AM"))
+        print(_("Version Date: {}").format("2025/09/17-08:00AM"))
 
         #PROTOTYPE FOR PLAYBACK
 
