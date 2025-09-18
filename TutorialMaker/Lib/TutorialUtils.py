@@ -71,6 +71,8 @@ class Widget():
             children.extend(self.__listWidgetAsChildren())
         elif self.className == "qMRMLSubjectHierarchyTreeView":
             children.extend(self.__MRMLTreeViewAsChildren())
+        elif self.className == "qSlicerModulesMenu" or self.className == "QMenu":
+            children.extend(self.__QMenuActionAsChildren())
         return children
 
     def childrenDetails(self):
@@ -115,9 +117,9 @@ class Widget():
         from types import SimpleNamespace
         virtualChildren = []
         model = None
-        if self.__widgetData.sortFilterProxyModel() is not None:
+        if hasattr(self.__widgetData, "sortFilterProxyModel"):
             model = self.__widgetData.sortFilterProxyModel()
-        else:
+        elif hasattr(self.__widgetData, "model"):
             model = self.__widgetData.model()
         if model is None:
             return virtualChildren
@@ -159,6 +161,24 @@ class Widget():
             NodeIndex += 1
 
         nodeTreeTraverser(model.index(0,0))
+
+        return virtualChildren
+    def __QMenuActionAsChildren(self):
+        from types import SimpleNamespace
+        virtualChildren = []
+        actions = self.__widgetData.actions()
+        for actionIndex in range(len(actions)):
+            action = actions[actionIndex]
+            if not action.isVisible():
+                continue
+            __itemData = SimpleNamespace(name= f"XmenuWidgetAction_{actionIndex}",
+            className= lambda:"XmenuWidgetAction",
+            text= action.text,
+            mapToGlobal= self.__widgetData.mapToGlobal,
+            rect= self.__widgetData.actionGeometry(action),
+            parent=lambda: self.__widgetData,
+            isVisible= self.__widgetData.isVisible)
+            virtualChildren.append(Widget(__itemData))
 
         return virtualChildren
 
@@ -214,6 +234,10 @@ class Util():
         widgets = []
         children = widget.getChildren()
         for child in children:
+            #If the widget is a window, do not add it outside of its own window
+            if hasattr(child.inner(), "isWindow") and child.inner().isWindow():
+                #print("Not expanding :" +child.className)
+                continue
             widgets.append(child)
             widgets = widgets + Util.__getWidgetsRecursive(child, depth + 1)
         return widgets
