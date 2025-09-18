@@ -2,7 +2,12 @@ import slicer
 import qt
 import os
 import re
-import copy
+
+def get_module_basepath(moduleName):
+    try:
+        return os.path.dirname(slicer.util.modulePath(moduleName))
+    except Exception:
+        raise Exception(f"Module {moduleName} not found")
 
 class Widget():
     def __init__(self, widgetData) -> None:
@@ -346,7 +351,7 @@ class Util():
     def verifyOutputFolders():
         if Util.mw is None:
             Util.loadMainWindow()
-        basePath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
+        basePath = get_module_basepath("TutorialMaker") + "/Outputs/"
         if not os.path.exists(basePath):
             os.mkdir(basePath)
             os.mkdir(basePath + "Raw")
@@ -354,7 +359,7 @@ class Util():
             os.mkdir(basePath + "Translation")
 
         # Verify if Testing folder exists
-        testingFolder = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Testing/"
+        testingFolder = get_module_basepath("TutorialMaker") + "/Testing/"
         # Check if testing folder exists
         if not os.path.exists(testingFolder):
             os.mkdir(testingFolder)
@@ -575,10 +580,10 @@ class SelfTestTutorialLayer():
         counter.count = 0
         finalFile = re.sub(tutorialMatcher, lambda match : tutorial_tests[counter.next()], code_contents)
 
-        path = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/"
+        path = get_module_basepath("TutorialMaker") + "/Outputs/"
 
         with open(path + "CurrentParsedTutorial.py", "w") as fd:
-            fd .write(finalFile)
+            fd.write(finalFile)
         pass
 
     @staticmethod
@@ -674,7 +679,7 @@ class ScreenshotTools():
         pass
 
     def saveScreenshotMetadata(self, index):
-        path = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/"
+        path = get_module_basepath("TutorialMaker") + "/Outputs/Raw/"
 
         openWindows = []
         for w in slicer.app.topLevelWidgets():
@@ -753,7 +758,7 @@ class Tutorial():
 
     #TODO:Unsafe, there should be a better method to do this, at least add some conditions
     def clearTutorial(self):
-        outputPath = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/"
+        outputPath = get_module_basepath("TutorialMaker") + "/Outputs/Raw/"
         if not os.path.exists(outputPath):
             return
         dirs = os.listdir(outputPath)
@@ -798,7 +803,7 @@ class TutorialScreenshot():
 # TODO: REMOVE THIS, DEPRECATED
 class JSONHandler:
     def __init__(self):
-        self.path = os.path.dirname(slicer.util.modulePath("TutorialMaker")) + "/Outputs/Raw/"
+        self.path = get_module_basepath("TutorialMaker") + "/Outputs/Raw/"
         if not os.path.exists(self.path):
             os.mkdir(self.path)
         import json
