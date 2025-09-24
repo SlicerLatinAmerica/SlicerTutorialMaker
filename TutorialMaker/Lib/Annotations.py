@@ -47,6 +47,9 @@ class Annotation:
         self.boundingBoxBottomRight = [0,0]
         self.__selectionSlideEffect = 0
 
+        self.caretVisible = True
+        self.caretPosition = len(self.text)
+
         # Need to change this later, make it loaded through resources
         self.icon_click = qt.QImage(os.path.dirname(__file__) + '/../Resources/Icons/Painter/click_icon.png')
         self.icon_click = self.icon_click.scaled(20,30)
@@ -70,7 +73,7 @@ class Annotation:
         return [self.boundingBoxBottomRight[0] - self.boundingBoxTopLeft[0], self.boundingBoxBottomRight[1] - self.boundingBoxTopLeft[1]]
 
     def wantsOptHelper(self):
-        return self.type in AnnotationType.Arrow | AnnotationType.TextBox | AnnotationType.ArrowText
+        return self.type in AnnotationType.Arrow | AnnotationType.ArrowText
 
     def wantsOffsetHelper(self):
         return self.type in AnnotationType.Click | AnnotationType.TextBox
@@ -108,6 +111,26 @@ class Annotation:
         self.pen = pen
         self.fontSize = fontSize
         pass
+
+    def drawCaret(self, painter, fontMetrics, textStart, textLines):
+
+        if not getattr(self, "caretVisible", True):
+            return  
+
+        caretLine = min(self.text[:self.caretPosition].count('\n'), max(len(textLines)-1, 0))
+        lineStartIndex = sum(len(l)+1 for l in textLines[:caretLine])
+        caretCol = self.caretPosition - lineStartIndex
+        caretCol = max(0, min(caretCol, len(textLines[caretLine])))
+
+        caretX = textStart[0] + fontMetrics.width(textLines[caretLine][:caretCol])
+        fHeight = fontMetrics.height()
+        lineSpacing = 2
+        caretYTop = textStart[1] - fHeight + lineSpacing + fHeight * caretLine
+        caretYBottom = caretYTop + fHeight
+
+        painter.drawLine(caretX, caretYTop, caretX, caretYBottom)
+
+        
 
     def draw(self, painter : qt.QPainter = None, pen : qt.QPen = None, brush :qt.QBrush = None):
         #Maybe we can organize this better
@@ -265,6 +288,8 @@ class Annotation:
             for lineIndex, line in enumerate(textLines):
                 painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight * lineIndex, line)
 
+            self.drawCaret(painter, fontMetrics, textStart, textLines)
+    
             self.setSelectionBoundingBox(arrowHead[0], arrowHead[1], arrowTail[0], arrowTail[1])
 
 
@@ -282,68 +307,63 @@ class Annotation:
         elif self.type == AnnotationType.Circle:
             pass
         elif self.type == AnnotationType.TextBox:
-            # So the box will be filled
             brush.setStyle(qt.Qt.SolidPattern)
             painter.setBrush(brush)
-
-            # Padding
-
             yPadding = 6
             xPadding = 6
             lineSpacing = 2
 
-            optX = self.optX - targetCenter[0]
-            optY = self.optY - targetCenter[1]
-
-            topLeft = qt.QPoint(targetPos[0], targetPos[1])
-            bottomRight = qt.QPoint(targetPos[0] + optX, targetPos[1] + optY)
-            rectToDraw = qt.QRect(topLeft,bottomRight)
-            painter.drawRect(rectToDraw)
-
-            # Calculate the text break and position
             font = qt.QFont("Arial", self.fontSize)
             painter.setFont(font)
             pen.setColor(qt.Qt.black)
             painter.setPen(pen)
-
             fontMetrics = qt.QFontMetrics(font)
             fHeight = fontMetrics.height()
 
-            textBoxBottomRight = [targetPos[0] + optX, targetPos[1] + optY]
-            textBoxTopLeft = [targetPos[0], targetPos[1]]
-
-            if textBoxBottomRight[0] < textBoxTopLeft[0]:
-                tmp = textBoxTopLeft[0]
-                textBoxTopLeft[0] = textBoxBottomRight[0]
-                textBoxBottomRight[0] = tmp
-
-            if textBoxBottomRight[1] < textBoxTopLeft[1]:
-                tmp = textBoxTopLeft[1]
-                textBoxTopLeft[1] = textBoxBottomRight[1]
-                textBoxBottomRight[1] = tmp
-
-            textStart = [textBoxTopLeft[0] + xPadding,
-                         textBoxTopLeft[1] + yPadding + fHeight]
-
-            textToWrite = self.text
-            if textToWrite == "":
-                textToWrite = _("Write something here")
-
-            textTokens = textToWrite.splitlines()
+            textToWrite = self.text if self.text else _("Write something here")
+            textTokens = textToWrite.splitlines(keepends=True)
             textLines = []
             line = ""
             for token in textTokens:
-                if fontMetrics.width(line + token) > textBoxBottomRight[0] - textBoxTopLeft[0] - xPadding:
-                    textLines.append(copy.deepcopy(line))
-                    line = f"{token} "
+                if "\n" in token:
+                    if line:
+                        textLines.append(line)
+                    textLines.append(token.rstrip("\n"))
+                    line = ""
                     continue
-                line += f"{token} "
-            textLines.append(line)
+
+                if fontMetrics.width(line + token) > 200:  # ancho por defecto inicial
+                    if line:
+                        textLines.append(line)
+                    line = token
+                else:
+                    line += token
+            if line:
+                textLines.append(line)
+
+            textWidth = max((fontMetrics.width(line) for line in textLines), default=0) + 2*xPadding
+            textHeight = len(textLines) * fHeight + (len(textLines)-1)*lineSpacing + 2*yPadding
+
+            if not hasattr(self, "_userSetSize"):
+                bottomRight = [targetPos[0] + textWidth, targetPos[1] + textHeight]
+            else:
+                bottomRight = [targetPos[0] + self.optX, targetPos[1] + self.optY]
+
+            topLeft = [targetPos[0], targetPos[1]]
+
+            rectToDraw = qt.QRect(qt.QPoint(*topLeft), qt.QPoint(*bottomRight))
+            painter.drawRect(rectToDraw)
+
+            textStart = [topLeft[0] + xPadding, topLeft[1] + yPadding + fHeight]
 
             for lineIndex, line in enumerate(textLines):
-                painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)
+                painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight * lineIndex, line)
 
-            self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + optX, targetPos[1] + optY)
+            self.drawCaret(painter, fontMetrics, textStart, textLines)
+
+            self.setSelectionBoundingBox(topLeft[0], topLeft[1], bottomRight[0], bottomRight[1])
+
+
 
         elif self.type == AnnotationType.Click:
             bottomRight = [targetPos[0] + targetSize[0],
