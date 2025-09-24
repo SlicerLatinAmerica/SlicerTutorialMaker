@@ -757,33 +757,65 @@ class TutorialGUI(qt.QMainWindow):
             self.setFocus()
             return False
 
-        if self.selectedAnnotationType == AnnotationType.Selected:
+        if self.selectedAnnotationType == AnnotationType.Selected and self.selectedAnnotation is not None:
+            ann = self.selectedAnnotation
+
+
             if event.key() == qt.Qt.Key_Delete:
-                self.selectedAnnotation.PERSISTENT = False
+                ann.PERSISTENT = False
                 self.cancelCurrentAnnotation()
 
-            elif self.selectedAnnotation.type in [AnnotationType.TextBox, AnnotationType.ArrowText]:
-                # Detect command Ctrl+C copy text
+
+            elif ann.type in [AnnotationType.TextBox, AnnotationType.ArrowText]:
+
                 if event.key() == qt.Qt.Key_C and event.modifiers() & qt.Qt.ControlModifier:
-                    qt.QApplication.clipboard().setText(self.selectedAnnotation.text)
-                
-                # Detect command Ctl+v page text
+                    qt.QApplication.clipboard().setText(ann.text)
+
                 elif event.key() == qt.Qt.Key_V and event.modifiers() & qt.Qt.ControlModifier:
-                    self.selectedAnnotation.text += qt.QApplication.clipboard().text()
+                    ann.text = ann.text[:ann.caretPosition] + qt.QApplication.clipboard().text() + ann.text[ann.caretPosition:]
+                    ann.caretPosition += len(qt.QApplication.clipboard().text())
+                    ann.caretPosition = max(0, min(ann.caretPosition, len(ann.text)))
 
-                # Detect Enter to add a line break
                 elif event.key() in [qt.Qt.Key_Return, qt.Qt.Key_Enter]:
-                    self.selectedAnnotation.text += "\n"
+                    try:
+                        ann.text = ann.text[:ann.caretPosition] + "\n" + ann.text[ann.caretPosition:]
+                        ann.caretPosition += 1
+                        ann.caretPosition = max(0, min(ann.caretPosition, len(ann.text)))
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
 
-                # Detect Backspace
                 elif event.key() == qt.Qt.Key_Backspace:
-                    self.selectedAnnotation.text = self.selectedAnnotation.text[:-1]
+                    if ann.caretPosition > 0:
+                        ann.text = ann.text[:ann.caretPosition-1] + ann.text[ann.caretPosition:]
+                        ann.caretPosition -= 1
+                        ann.caretPosition = max(0, min(ann.caretPosition, len(ann.text)))
+
+                elif event.key() == qt.Qt.Key_Left:
+                    ann.caretPosition -= 1
+                    ann.caretPosition = max(0, ann.caretPosition)
+                elif event.key() == qt.Qt.Key_Right:
+                    ann.caretPosition += 1
+                    ann.caretPosition = min(len(ann.text), ann.caretPosition)
+                elif event.key() == qt.Qt.Key_Home:
+                    lines = ann.text.splitlines(keepends=True)
+                    lineIndex = ann.text[:ann.caretPosition].count('\n')
+                    lineStart = sum(len(l) for l in lines[:lineIndex])
+                    ann.caretPosition = lineStart
+                elif event.key() == qt.Qt.Key_End:
+                    lines = ann.text.splitlines(keepends=True)
+                    lineIndex = ann.text[:ann.caretPosition].count('\n')
+                    lineStart = sum(len(l) for l in lines[:lineIndex])
+                    ann.caretPosition = lineStart + len(lines[lineIndex])
 
                 else:
-                    self.selectedAnnotation.text += event.text()
+                    ann.text = ann.text[:ann.caretPosition] + event.text() + ann.text[ann.caretPosition:]
+                    ann.caretPosition += len(event.text())
+                    ann.caretPosition = max(0, min(ann.caretPosition, len(ann.text)))
 
-            return True
+                return True
 
+        # --- Navegar entre anotaciones con flechas ---
         elif self.selectedAnnotator is not None and self.selectedAnnotation is not None:
             if event.key() == qt.Qt.Key_Up:
                 self.selectorParentDelta(-1)
@@ -793,6 +825,8 @@ class TutorialGUI(qt.QMainWindow):
                 return True
 
         return False
+
+
 
 
     def selectorParentDelta(self, delta : int):
