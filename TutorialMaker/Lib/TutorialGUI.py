@@ -3,6 +3,7 @@ import qt
 import json
 import os
 import copy
+import Lib.TutorialUtils
 from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide
 from Lib.TutorialUtils import Tutorial, TutorialScreenshot
 from slicer.i18n import tr as _
@@ -333,15 +334,32 @@ class TutorialGUI(qt.QMainWindow):
         self.icon_arrowDown = qt.QIcon(qt.QPixmap.fromImage(self.image_ArrowDown))
         pass
 
-    def open_json_file_dialog(self):
-        pass
+    def openAnnotationsAsJSON(self):
+        parent = slicer.util.mainWindow()
+        basePath = Lib.TutorialUtils.get_module_basepath("TutorialMaker")
+        jsonPath = qt.QFileDialog.getOpenFileName(
+            parent,
+            _("Select a JSON file"),
+            basePath + "/Outputs/Annotations/",              
+            _("JSON Files (*.json)") 
+        )
+
+        if os.path.exists(jsonPath):
+            self.loadAnnotations(jsonPath)
+        else:
+            pass
 
     def saveAnnotationsAsJSON(self):
-        import re
+        import re, os, json
+
+        tutorialTitle = self.tutorialInfo.get("title", "tutorial_sin_nombre")
+        cleanTutorialTitle = re.sub(r'[^a-zA-Z0-9]', '', tutorialTitle.replace(" ", "_"))
+
+        outputDir = os.path.join(self.outputFolder, cleanTutorialTitle)
+        os.makedirs(outputDir, exist_ok=True)
+
         outputFileAnnotations = {**self.tutorialInfo}
         outputFileTextDict = {}
-        outputFileOld = []
-
         outputFileAnnotations["slides"] = []
 
         for stepIndex, step in enumerate(self.steps):
@@ -355,44 +373,42 @@ class TutorialGUI(qt.QMainWindow):
 
                 slidePrefix = f"{stepIndex}_{slideIndex}"
                 slideTitle = f"{slidePrefix}_{cleanSlideTitle}"
-                slideImagePath = f"{self.outputFolder}/{slideTitle}"
+                slideImagePath = os.path.join(outputDir, slideTitle)
                 if cleanSlideTitle == "":
                     slideTitle += "slide"
                     slideImagePath += "slide"
+
                 slideImage.save(slideImagePath + ".png", "PNG")
 
-                textDict = {f"{slideTitle}_title": slide.SlideTitle,
-                            f"{slideTitle}_body": slide.SlideBody}
+                textDict = {
+                    f"{slideTitle}_title": slide.SlideTitle,
+                    f"{slideTitle}_body": slide.SlideBody
+                }
 
-                slideInfo = {"ImagePath": f"{slideTitle}.png",
-                             "SlideCode": f"{stepIndex}/{slideIndex}",
-                             "SlideLayout": slide.SlideLayout,
-                             "SlideTitle": f"{slideTitle}_title",
-                             "SlideDesc": f"{slideTitle}_body",
-                             "Annotations": []}
+                slideInfo = {
+                    "ImagePath": f"{slideTitle}.png",
+                    "SlideCode": f"{stepIndex}/{slideIndex}",
+                    "SlideLayout": slide.SlideLayout,
+                    "SlideTitle": f"{slideTitle}_title",
+                    "SlideDesc": f"{slideTitle}_body",
+                    "Annotations": []
+                }
 
                 for annIndex, annotation in enumerate(slide.annotations):
                     info = annotation.toDict()
                     textDict[f"{slidePrefix}_{info['type']}_{annIndex}"] = info["text"]
-                    slideInfo["Annotations"].append({"widgetPath": info["widgetPath"],
-                                                     "type": info["type"],
-                                                     "offset": info["offset"],
-                                                     "optional": info["optional"],
-                                                     "custom": info["custom"],
-                                                     "penSettings": info["penSettings"],
-                                                      "text": f"{slidePrefix}_{info['type']}_{annIndex}"})
-                    pass
-                outputFileAnnotations["slides"].append(slideInfo)
-                outputFileTextDict = {**outputFileTextDict, **textDict}
-            pass
+                    slideInfo["Annotations"].append(info)
 
-        with open(file= f"{self.outputFolder}/annotations.json", mode='w', encoding="utf-8") as fd:
+                outputFileAnnotations["slides"].append(slideInfo)
+                outputFileTextDict.update(textDict)
+
+        with open(os.path.join(outputDir, "annotations.json"), mode='w', encoding="utf-8") as fd:
             json.dump(outputFileAnnotations, fd, ensure_ascii=False, indent=4)
 
-        with open(file= f"{self.outputFolder}/text_dict_default.json", mode='w', encoding="utf-8") as fd:
+        with open(os.path.join(outputDir, "text_dict_default.json"), mode='w', encoding="utf-8") as fd:
             json.dump(outputFileTextDict, fd, ensure_ascii=False, indent=4)
 
-
+        slicer.util.infoDisplay(_("Saved Annotations"), _("Saved Annotations: {tutorialName}").format(tutorialName=tutorialTitle))
 
     def deleteSelectedAnnotation(self):
         self.selectedAnnotation = None
@@ -810,6 +826,9 @@ class TutorialGUI(qt.QMainWindow):
             self.selectorParentDelta(1)
 
     def open_json_file(self, filepath):
+        import os
+        import json
+        
         directory_path = os.path.dirname(filepath)
         # Read the data from the file
         with open(filepath, encoding='utf-8') as file:
@@ -846,11 +865,42 @@ class TutorialGUI(qt.QMainWindow):
             self.tutorial2.steps.append([new_screenshot])  #The white image is added
         else:
             self.tutorial2.steps.append([new_screenshot]) 
+        
+        tutorialTitle = tutorial.metadata["title"]
+        annotations_dir = Lib.TutorialUtils.get_module_basepath("TutorialMaker") + f"/Outputs/Annotations/{tutorialTitle}/"
 
+        if os.path.exists(annotations_dir):
+            self.loadAnnotations(annotations_dir)
+        else:
+            pass
 
-       
+    def loadAnnotations(self, annotations_dir):
+        import os, json
 
+        annotations_file = os.path.join(annotations_dir, "annotations.json")
+        text_file = os.path.join(annotations_dir, "text_dict_default.json")
 
+        if os.path.exists(annotations_file) and os.path.exists(text_file):
+            with open(annotations_file, encoding="utf-8") as f:
+                annotations_data = json.load(f)
+
+            with open(text_file, encoding="utf-8") as f:
+                text_data = json.load(f)
+
+            self.rebuildStepsFromAnnotations(text_data, annotations_data)
+            return True
+        else:
+            return False
+        
+    def rebuildStepsFromAnnotations(self, text_data, annotations_data):
+        with slicer.util.tryWithErrorDisplay("Failed to load annotations"):
+            for stepIndex, step in enumerate(self.steps):
+                for slideIndex, slide in enumerate(step.Slides):
+                    slide_data = annotations_data.get("slides", [])[stepIndex]
+                    for ann in slide_data.get("Annotations", []):
+                        annotation = Annotation.fromDict(ann)
+                        slide.AddAnnotation(annotation)
+    
 
     def eventFilter(self, obj, event):
         if obj == self.selectedSlide:
@@ -910,7 +960,7 @@ class TutorialGUI(qt.QMainWindow):
         toolbar.addAction(actionAdd)
         toolbar.addAction(actionCopy)
 
-        actionOpen.triggered.connect(self.open_json_file_dialog)
+        actionOpen.triggered.connect(self.openAnnotationsAsJSON)
         actionSave.triggered.connect(self.saveAnnotationsAsJSON)
         actionBack.triggered.connect(self.deleteSelectedAnnotation)
         actionDelete.triggered.connect(self.delete_screen)

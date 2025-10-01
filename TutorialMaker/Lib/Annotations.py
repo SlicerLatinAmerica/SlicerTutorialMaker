@@ -76,16 +76,65 @@ class Annotation:
         return self.type in AnnotationType.Click | AnnotationType.TextBox
 
     def toDict(self):
-        annotationJSON = {"widgetPath": self.target["path"],
-                          "type": self.type.name,
-                          "offset": [self.offsetX, self.offsetY],
-                          "optional": [self.optX, self.optY],
-                          "custom": "",
-                          "penSettings": {"color": self.color.name(),
-                                          "thickness": self.thickness,
-                                          "fontSize": self.fontSize},
-                           "text": self.text}
+        annotationJSON = {
+            "widgetPath": self.target["path"],
+            "type": self.type.name,
+            "offset": [self.offsetX, self.offsetY],
+            "optional": [self.optX, self.optY],
+            "custom": "",
+            "penSettings": {
+                "color": self.color.name(),
+                "thickness": self.thickness,
+                "fontSize": self.fontSize
+            },
+            "text": self.text,
+            "target": {
+                "name": self.target.get("name", ""),
+                "path": self.target.get("path", ""),
+                "text": self.target.get("text", ""),
+                "position": self.target.get("position", [0, 0]),
+                "size": self.target.get("size", [0, 0])
+            },
+            "annotationOffset": self.annotationOffset,
+            "boundingBoxTopLeft": getattr(self, "boundingBoxTopLeft", None),
+            "boundingBoxBottomRight": getattr(self, "boundingBoxBottomRight", None),
+        }
         return annotationJSON
+    
+    @classmethod
+    def fromDict(cls, ann_dict):
+        annotation = cls(
+            TargetWidget={
+                "name": ann_dict["target"].get("name"),
+                "path": ann_dict["target"].get("path"),
+                "text": ann_dict["target"].get("text"),
+                "position": ann_dict["target"].get("position"),
+                "size": ann_dict["target"].get("size")
+            },
+            OffsetX=ann_dict.get("offset", [0, 0])[0],
+            OffsetY=ann_dict.get("offset", [0, 0])[1],
+            OptX=ann_dict.get("optional", [0, 0])[0],
+            OptY=ann_dict.get("optional", [0, 0])[1],
+            Text=ann_dict.get("text", ""),
+            Type=AnnotationType[ann_dict.get("type")]
+        )
+
+        # Restaurar atributos adicionales
+        annotation.annotationOffset = ann_dict.get("annotationOffset", [0, 0])
+        annotation.boundingBoxTopLeft = ann_dict.get("boundingBoxTopLeft", [0, 0])
+        annotation.boundingBoxBottomRight = ann_dict.get("boundingBoxBottomRight", [0, 0])
+        annotation.PERSISTENT = ann_dict.get("PERSISTENT", True)
+        annotation.drawBoundingBox = ann_dict.get("drawBoundingBox", False)
+        annotation.__selectionSlideEffect = ann_dict.get("_Annotation__selectionSlideEffect", 0)
+        annotation.fontSize = ann_dict.get("fontSize", 14)
+        annotation.thickness = ann_dict.get("thickness", 4)
+        annotation.color = qt.QColor(ann_dict.get("penSettings", {}).get("color", "#ff8000"))
+        annotation.brush = ann_dict.get("brush", True)
+        # icon_click se puede volver a cargar si es necesario
+        annotation.icon_click = qt.QImage(os.path.dirname(__file__) + '/../Resources/Icons/Painter/click_icon.png')
+        annotation.icon_click = annotation.icon_click.scaled(20, 30)
+
+        return annotation
 
     def setOffset(self, Offset : list[int]):
         self.annotationOffset = Offset
