@@ -246,12 +246,17 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def Capture(self, tutorialName):
-        def FinishTutorial():
+        def FinishTutorial(title):
             slicer.util.mainWindow().moduleSelector().selectModule('TutorialMaker')
             slicer.util.infoDisplay(_("Tutorial Captured"), _("Captured Tutorial: {tutorialName}").format(tutorialName=tutorialName))
+            Annotator = Lib.TutorialGUI.TutorialGUI()
+            Annotator.open_json_file(Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Outputs/Raw/"+title+"/Tutorial.json")
+            Annotator.show()
         
         with slicer.util.tryWithErrorDisplay("Failed to capture tutorial"):
-            TutorialMakerLogic.runTutorialTestCases(tutorialName, FinishTutorial)
+            title=TutorialMakerLogic.runTutorialTestCases(tutorialName, lambda: FinishTutorial(title))
+            
+
 
     def Generate(self, tutorialName):
         with slicer.util.tryWithErrorDisplay(_("Failed to generate tutorial")):
@@ -274,8 +279,20 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
 
     def OpenAnnotator(Self):
         Annotator = Lib.TutorialGUI.TutorialGUI()
-        Annotator.open_json_file(Lib.TutorialUtils.get_module_basepath("TutorialMaker") + "/Outputs/Raw/Tutorial.json")
-        Annotator.show()
+        parent = slicer.util.mainWindow()
+        basePath = Lib.TutorialUtils.get_module_basepath("TutorialMaker")
+        jsonPath = qt.QFileDialog.getOpenFileName(
+            parent,
+            _("Select a JSON file"),
+            basePath + "/Outputs/Raw/",              
+            _("JSON Files (*.json)") 
+        )
+
+        if jsonPath:  # Si se seleccionó un archivo
+            Annotator.open_json_file(jsonPath)
+            Annotator.show()
+        else:
+            slicer.util.infoDisplay(_("No file selected"),_("No JSON file was opened"))
         pass
 
     def loadTutorialsFromRepos(self):
@@ -374,8 +391,8 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
                 continue
             testClass = getattr(TutorialModule, className)
             tutorial = testClass()
-            SelfTestTutorialLayer.RunTutorial(tutorial, callback)
-            return
+            title = SelfTestTutorialLayer.RunTutorial(tutorial, callback)
+            return title
         logging.error(_(f"No tests found in {tutorial_name}"))
         raise Exception(_("No Tests Found"))
 

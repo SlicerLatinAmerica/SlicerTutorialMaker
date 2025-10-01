@@ -596,6 +596,8 @@ class SelfTestTutorialLayer():
             "FINISHED": False
         }
 
+        tutorial_title = None
+
         def ScreenshotCallable(tutorial, callback, _locals, _stepdict, _index=0):
             if not _stepdict[_index - 1]:
                 timerCallback = functools.partial(ScreenshotCallable, tutorial, callback, _locals, _stepdict, _index=_index)
@@ -612,7 +614,7 @@ class SelfTestTutorialLayer():
                 qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL, endCallback)
                 return
             tutorial.nextScreenshot()
-            tutorial.endTutorial()
+            tutorial.endTutorial(tutorial.metadata["title"])
             TUTORIAL_STEP_DICT["FINISHED"] = True
 
         tutorialSource = inspect.getsource(tutorialClass.runTest)
@@ -627,6 +629,7 @@ class SelfTestTutorialLayer():
                 continue
             if _locals["TUTORIAL_GETINFO"] is not None:
                 info = _locals["TUTORIAL_GETINFO"]()
+                tutorial_title = info[0]
                 tutorial = Tutorial(*info)
                 tutorial.clearTutorial()
                 tutorial.beginTutorial()
@@ -654,6 +657,8 @@ class SelfTestTutorialLayer():
 
             finishCallback = functools.partial(FinishCallback, callback)
             qt.QTimer.singleShot(TUTORIAL_STEP_INTERVAL*(functionIndex + 1), finishCallback)
+        
+        return tutorial_title
 
 class NextCounter():
     def __init__(self, count=0):
@@ -674,12 +679,12 @@ class SignalManager(qt.QObject):
         self.received.emit(msg)
 
 class ScreenshotTools():
-    def __init__(self) -> None:
-        self.handler = JSONHandler()
+    def __init__(self, tutorialTitle) -> None:
+        self.handler = JSONHandler(tutorialTitle)
         pass
 
     def saveScreenshotMetadata(self, index):
-        path = get_module_basepath("TutorialMaker") + "/Outputs/Raw/"
+        path = self.handler.path #get_module_basepath("TutorialMaker") + "/Outputs/Raw/"
 
         openWindows = []
         for w in slicer.app.topLevelWidgets():
@@ -751,14 +756,17 @@ class Tutorial():
         self.steps = []
 
     def beginTutorial(self):
-        screenshotTools = ScreenshotTools()
+        screenshotTools = ScreenshotTools(self.metadata["title"])
         #Screenshot counter
         self.nSteps = 0
         self.screenshottools = screenshotTools
 
     #TODO:Unsafe, there should be a better method to do this, at least add some conditions
     def clearTutorial(self):
-        outputPath = get_module_basepath("TutorialMaker") + "/Outputs/Raw/"
+        #outputPath = get_module_basepath("TutorialMaker") + "/Outputs/Raw/"
+        if not hasattr(self, 'screenshottools'):
+            return
+        outputPath = self.screenshottools.handler.path
         if not os.path.exists(outputPath):
             return
         dirs = os.listdir(outputPath)
@@ -780,9 +788,9 @@ class Tutorial():
         self.nSteps = self.nSteps + 1
     pass
 
-    def endTutorial(self):
-        handler = JSONHandler()
-        handler.saveTutorial(self.metadata, self.steps)
+    def endTutorial(self, tutorialTitle):
+        handler = JSONHandler(tutorialTitle)
+        handler.saveTutorial(self.metadata, self.steps)   # Save tutorial to JSON file
 
 class TutorialScreenshot():
     def __init__(self, screenshot="", metadata=""):
@@ -802,8 +810,8 @@ class TutorialScreenshot():
 
 # TODO: REMOVE THIS, DEPRECATED
 class JSONHandler:
-    def __init__(self):
-        self.path = get_module_basepath("TutorialMaker") + "/Outputs/Raw/"
+    def __init__(self, tutorialTitle):
+        self.path = get_module_basepath("TutorialMaker") + "/Outputs/Raw/" +tutorialTitle + "/"
         if not os.path.exists(self.path):
             os.mkdir(self.path)
         import json
