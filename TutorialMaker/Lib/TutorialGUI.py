@@ -3,7 +3,7 @@ import qt
 import json
 import os
 import copy
-from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide
+from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide, AnnotatedTutorial
 from Lib.TutorialUtils import Tutorial, TutorialScreenshot
 from slicer.i18n import tr as _
 
@@ -333,8 +333,38 @@ class TutorialGUI(qt.QMainWindow):
         self.icon_arrowDown = qt.QIcon(qt.QPixmap.fromImage(self.image_ArrowDown))
         pass
 
-    def open_json_file_dialog(self):
-        pass
+    def openAnnotationsAsJSON(self):
+        from Lib.TutorialUtils import get_module_basepath as getModulePath
+        parent = slicer.util.mainWindow()
+        basePath = getModulePath("TutorialMaker")
+        jsonPath = qt.QFileDialog.getOpenFileName(
+            parent,
+            _("Select a JSON file"),
+            basePath + "/Outputs/Annotations/",              
+            _("JSON Files (*.json)") 
+        )
+        if not os.path.exists(jsonPath):
+            return
+        
+        [tInfo, tSlides, tPaths] = AnnotatedTutorial.LoadAnnotatedTutorial(jsonPath)
+        for step in self.steps:
+            self.gridLayout.removeWidget(step)
+            step.deleteLater()
+        self.steps = []
+        for stepIndex in range(len(tSlides)):
+            stepWidget = AnnotatorStepWidget(stepIndex, self.thumbnailSize, parent=self)
+            stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
+            stepWidget.swapRequest.connect(self.swapStepPosition)
+            stepWidget.AddStepWindows(tSlides[stepIndex])
+
+            self.steps.append(stepWidget)
+            self.gridLayout.addWidget(stepWidget)  # noqa: F821
+            stepWidget.UNDELETABLE = True # noqa: F821
+            stepWidget.CreateMergedWindow() # noqa: F821
+            stepWidget.ToggleExtended() # noqa: F821
+        self.tutorialInfo = tInfo
+        
+
 
     def saveAnnotationsAsJSON(self):
         import re
@@ -910,7 +940,7 @@ class TutorialGUI(qt.QMainWindow):
         toolbar.addAction(actionAdd)
         toolbar.addAction(actionCopy)
 
-        actionOpen.triggered.connect(self.open_json_file_dialog)
+        actionOpen.triggered.connect(self.openAnnotationsAsJSON)
         actionSave.triggered.connect(self.saveAnnotationsAsJSON)
         actionBack.triggered.connect(self.deleteSelectedAnnotation)
         actionDelete.triggered.connect(self.delete_screen)
