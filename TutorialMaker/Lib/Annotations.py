@@ -1,10 +1,13 @@
 import os
+import slicer
 import qt
 import copy
 import math
+import json
 from slicer.i18n import tr as _
 from enum import Flag, auto
 from Lib.TutorialUtils import Util
+from Lib.TutorialUtils import Tutorial, TutorialScreenshot
 
 class AnnotationType(Flag):
     Nil = auto() # Not for saving
@@ -572,3 +575,95 @@ class AnnotatorSlide:
         for annotation in self.annotations:
             annotation.draw(painter, pen, brush)
         painter.end()
+
+class AnnotatedTutorial:
+    
+    @staticmethod
+    def GetLocalizedDict(lang, tutorialName = ""):
+        dictPath = f"{os.path.dirname(__file__)}/../Outputs" + "/Annotations/text_dict_default.json"
+        textDict = {}
+        with open(dictPath, encoding='utf-8') as file:
+                textDict = json.load(file)
+        return textDict
+
+    @staticmethod
+    def LoadAnnotatedTutorial(path):
+        outputFolder = f"{os.path.dirname(__file__)}/../Outputs"
+
+        settings = slicer.app.userSettings()
+        currentLanguage = settings.value("language")
+
+        imagePaths : list[str] = [] #TODO: Improve this part
+        slides = []
+
+        textDict = AnnotatedTutorial.GetLocalizedDict(currentLanguage)
+        with open(path, encoding='utf-8') as file:
+            rawData = json.load(file)
+        TutorialInfo = {
+            "title": rawData["title"],
+            "author": rawData["author"],
+            "date": rawData["date"],
+            "desc": rawData["desc"],
+        }
+        rawDataOffsetCounter = 0
+        for slideData in rawData["slides"]:
+            slideStep, slideImg = slideData['SlideCode'].split("/")
+            slideStep = str(int(slideStep) - rawDataOffsetCounter)
+            rawStepPath = f"{outputFolder}/raw/{slideStep}/{slideImg}"
+            slideMetadata = []
+            slideImage : qt.QImage = None
+
+            tsParser = TutorialScreenshot()
+            if slideData["SlideLayout"] == "Screenshot":
+                try:
+                    tsParser.metadata = rawStepPath + ".json"
+                    slideMetadata = tsParser.getWidgets()
+
+                    slideImage = qt.QImage(rawStepPath + ".png")
+                except FileNotFoundError:
+                    stepPath = f"{outputFolder}/raw/{slideStep}"
+                    slideMetadata = []
+                    test_contents = os.listdir(stepPath)
+                    for content in test_contents:
+                        if(".json" not in content):
+                            continue
+                        tsParser.metadata = f"{stepPath}/{content}"
+                        slideMetadata.extend(tsParser.getWidgets())
+
+                    slideImage = qt.QImage(f"{outputFolder}/Annotations/{slideData['ImagePath']}")
+            else:
+                rawDataOffsetCounter += 1
+                slideImage = qt.QImage(f"{outputFolder}/Annotations/{slideData['ImagePath']}")
+
+            annotations = []
+            for annotationData in slideData["Annotations"]:
+                targetWidget = {
+                    "position": [0,0],
+                    "size": [1,1]
+                }
+                for widget in slideMetadata:
+                    if annotationData["widgetPath"] == widget["path"]:
+                        targetWidget = widget
+                annotation = Annotation(
+                    targetWidget,
+                    *annotationData["offset"],
+                    *annotationData["optional"],
+                    textDict[annotationData["text"]],
+                    AnnotationType[annotationData["type"]]
+                )
+                annotation.penConfig(
+                    qt.QColor(annotationData["penSettings"]["color"]),
+                    annotationData["penSettings"]["fontSize"],
+                    annotationData["penSettings"]["thickness"]
+                )
+                annotation.PERSISTENT = True
+                annotations.append(annotation)
+            annotatedSlide = AnnotatorSlide(qt.QPixmap.fromImage(slideImage), slideMetadata, annotations)
+            annotatedSlide.SlideTitle = textDict[slideData["SlideTitle"]]
+            annotatedSlide.SlideBody = textDict[slideData["SlideDesc"]]
+            annotatedSlide.SlideLayout = slideData["SlideLayout"]
+
+            imagePaths.append(slideData["ImagePath"])
+            slides.append(annotatedSlide)
+
+        return [TutorialInfo, slides, imagePaths]
