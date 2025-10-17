@@ -332,18 +332,20 @@ class Annotation:
             if textToWrite == "":
                 textToWrite = _("Write something here")
 
-            textTokens = textToWrite.splitlines()
-            textLines = []
-            line = ""
-            for token in textTokens:
-                if fontMetrics.width(line + token) > textBoxBottomRight[0] - textBoxTopLeft[0] - xPadding:
-                    textLines.append(copy.deepcopy(line))
-                    line = f"{token} "
-                    continue
-                line += f"{token} "
-            textLines.append(line)
+            displayLines = []
+            textLines = textToWrite.splitlines()
+            for tLines in textLines:
+                textTokens = tLines.split()
+                line = ""
+                for token in textTokens:
+                    if fontMetrics.width(line + token) > textBoxBottomRight[0] - textBoxTopLeft[0] - xPadding:
+                        displayLines.append(copy.deepcopy(line))
+                        line = f"{token} "
+                        continue
+                    line += f"{token} "
+                displayLines.append(line)
 
-            for lineIndex, line in enumerate(textLines):
+            for lineIndex, line in enumerate(displayLines):
                 painter.drawText(textStart[0], textStart[1] + lineSpacing + fHeight*lineIndex, line)
 
             self.setSelectionBoundingBox(targetPos[0], targetPos[1], targetPos[0] + optX, targetPos[1] + optY)
@@ -648,7 +650,7 @@ class AnnotatedTutorial:
                     targetWidget,
                     *annotationData["offset"],
                     *annotationData["optional"],
-                    textDict[annotationData["text"]],
+                    textDict.get(annotationData["text"], ""),
                     AnnotationType[annotationData["type"]]
                 )
                 annotation.penConfig(
@@ -659,8 +661,8 @@ class AnnotatedTutorial:
                 annotation.PERSISTENT = True
                 annotations.append(annotation)
             annotatedSlide = AnnotatorSlide(qt.QPixmap.fromImage(slideImage), slideMetadata, annotations)
-            annotatedSlide.SlideTitle = textDict[slideData["SlideTitle"]]
-            annotatedSlide.SlideBody = textDict[slideData["SlideDesc"]]
+            annotatedSlide.SlideTitle = textDict.get(slideData["SlideTitle"], "")
+            annotatedSlide.SlideBody = textDict.get(slideData["SlideDesc"], "")
             annotatedSlide.SlideLayout = slideData["SlideLayout"]
 
             imagePaths.append(slideData["ImagePath"])
