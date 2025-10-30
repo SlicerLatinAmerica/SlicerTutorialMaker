@@ -3,7 +3,7 @@ import qt
 import json
 import os
 import copy
-from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide
+from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide, AnnotatedTutorial
 from Lib.TutorialUtils import Tutorial, TutorialScreenshot
 from slicer.i18n import tr as _
 
@@ -333,8 +333,38 @@ class TutorialGUI(qt.QMainWindow):
         self.icon_arrowDown = qt.QIcon(qt.QPixmap.fromImage(self.image_ArrowDown))
         pass
 
-    def open_json_file_dialog(self):
-        pass
+    def openAnnotationsAsJSON(self):
+        from Lib.TutorialUtils import get_module_basepath as getModulePath
+        parent = slicer.util.mainWindow()
+        basePath = getModulePath("TutorialMaker")
+        jsonPath = qt.QFileDialog.getOpenFileName(
+            parent,
+            _("Select a JSON file"),
+            basePath + "/Outputs/Annotations/",              
+            _("JSON Files (*.json)") 
+        )
+        if not os.path.exists(jsonPath):
+            return
+        
+        [tInfo, tSlides, tPaths] = AnnotatedTutorial.LoadAnnotatedTutorial(jsonPath)
+        for step in self.steps:
+            self.gridLayout.removeWidget(step)
+            step.deleteLater()
+        self.steps = []
+        for stepIndex in range(len(tSlides)):
+            stepWidget = AnnotatorStepWidget(stepIndex, self.thumbnailSize, parent=self)
+            stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
+            stepWidget.swapRequest.connect(self.swapStepPosition)
+            stepWidget.AddStepWindows(tSlides[stepIndex])
+
+            self.steps.append(stepWidget)
+            self.gridLayout.addWidget(stepWidget)  # noqa: F821
+            stepWidget.UNDELETABLE = True # noqa: F821
+            stepWidget.CreateMergedWindow() # noqa: F821
+            stepWidget.ToggleExtended() # noqa: F821
+        self.tutorialInfo = tInfo
+        
+
 
     def saveAnnotationsAsJSON(self):
         import re
@@ -441,8 +471,12 @@ class TutorialGUI(qt.QMainWindow):
 
         #TODO: use widget annotation infrastructure to make these pages more on the fly interactable
         # Insert Dummy Pages for Title, Acknowledgements
-        self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png', type_="CoverPage")
-        self.addBlankPage(False, stepIndex + 2, self.dir_path + '/../Resources/NewSlide/Acknowledgments.png', type_="Acknowledgement")
+        #self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png', type_="CoverPage")
+        cover_pm = self.make_cover_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+        self.addBlankPage(False, 0, "", type_="CoverPage", pixmap=cover_pm)
+        acknowledgments_pm= self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+        if acknowledgments_pm is not None:
+            self.addBlankPage(False, stepIndex + 2, type_="Acknowledgment", pixmap = acknowledgments_pm)
 
         pass
 
@@ -494,41 +528,45 @@ class TutorialGUI(qt.QMainWindow):
 
     #TODO: Clean this up, there's a better way to keep track of the step.stepIndex value, with this we have to keep 2 copies redundant
     #This seems like a very expensive function
-    def addBlankPage(self, state,index : int = None, backgroundPath : str = "", metadata : dict = None, type_ : str = ""):
+    # Cambia la firma:
+    def addBlankPage(self, state, index:int=None, backgroundPath:str="", metadata:dict=None, type_:str="", pixmap:qt.QPixmap=None):
         stepWidget = AnnotatorStepWidget(len(self.steps), self.thumbnailSize, parent=self)
         stepWidget.thumbnailClicked.connect(self.changeSelectedSlide)
         stepWidget.swapRequest.connect(self.swapStepPosition)
-        if backgroundPath == "":
-            self.images_selector(self.tutorial2,index) 
-        else: 
-            if metadata is None:
-                metadata = {}
+
+        if metadata is None:
+            metadata = {}
+
+        if pixmap is not None:
+            annotatorSlide = AnnotatorSlide(pixmap, metadata)
+        elif backgroundPath:
             annotatorSlide = AnnotatorSlide(qt.QPixmap(backgroundPath), metadata)
-            if type_ != "":
-                annotatorSlide.SlideLayout = type_
-            stepWidget.AddStepWindows(annotatorSlide)
-            stepWidget.CreateMergedWindow()
+        else:
+            # comportamiento anterior (selector de imágenes)
+            self.images_selector(self.tutorial2, index)
+            return
 
-            def InsertWidget(_nWidget, _index):
+        if type_:
+            annotatorSlide.SlideLayout = type_
+        stepWidget.AddStepWindows(annotatorSlide)
+        stepWidget.CreateMergedWindow()
 
-                #To make the lists bigger
-                self.steps.append(_nWidget)
-                self.gridLayout.addWidget(_nWidget)
+        def InsertWidget(_nWidget, _index):
+            self.steps.append(_nWidget)
+            self.gridLayout.addWidget(_nWidget)
+            for stepIndex in range(len(self.steps) - 1, _index, -1):
+                self.steps[stepIndex] = self.steps[stepIndex - 1]
+                self.steps[stepIndex].stepIndex = stepIndex
+                self.gridLayout.addWidget(self.steps[stepIndex], stepIndex, 0)
+            self.steps[_index] = _nWidget
+            _nWidget.stepIndex = _index
+            self.gridLayout.addWidget(_nWidget, _index, 0)
 
-                for stepIndex in range(len(self.steps) - 1, _index, -1):
-                    self.steps[stepIndex] = self.steps[stepIndex - 1]
-                    self.steps[stepIndex].stepIndex = stepIndex
-                    self.gridLayout.addWidget(self.steps[stepIndex], stepIndex, 0)
+        if index is not None:
+            InsertWidget(stepWidget, index)
+            return
+        InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
 
-                self.steps[_index] = _nWidget
-                _nWidget.stepIndex = _index
-                self.gridLayout.addWidget(_nWidget, _index, 0)
-
-            if index is not None:
-                InsertWidget(stepWidget, index)
-                return
-            InsertWidget(stepWidget, self.selectedIndexes[0] + 1)
-            pass
         
     def add_selected_image(self):
         insert_index = self.selectedIndexes[0]+1
@@ -910,7 +948,7 @@ class TutorialGUI(qt.QMainWindow):
         toolbar.addAction(actionAdd)
         toolbar.addAction(actionCopy)
 
-        actionOpen.triggered.connect(self.open_json_file_dialog)
+        actionOpen.triggered.connect(self.openAnnotationsAsJSON)
         actionSave.triggered.connect(self.saveAnnotationsAsJSON)
         actionBack.triggered.connect(self.deleteSelectedAnnotation)
         actionDelete.triggered.connect(self.delete_screen)
@@ -1203,3 +1241,124 @@ class TutorialGUI(qt.QMainWindow):
         button.setStyleSheet("border: 2px solid blue;")
 
                 
+    def make_cover_pixmap(self, info: dict, size=(900, 530,)) -> qt.QPixmap: #Create an image with the tutorial information
+        W, H = size
+        pm = qt.QPixmap(W, H)
+        pm.fill(qt.Qt.white)
+
+        logo_path=self.dir_path + '/../Resources/Icons/3DSlicer.png' #Gets the logo of 3D Slicer
+        logo_max_wh=(140, 80)
+        line_color=(0, 102, 204)
+        line_thickness=6
+
+        title_bg_color = (0, 102, 204, 32)  
+        title_text_color = (0, 0, 0)
+        title_radius = 14
+
+        marginX, marginTop = 10, 0
+        logoSpaceH = logo_max_wh[1] if logo_path else 0
+        titleTop = marginTop + logoSpaceH + 40
+
+        p = qt.QPainter(pm)
+        p.setRenderHint(qt.QPainter.Antialiasing, True)
+        p.setRenderHint(qt.QPainter.TextAntialiasing, True)
+        try:
+            y_line = 20    
+            pen = qt.QPen(qt.QColor(*line_color))
+            pen.setWidth(line_thickness)
+            pen.setCapStyle(qt.Qt.RoundCap)
+            p.setPen(pen)
+            p.drawLine(marginX, y_line, W - marginX, y_line)
+
+            if logo_path:
+                logo = qt.QPixmap(logo_path)
+                if not logo.isNull():
+                    maxW, maxH = logo_max_wh
+                    logo = logo.scaled(maxW, maxH, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+                    lx, ly = 20, 30
+                    p.drawPixmap(lx, ly, logo)
+            # title configuration
+            title  = info.get("title", "")
+
+            f_title = qt.QFont()
+            f_title.setPointSize(28)
+            f_title.setBold(True)
+            p.setFont(f_title)
+            top_margin = 40 + (logo_max_wh[1] if logo_path else 0)
+            title_rect = qt.QRect(40, top_margin, W-80, 120)
+            p.setPen(qt.QPen(qt.QColor(0, 0, 0)))
+            #Background
+            metrics = qt.QFontMetrics(f_title)
+            wrapped_height = metrics.boundingRect(title_rect, qt.Qt.AlignCenter | qt.Qt.TextWordWrap, title).height()
+            padY, padX = 35, 18
+            bg_rect = qt.QRect(
+                title_rect.left() - padX,
+                title_rect.top() - padY,
+                title_rect.width() + 2*padX,
+                wrapped_height + 2*padY
+            )
+
+            r, g, b, *a = title_bg_color
+            alpha = a[0] if a else 40
+            brush = qt.QBrush(qt.QColor(r, g, b, alpha))
+            p.setBrush(brush)
+            p.setPen(qt.QPen(qt.Qt.NoPen))
+            p.drawRoundedRect(bg_rect, title_radius, title_radius)
+
+            # Title
+            p.setPen(qt.QPen(qt.QColor(*title_text_color)))
+            p.drawText(qt.QRect(50, 80, W-80, 120), 
+                    qt.Qt.AlignCenter | qt.Qt.TextWordWrap, 
+                    title)
+
+            # authors
+            f_auth = qt.QFont()
+            f_auth.setPointSize(16)
+            p.setFont(f_auth)
+            p.drawText(qt.QRect(40, 200, W-80, 80),
+                    qt.Qt.AlignCenter | qt.Qt.TextWordWrap, 
+                    info.get("author", ""))
+
+            # Date
+            f_date = qt.QFont()
+            f_date.setPointSize(12)
+            p.setFont(f_date)
+            p.drawText(qt.QRect(40, 280, W-80, 40),
+                    qt.Qt.AlignCenter, 
+                    info.get("date", ""))
+
+            # Description)
+            f_desc = qt.QFont()
+            f_desc.setPointSize(12)
+            p.setFont(f_desc)
+            p.drawText(qt.QRect(80, 340, W-160, 150),
+                    qt.Qt.AlignTop | qt.Qt.TextWordWrap, 
+                    info.get("desc", ""))
+        finally:
+            p.end()
+        return pm
+    
+    def make_acknowledments_pixmap(self, info: dict, size=(900, 530,)) -> qt.QPixmap: #Create an image with the tutorial information
+        text = info.get("acknowledgments", "")
+        if not text:
+            return None
+
+        W, H = size
+        pm = qt.QPixmap(W, H)
+        pm.fill(qt.Qt.white)
+
+        p = qt.QPainter(pm)
+        p.setRenderHint(qt.QPainter.Antialiasing, True)
+        p.setRenderHint(qt.QPainter.TextAntialiasing, True)
+        
+        try:
+            f_ack = qt.QFont()
+            f_ack.setPointSize(16)
+            p.setFont(f_ack)
+            p.drawText(qt.QRect(40, 200, W-80, 80),
+                    qt.Qt.AlignCenter | qt.Qt.TextWordWrap, 
+                    info.get("acknowledgments", ""))
+
+        finally:
+            p.end()
+        return pm

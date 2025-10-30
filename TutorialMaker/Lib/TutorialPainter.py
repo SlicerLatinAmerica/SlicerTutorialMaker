@@ -4,7 +4,7 @@ import os
 import math
 import json
 from slicer.i18n import tr as _
-from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide
+from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide, AnnotatedTutorial
 from Lib.TutorialUtils import Tutorial, TutorialScreenshot
 import Lib.TutorialUtils as TutorialUtils
 import Lib.TutorialExporter as Exporter
@@ -718,7 +718,7 @@ class TutorialPainter:
         self.TutorialInfo = {}
         self.currentLanguage = settings.value("language")
 
-        # TODO: Get a better way to get the module position
+        # TODO: Get a better way to get the module location
         self.outputFolder = f"{os.path.dirname(__file__)}/../Outputs"
         pass
 
@@ -805,7 +805,7 @@ class TutorialPainter:
         pass
 
     def GenerateHTMLfromAnnotatedTutorial(self, path):
-        self.LoadAnnotatedTutorial(path)
+        [self.TutorialInfo, self.slides, self.imagePaths] = AnnotatedTutorial.LoadAnnotatedTutorial(path)
         localizedScreenshotsPath = f"{self.outputFolder}/{self.TutorialInfo['title']}_{self.currentLanguage}"
         clean_title = self.TutorialInfo["title"].strip().replace(" ", "_").replace("\t", "_").replace("\n", "_").replace("\r", "_")
         clean_folder = f"{os.path.dirname(os.path.dirname(__file__))}/Outputs"
