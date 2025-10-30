@@ -37,3 +37,5 @@ node_modules
 
 TutorialMaker/Outputs/*
 TutorialMaker/Testing/*
+Languages/*
+TutorialMaker/Languages
