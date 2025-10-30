@@ -517,7 +517,7 @@ class SelfTestTutorialLayer():
         counter = NextCounter()
 
         code_contents = ""
-        with open(path) as fd:
+        with open(path, encoding='utf-8') as fd:
             code_contents = fd.read()
 
         # GENERATE FUNCTIONS FOR EACH TUTORIAL DIRECTIVE
@@ -582,7 +582,7 @@ class SelfTestTutorialLayer():
 
         path = get_module_basepath("TutorialMaker") + "/Outputs/"
 
-        with open(path + "CurrentParsedTutorial.py", "w") as fd:
+        with open(path + "CurrentParsedTutorial.py", "w", encoding='utf-8') as fd:
             fd.write(finalFile)
         pass
 
