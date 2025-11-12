@@ -21,29 +21,37 @@ class CoverSlide():
         return f"# {self.Title}\n**Autor:** {self.Author}\n\n{self.Description}\n"
 
 class BackCoverSlide():
-    def __init__(self, title: str, acknowledgements: str):
+    def __init__(self, title: str, Acknowledgments: str):
         self.Title = title
-        self.Acknowledgements = acknowledgements
+        self.Acknowledgments = Acknowledgments 
     
     def ToHtml(self):
-        aknowledgements = ""
-        for key, value in self.Acknowledgements.items():
-            aknowledgements += "<li><h2><strong>{}</strong><br>{}</h2></li>".format(key, value)
-        
-        return  """
-                <div class="backCover">
-                    <h1 class="coverTitle">{}</h1>
-                    <ul class="coverAcknowledgements">
-                        {}
-                    </ul>
-                </div>
-                """.format(self.Title, aknowledgements)
+        if isinstance(self.Acknowledgments, dict):
+            items = "".join(
+                f"<li><h2><strong>{k}</strong><br>{v}</h2></li>"
+                for k, v in self.Acknowledgments.items()
+            )
+        else:
+            text = (self.Acknowledgments or "").strip()
+            items = f"<li><h2>{text}</h2></li>" if text else ""
+
+        return f"""
+            <div class="backCover">
+                <h1 class="coverTitle">{self.Title}</h1>
+                <ul class="coverAcknowledgments">
+                    {items}
+                </ul>
+            </div>
+        """
+
     
     def ToMarkdown(self):
-        md = f"# {self.Title}\n"
-        for key, value in self.Acknowledgements.items():
-            md += f"- **{key}**\n  {value}\n"
-        return md + "\n"  
+        if isinstance(self.Acknowledgments, dict):
+            lines = "\n".join(f"- **{k}**\n  {v}" for k, v in self.Acknowledgments.items())
+        else:
+            text = (self.Acknowledgments or "").strip()
+            lines = f"- {text}" if text else ""
+        return f"# {self.Title}\n{lines}\n"
 
 class SimpleSlide():
     def __init__(self, Title: str, Description: str, ImagePath: str):
@@ -162,14 +170,14 @@ class TutorialExporter():
                     font-size: 1.5rem;    
                 }
 
-                .coverAcknowledgements {
+                .coverAcknowledgments {
                     list-style: none;
                 }
 
                 @media print {
                     .slide,
                     .cover,
-                    .backcover {
+                    .backCover {
                         height: 99%;
                         align-content: center;
                         page-break-after: always;

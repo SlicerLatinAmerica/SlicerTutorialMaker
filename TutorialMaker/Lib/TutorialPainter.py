@@ -816,7 +816,7 @@ class TutorialPainter:
         pages : list[Exporter.SlidePage] = []
         for slideIndex, slide in enumerate(self.slides):
             page = None
-            # This doesn't parse what was entered in the 'Cover Page' slide inside annotator itself
+            
             if slide.SlideLayout == "CoverPage":
                 page = Exporter.CoverSlide(
                     self.TutorialInfo['title'],
@@ -825,11 +825,13 @@ class TutorialPainter:
                     self.TutorialInfo['desc'],
                     )
             # This doesn't parse the Acknowledgements correctly
-            elif slide.SlideLayout == "Acknowledgement":
+            elif slide.SlideLayout == "Acknowledgment":
                 page = Exporter.BackCoverSlide(
-                    slide.SlideTitle,
-                    {"": slide.SlideBody}
+                    slide.SlideTitle or "Acknowledgments",
+                    slide.SlideBody 
                 )
+
+
             elif slide.SlideLayout == "Screenshot":
                 title = slide.SlideTitle 
                 page = Exporter.SimpleSlide(

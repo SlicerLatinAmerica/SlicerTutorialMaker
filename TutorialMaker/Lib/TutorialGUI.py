@@ -164,6 +164,7 @@ class AnnotatorStepWidget(qt.QWidget):
                                        nextImage)
         painter.end()
         mergedSlide = AnnotatorSlide(qt.QPixmap().fromImage(finalImage), finalJson)
+        mergedSlide.SlideLayout = "Screenshot" 
 
         self.mergedSlideIndex = self.screenshotCount
         self.AddStepWindows(mergedSlide)
@@ -383,7 +384,7 @@ class TutorialGUI(qt.QMainWindow):
 
         # Ensure Acknowledgment exists ALWAYS (even if empty)
         if self.ackStepIndex is None:
-            pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+            pm = self.make_acknowledgments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
             self.addBlankPage(False, 1, "", type_="Acknowledgment", pixmap=pm)
             self.ackStepIndex = 1
 
@@ -402,7 +403,10 @@ class TutorialGUI(qt.QMainWindow):
 
         for stepIndex, step in enumerate(self.steps):
             for slideIndex, slide in enumerate(step.Slides):
-                if not slide.Active:
+                #if not slide.Active:
+                 #   continue
+                layoutName = getattr(slide, "SlideLayout", "")
+                if (not slide.Active) and layoutName not in ("CoverPage", "Acknowledgment"):
                     continue
                 slideImage = slide.image
 
@@ -474,6 +478,7 @@ class TutorialGUI(qt.QMainWindow):
             #Main window
             try:
                 annotatorSlide = AnnotatorSlide(screenshots[0].getImage(), screenshots[0].getWidgets())
+                annotatorSlide.SlideLayout = "Screenshot"
                 stepWidget.AddStepWindows(annotatorSlide)
             except Exception:
                 print(f"ERROR: Annotator Failed to add top level window in step:{stepIndex}, loadImagesAndMetadata")
@@ -485,6 +490,7 @@ class TutorialGUI(qt.QMainWindow):
                     annotatorSlide = AnnotatorSlide(screenshot.getImage(),
                                                     screenshot.getWidgets(),
                                                     WindowOffset=screenshot.getWidgets()[0]["position"])
+                    annotatorSlide.SlideLayout = "Screenshot"
                     stepWidget.AddStepWindows(annotatorSlide)  # noqa: F821
                 except Exception:
                     print(f"ERROR: Annotator Failed to add window in step:{stepIndex}, loadImagesAndMetadata")
@@ -501,7 +507,7 @@ class TutorialGUI(qt.QMainWindow):
         self.coverStepIndex = 0
 
         # Acknowledgments page (always, even if empty)
-        acknowledgments_pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+        acknowledgments_pm = self.make_acknowledgments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
         if acknowledgments_pm is not None:
             self.addBlankPage(False, len(self.steps), "", type_="Acknowledgment", pixmap=acknowledgments_pm)
             self.ackStepIndex = len(self.steps) - 1
@@ -617,6 +623,7 @@ class TutorialGUI(qt.QMainWindow):
                 image_pixmap = screenshot.getImage()
                 image_widgets = screenshot.getWidgets()
                 annotatorSlide = AnnotatorSlide(image_pixmap, image_widgets)
+                annotatorSlide.SlideLayout = "Screenshot"
 
             
                 if not image_pixmap or image_pixmap.isNull():
@@ -1379,7 +1386,7 @@ class TutorialGUI(qt.QMainWindow):
             p.end()
         return pm
     
-    def make_acknowledments_pixmap(self, info: dict, size=(900, 530,)) -> qt.QPixmap:
+    def make_acknowledgments_pixmap(self, info: dict, size=(900, 530,)) -> qt.QPixmap:
     
         text = info.get("acknowledgments", "")
 
@@ -1424,13 +1431,13 @@ class TutorialGUI(qt.QMainWindow):
     def _regenerateAcknowledgmentPixmap(self):
         # Always regenerate (even when empty) so changes reflect instantly
         if self.ackStepIndex is None:
-            pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+            pm = self.make_acknowledgments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
             self.addBlankPage(False, 1, "", type_="Acknowledgment", pixmap=pm)
             self.ackStepIndex = 1
             return
         stepW = self.steps[self.ackStepIndex]
         slide = stepW.Slides[0]
-        new_pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+        new_pm = self.make_acknowledgments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
         slide.image = new_pm
         stepW.SlideWidgets[0].setPixmap(slide.GetResized(*self.thumbnailSize))
         if self.selectedIndexes == [self.ackStepIndex, 0]:
@@ -1444,7 +1451,7 @@ class TutorialGUI(qt.QMainWindow):
         if "acknowledgments" in kwargs:
             # Ensure page exists and then refresh drawing
             if self.ackStepIndex is None:
-                pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+                pm = self.make_acknowledgments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
                 self.addBlankPage(False, 1, "", type_="Acknowledgment", pixmap=pm)
                 self.ackStepIndex = 1
             self._regenerateAcknowledgmentPixmap()
