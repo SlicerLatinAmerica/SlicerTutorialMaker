@@ -831,11 +831,19 @@ class TutorialScreenshot():
     def getWidgets(self):
         widgets = []
         nWidgets = JSONHandler.parseJSON(self.metadata)
+        dpr = self.getDevicePixelRatio()
         
         for keys in nWidgets:
             if isinstance(keys, str) and keys.startswith("_"):
                 continue
-            widgets.append(nWidgets[keys])
+            
+            widget = nWidgets[keys].copy() if hasattr(nWidgets[keys], 'copy') else dict(nWidgets[keys])
+            
+            if dpr > 1.0:
+                widget["position"] = [widget["position"][0] / dpr, widget["position"][1] / dpr]
+                widget["size"] = [widget["size"][0] / dpr, widget["size"][1] / dpr]
+            
+            widgets.append(widget)
         return widgets
     
     def getDevicePixelRatio(self):
