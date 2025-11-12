@@ -2,6 +2,7 @@ import slicer
 import qt
 import os
 import re
+from slicer.i18n import tr as _
 
 def get_module_basepath(moduleName):
     try:
@@ -506,6 +507,7 @@ class SelfTestTutorialLayer():
         "metadata_author" : "AUTHOR",
         "metadata_date" : "DATE",
         "metadata_desc" : "DESC",
+        "metadata_dependencies" : "DEPENDENCIES",
         "takeScreenshot" : "SCREENSHOT",
     }
 
@@ -535,6 +537,7 @@ class SelfTestTutorialLayer():
             tutorial_author = ""
             tutorial_date = ""
             tutorial_desc = ""
+            tutorial_dependencies = ""
 
             for info in re.findall(infoMatcher, test_module):
                 if info[0] == SelfTestTutorialLayer.directives['metadata_title']:
@@ -549,11 +552,14 @@ class SelfTestTutorialLayer():
                 elif info[0] == SelfTestTutorialLayer.directives['metadata_desc']:
                     tutorial_desc = info[2]
                     pass
-            
+                elif info[0] == SelfTestTutorialLayer.directives['metadata_dependencies']:
+                    tutorial_dependencies = info[2]
+                    pass
+
             info_func = (
                 "\n"
                 f"{' '*8}def TUTORIAL_GETINFO():\n"
-                f"{' '*12}return ['{tutorial_title}','{tutorial_author}', '{tutorial_date}', '{tutorial_desc}']\n"
+                f"{' '*12}return ['{tutorial_title}','{tutorial_author}', '{tutorial_date}', '{tutorial_desc}', '{tutorial_dependencies}']\n"
             )
             
             tutorial_functions = []
@@ -740,21 +746,40 @@ class Tutorial():
             title,
             author,
             date,
-            description
+            description,
+            dependencies=""
     ):
         self.metadata = {}
         self.metadata["title"] = title
         self.metadata["author"] = author
         self.metadata["date"] = date
         self.metadata["desc"] = description
+        self.metadata["dependencies"] = dependencies.split(",") if dependencies != "" else []
 
         self.steps = []
 
+    def verifyDependencies(self):
+        for dependency in self.metadata["dependencies"]:
+            try:
+                slicer.util.modulePath(dependency)
+            except Exception:
+                raise Exception(_("Modules: {dependencies} not found. Please install the required modules before running the tutorial.").format(dependencies=self.metadata["dependencies"]))
+
     def beginTutorial(self):
         screenshotTools = ScreenshotTools()
+        answer = slicer.util.confirmOkCancelDisplay(
+            _("Close Python Console and Error Log?"),
+            _("Do you want to close the Python Console and Error Log windows for a better tutorial experience?"),
+            okButtonText=_("Yes"),
+            cancelButtonText=_("No")
+        )
+        if answer:
+            slicer.util.mainWindow().pythonConsole().parent().setVisible(False)
+            slicer.util.mainWindow().errorLogWidget().parent().setVisible(False)
         #Screenshot counter
         self.nSteps = 0
         self.screenshottools = screenshotTools
+        self.verifyDependencies()
 
     #TODO:Unsafe, there should be a better method to do this, at least add some conditions
     def clearTutorial(self):

@@ -5,6 +5,8 @@ import os
 import copy
 from Lib.Annotations import Annotation, AnnotationType, AnnotatorSlide, AnnotatedTutorial
 from Lib.TutorialUtils import Tutorial, TutorialScreenshot
+
+import slicer
 from slicer.i18n import tr as _
 
 class DraggableLabel(qt.QLabel):
@@ -343,6 +345,8 @@ class TutorialGUI(qt.QMainWindow):
             basePath + "/Outputs/Annotations/",              
             _("JSON Files (*.json)") 
         )
+        self.raise_()
+        self.activateWindow()
         if not os.path.exists(jsonPath):
             return
         
@@ -421,6 +425,11 @@ class TutorialGUI(qt.QMainWindow):
 
         with open(file= f"{self.outputFolder}/text_dict_default.json", mode='w', encoding="utf-8") as fd:
             json.dump(outputFileTextDict, fd, ensure_ascii=False, indent=4)
+
+        slicer.util.infoDisplay(_("Tutorial files have been saved at:\n{path}").format(path=self.outputFolder), windowTitle=_("Tutorial saved"))
+        
+        self.raise_()
+        self.activateWindow()
 
 
 

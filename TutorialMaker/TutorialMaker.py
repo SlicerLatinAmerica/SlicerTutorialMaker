@@ -70,7 +70,7 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.__selectedTutorial = None
         self.isDebug = slicer.app.settings().value("Developer/DeveloperMode")
 
-        print(_("Version Date: {}").format("2025/09/17-08:00AM"))
+        print(_("Version Date: {}").format("2025/11/11-08:00AM"))
 
         #PROTOTYPE FOR PLAYBACK
 
@@ -185,6 +185,10 @@ class TutorialMakerWidget(ScriptedLoadableModuleWidget, VTKObservationMixin): # 
         self.ui.pushButtonGenerate.setEnabled(self.__selectedTutorial is not None)
 
     def getFromGithub(self):
+        slicer.util.infoDisplay(_("Fetching tutorials from GitHub.\n" 
+        "The window may appear unresponsive but the process is running in the background.\n" 
+        "This process will take some minutes.\n" 
+        "Click on \"OK\" to continue."), _("Please wait"))
         self.logic.loadTutorialsFromRepos()
         self.populateTutorialList()
         pass
@@ -217,9 +221,6 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         self.TutorialRepos = [
             "SlicerLatinAmerica/SlicerTestTutorial"
         ]
-        self.LanguageRepos = [
-            "Slicer/SlicerLanguageTranslations"
-        ]
 
     def setDefaultParameters(self, parameterNode):
         """
@@ -246,12 +247,27 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         pass
 
     def Capture(self, tutorialName):
+        if not slicer.util.confirmOkCancelDisplay(
+            _("Please do not interact with Slicer until the process is finished.\n"
+              "Ensure your slicer application is maximized.\n"
+              "Save and clear the scene before starting.\n"
+              "Some tutorials may take several minutes to be captured.\n"
+              "And will appear frozen, but this is normal, the tutorial still being captured.\n"
+              "Click on \"OK\" to continue. \"Cancel\" to abort."),
+            _("Capturing tutorial")
+        ):
+            return  # Usuário cancelou
+
         def FinishTutorial():
             slicer.util.mainWindow().moduleSelector().selectModule('TutorialMaker')
             slicer.util.infoDisplay(_("Tutorial Captured"), _("Captured Tutorial: {tutorialName}").format(tutorialName=tutorialName))
-        
-        with slicer.util.tryWithErrorDisplay("Failed to capture tutorial"):
+
+        try:
             TutorialMakerLogic.runTutorialTestCases(tutorialName, FinishTutorial)
+        except Exception as e:
+            slicer.util.errorDisplay(_("Failed to capture tutorial, please send this error on our GitHub Issue page:\n{err}").format(err=str(e)))
+            slicer.util.reloadScriptedModule("TutorialMaker")
+            slicer.util.selectModule("TutorialMaker")
 
     def Generate(self, tutorialName):
         with slicer.util.tryWithErrorDisplay(_("Failed to generate tutorial")):
@@ -282,7 +298,7 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         modulePath = Lib.TutorialUtils.get_module_basepath("TutorialMaker")
         
         os.makedirs(os.path.join(modulePath, "Testing"), exist_ok=True)
-        os.makedirs(os.path.join(modulePath, "Languages"), exist_ok=True)
+        #os.makedirs(os.path.join(modulePath, "Languages"), exist_ok=True)
         
         # Tutorials
         for repo in self.TutorialRepos:
@@ -303,47 +319,6 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
                                 fd.close()
                         except:
                             continue
-                      
-        # Language Packs  
-        for repo in self.LanguageRepos:
-            files = GitTools.GitFile("", "")
-            try:
-                with slicer.util.tryWithErrorDisplay(_("Failed to fetch language packs from {repo}").format(repo=repo)):
-                    files = GitTools.GitTools.ParseRepo(repo)
-            except:
-                continue
-            for langFile in files.dir("translations"):
-                if not (langFile.endswith(".ts") or langFile.endswith(".qm")):
-                    continue
-                try:
-                    with slicer.util.tryWithErrorDisplay(_("Failed to fetch {langFile} from {repo}").format(langFile=langFile, repo=repo)):
-                        raw = files.getRaw(f"translations/{langFile}")
-                        dest_path = os.path.join(modulePath, "Languages", langFile)
-                       
-                        # Save the file
-                        if isinstance(raw, (bytes, bytearray)):
-                            with open(dest_path, "wb") as fd:
-                                fd.write(raw)
-                        else:
-                            with open(dest_path, "w", encoding='utf-8') as fd:
-                                fd.write(raw)
-
-                        # Compile .ts files to .qm files using lrelease
-                        if langFile.endswith('.ts'):
-                            try:
-                                ts_full = dest_path
-                                qm_full = os.path.splitext(ts_full)[0] + '.qm'
-                                res = subprocess.run(["lrelease", ts_full], check=False, capture_output=True)
-                                if res.returncode != 0:
-                                    logging.warning(_("lrelease failed for {ts}: {err}").format(ts=ts_full, err=res.stderr.decode('utf-8', errors='ignore')))
-                                else:
-                                    if os.path.exists(qm_full):
-                                        logging.info(_("Compiled {ts} -> {qm}").format(ts=ts_full, qm=qm_full))
-                            except Exception as e:
-                                logging.warning(_("Could not run lrelease to compile {ts}: {e}").format(ts=dest_path, e=e))
-                except:
-                    continue
-        pass
 
     def loadTutorials(self):
         test_tutorials = []
@@ -368,6 +343,9 @@ class TutorialMakerLogic(ScriptedLoadableModuleLogic): # noqa: F405
         """
         tPath = Lib.TutorialUtils.get_module_basepath("TutorialMaker") + f"/Testing/{tutorial_name}.py"
         SelfTestTutorialLayer.ParseTutorial(tPath)
+        import sys
+        if "Outputs.CurrentParsedTutorial" in sys.modules:
+            del sys.modules["Outputs.CurrentParsedTutorial"]
         TutorialModule = importlib.import_module("Outputs.CurrentParsedTutorial")
         for className in TutorialModule.__dict__:
             if("Test" not in className or className == "ScriptedLoadableModuleTest"):
