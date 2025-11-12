@@ -112,13 +112,15 @@ class Annotation:
         self.fontSize = fontSize
         pass
 
-    def draw(self, painter : qt.QPainter = None, pen : qt.QPen = None, brush :qt.QBrush = None):
+    def draw(self, painter : qt.QPainter = None, pen : qt.QPen = None, brush :qt.QBrush = None, devicePixelRatio : float = 1.0):
         #Maybe we can organize this better
-        targetPos = [self.target["position"][0] - self.annotationOffset[0] + self.offsetX,
-                     self.target["position"][1] - self.annotationOffset[1] + self.offsetY]
+        # Apply device pixel ratio correction for proper scaling on Retina/HiDPI displays
+        # Coordinates were multiplied by DPR during capture, so we divide here for drawing
+        targetPos = [(self.target["position"][0] - self.annotationOffset[0] + self.offsetX) / devicePixelRatio,
+                     (self.target["position"][1] - self.annotationOffset[1] + self.offsetY) / devicePixelRatio]
 
         #Might as well do this then
-        targetSize = self.target["size"]
+        targetSize = [self.target["size"][0] / devicePixelRatio, self.target["size"][1] / devicePixelRatio]
 
 
         targetCenter = [targetPos[0] + targetSize[0]/2,
@@ -406,6 +408,10 @@ class AnnotatorSlide:
         self.SlideLayout = "Screenshot"
         self.SlideTitle = ""
         self.SlideBody = ""
+        
+        # Store device pixel ratio for proper scaling on Retina/HiDPI displays
+        # Default to 1.0 for backward compatibility
+        self.devicePixelRatio = 1.0
         pass
 
     def AddAnnotation(self, annotation : Annotation):
@@ -420,8 +426,11 @@ class AnnotatorSlide:
         posY += self.windowOffset[1]
 
         for widget in self.metadata:
-            rectX, rectY = widget["position"]
-            rectWidth, rectHeight = widget["size"]
+            # Apply device pixel ratio correction when checking widget positions
+            rectX = widget["position"][0] / self.devicePixelRatio
+            rectY = widget["position"][1] / self.devicePixelRatio
+            rectWidth = widget["size"][0] / self.devicePixelRatio
+            rectHeight = widget["size"][1] / self.devicePixelRatio
             if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
                 results.append(widget)
         return results
@@ -481,101 +490,7 @@ class AnnotatorSlide:
         pen = qt.QPen()
         brush = qt.QBrush()
         for annotation in self.annotations:
-            annotation.draw(painter, pen, brush)
-        painter.end()
-
-    def __init__(self, BackgroundImage : qt.QPixmap, Metadata : dict, Annotations : list[Annotation] = None, WindowOffset : list[int] = None):
-
-        self.image = BackgroundImage
-        self.outputImage = self.image.copy()
-        self.metadata = Metadata
-        if Annotations is None:
-            Annotations = []
-        if WindowOffset is None:
-            WindowOffset = [0,0]
-        self.windowOffset = WindowOffset
-        self.annotations = Annotations
-        self.Active = True
-
-        self.SlideLayout = "Screenshot"
-        self.SlideTitle = ""
-        self.SlideBody = ""
-        pass
-
-    def AddAnnotation(self, annotation : Annotation):
-        annotation.setOffset(self.windowOffset)
-        self.annotations.append(annotation)
-        pass
-
-    def FindWidgetsAtPos(self, posX, posY):
-        results = []
-
-        posX += self.windowOffset[0]
-        posY += self.windowOffset[1]
-
-        for widget in self.metadata:
-            rectX, rectY = widget["position"]
-            rectWidth, rectHeight = widget["size"]
-            if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
-                results.append(widget)
-        return results
-
-    def FindAnnotationsAtPos(self, posX, posY):
-        results = []
-
-        for annotation in self.annotations:
-            rectX, rectY = annotation.boundingBoxTopLeft
-            rectWidth, rectHeight = annotation.getSelectionBoundingBoxSize()
-            if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
-                results.append(annotation)
-
-        results.sort(reverse=True, key= lambda x: x.getSelectionBoundingBoxSize()[0]*x.getSelectionBoundingBoxSize()[1])
-        return results
-
-
-    def MapScreenToImage(self, qPos : qt.QPoint, qLabel : qt.QLabel):
-        imageSizeX = self.image.width()
-        imageSizeY = self.image.height()
-
-        labelWidth = qLabel.width
-        labelHeight = qLabel.height
-
-        x = Util.mapFromTo(qPos.x(), 0, labelWidth, 0, imageSizeX)
-        y = Util.mapFromTo(qPos.y(), 0, labelHeight, 0, imageSizeY)
-
-        return [x,y]
-
-    def MapImageToScreen(self, qPos : qt.QPoint, qLabel : qt.QLabel):
-        imageSizeX = self.image.width()
-        imageSizeY = self.image.height()
-
-        labelWidth = qLabel.width
-        labelHeight = qLabel.height
-
-        x = Util.mapFromTo(qPos.x(), 0, imageSizeX, 0, labelWidth)
-        y = Util.mapFromTo(qPos.y(), 0, imageSizeY, 0, labelHeight)
-
-        return [x,y]
-
-    def GetResized(self, resizeX : float = 0, resizeY : float = 0, keepAspectRatio=False) -> qt.QPixmap:
-        if resizeX <= 0 or resizeY <= 0:
-            return self.outputImage
-        if keepAspectRatio:
-            self.outputImage.scaled(resizeX, resizeY, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
-        return self.outputImage.scaled(resizeX, resizeY,qt.Qt.IgnoreAspectRatio, qt.Qt.SmoothTransformation)
-
-    def ReDraw(self):
-        del self.outputImage
-        self.outputImage = self.image.copy()
-        self.Draw()
-
-    def Draw(self):
-        painter = qt.QPainter(self.outputImage)
-        painter.setRenderHint(qt.QPainter.Antialiasing, True)
-        pen = qt.QPen()
-        brush = qt.QBrush()
-        for annotation in self.annotations:
-            annotation.draw(painter, pen, brush)
+            annotation.draw(painter, pen, brush, self.devicePixelRatio)
         painter.end()
 
 class AnnotatedTutorial:
@@ -616,10 +531,12 @@ class AnnotatedTutorial:
             slideImage : qt.QImage = None
 
             tsParser = TutorialScreenshot()
+            devicePixelRatio = 1.0  # Default for backward compatibility
             if slideData["SlideLayout"] == "Screenshot":
                 try:
                     tsParser.metadata = rawStepPath + ".json"
                     slideMetadata = tsParser.getWidgets()
+                    devicePixelRatio = tsParser.getDevicePixelRatio()
 
                     slideImage = qt.QImage(rawStepPath + ".png")
                 except FileNotFoundError:
@@ -631,6 +548,9 @@ class AnnotatedTutorial:
                             continue
                         tsParser.metadata = f"{stepPath}/{content}"
                         slideMetadata.extend(tsParser.getWidgets())
+                        # Get DPR from the first metadata file found
+                        if devicePixelRatio == 1.0:
+                            devicePixelRatio = tsParser.getDevicePixelRatio()
 
                     slideImage = qt.QImage(f"{outputFolder}/Annotations/{slideData['ImagePath']}")
             else:
@@ -661,6 +581,7 @@ class AnnotatedTutorial:
                 annotation.PERSISTENT = True
                 annotations.append(annotation)
             annotatedSlide = AnnotatorSlide(qt.QPixmap.fromImage(slideImage), slideMetadata, annotations)
+            annotatedSlide.devicePixelRatio = devicePixelRatio  # Set the DPR for this slide
             annotatedSlide.SlideTitle = textDict.get(slideData["SlideTitle"], "")
             annotatedSlide.SlideBody = textDict.get(slideData["SlideDesc"], "")
             annotatedSlide.SlideLayout = slideData["SlideLayout"]

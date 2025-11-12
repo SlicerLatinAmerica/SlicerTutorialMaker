@@ -727,6 +727,8 @@ class ScreenshotTools():
 
     def saveAllWidgetsData(self, filename, window):
         data = {}
+        # Save the device pixel ratio for proper scaling on different platforms
+        data["_devicePixelRatio"] = slicer.app.desktop().devicePixelRatioF()
         widgets = Util.getOnScreenWidgets(window)
         for index in range(len(widgets)):
             try:
@@ -822,8 +824,16 @@ class TutorialScreenshot():
         widgets = []
         nWidgets = JSONHandler.parseJSON(self.metadata)
         for keys in nWidgets:
+            # Skip metadata keys that start with underscore
+            if isinstance(keys, str) and keys.startswith("_"):
+                continue
             widgets.append(nWidgets[keys])
         return widgets
+    
+    def getDevicePixelRatio(self):
+        """Get the device pixel ratio saved with this screenshot, defaults to 1.0"""
+        nWidgets = JSONHandler.parseJSON(self.metadata)
+        return nWidgets.get("_devicePixelRatio", 1.0)
 
 # TODO: REMOVE THIS, DEPRECATED
 class JSONHandler:
