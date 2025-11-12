@@ -634,6 +634,7 @@ class SelfTestTutorialLayer():
             if _locals["TUTORIAL_GETINFO"] is not None:
                 info = _locals["TUTORIAL_GETINFO"]()
                 tutorial = Tutorial(*info)
+                tutorial.verifyDependencies()
                 tutorial.clearTutorial()
                 tutorial.beginTutorial()
                 _stepIndex = 0
@@ -779,7 +780,6 @@ class Tutorial():
         #Screenshot counter
         self.nSteps = 0
         self.screenshottools = screenshotTools
-        self.verifyDependencies()
 
     #TODO:Unsafe, there should be a better method to do this, at least add some conditions
     def clearTutorial(self):
