@@ -819,7 +819,12 @@ class TutorialScreenshot():
 
     def getImage(self):
         image = qt.QImage(self.screenshot)
-        return qt.QPixmap.fromImage(image)
+        pixmap = qt.QPixmap.fromImage(image)
+        # Set the device pixel ratio so Qt scales the pixmap correctly on HiDPI displays
+        # This ensures coordinates and image are in the same coordinate system
+        dpr = self.getDevicePixelRatio()
+        pixmap.setDevicePixelRatio(dpr)
+        return pixmap
     def getWidgets(self):
         widgets = []
         nWidgets = JSONHandler.parseJSON(self.metadata)

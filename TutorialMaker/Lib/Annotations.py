@@ -112,15 +112,14 @@ class Annotation:
         self.fontSize = fontSize
         pass
 
-    def draw(self, painter : qt.QPainter = None, pen : qt.QPen = None, brush :qt.QBrush = None, devicePixelRatio : float = 1.0):
+    def draw(self, painter : qt.QPainter = None, pen : qt.QPen = None, brush :qt.QBrush = None):
         #Maybe we can organize this better
-        # Apply device pixel ratio correction for proper scaling on Retina/HiDPI displays
-        # Coordinates were multiplied by DPR during capture, so we divide here for drawing
-        targetPos = [(self.target["position"][0] - self.annotationOffset[0] + self.offsetX) / devicePixelRatio,
-                     (self.target["position"][1] - self.annotationOffset[1] + self.offsetY) / devicePixelRatio]
+        # Device pixel ratio is handled by QPixmap.setDevicePixelRatio, no manual scaling needed
+        targetPos = [self.target["position"][0] - self.annotationOffset[0] + self.offsetX,
+                     self.target["position"][1] - self.annotationOffset[1] + self.offsetY]
 
         #Might as well do this then
-        targetSize = [self.target["size"][0] / devicePixelRatio, self.target["size"][1] / devicePixelRatio]
+        targetSize = self.target["size"]
 
 
         targetCenter = [targetPos[0] + targetSize[0]/2,
@@ -426,11 +425,9 @@ class AnnotatorSlide:
         posY += self.windowOffset[1]
 
         for widget in self.metadata:
-            # Apply device pixel ratio correction when checking widget positions
-            rectX = widget["position"][0] / self.devicePixelRatio
-            rectY = widget["position"][1] / self.devicePixelRatio
-            rectWidth = widget["size"][0] / self.devicePixelRatio
-            rectHeight = widget["size"][1] / self.devicePixelRatio
+            # Device pixel ratio is handled by QPixmap.setDevicePixelRatio
+            rectX, rectY = widget["position"]
+            rectWidth, rectHeight = widget["size"]
             if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
                 results.append(widget)
         return results
@@ -490,7 +487,7 @@ class AnnotatorSlide:
         pen = qt.QPen()
         brush = qt.QBrush()
         for annotation in self.annotations:
-            annotation.draw(painter, pen, brush, self.devicePixelRatio)
+            annotation.draw(painter, pen, brush)
         painter.end()
 
 class AnnotatedTutorial:
@@ -580,8 +577,13 @@ class AnnotatedTutorial:
                 )
                 annotation.PERSISTENT = True
                 annotations.append(annotation)
-            annotatedSlide = AnnotatorSlide(qt.QPixmap.fromImage(slideImage), slideMetadata, annotations)
-            annotatedSlide.devicePixelRatio = devicePixelRatio  # Set the DPR for this slide
+            
+            # Create pixmap and set device pixel ratio for proper scaling
+            pixmap = qt.QPixmap.fromImage(slideImage)
+            pixmap.setDevicePixelRatio(devicePixelRatio)
+            
+            annotatedSlide = AnnotatorSlide(pixmap, slideMetadata, annotations)
+            annotatedSlide.devicePixelRatio = devicePixelRatio  # Store for reference
             annotatedSlide.SlideTitle = textDict.get(slideData["SlideTitle"], "")
             annotatedSlide.SlideBody = textDict.get(slideData["SlideDesc"], "")
             annotatedSlide.SlideLayout = slideData["SlideLayout"]

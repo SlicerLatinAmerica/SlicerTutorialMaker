@@ -519,7 +519,7 @@ class ImageDrawer:
 
     # TODO: In that moment we will remove the translation and only show in English
     # after define the infrastructre with Weblate or GitHub we will use community translation
-    def painter(self, metadata, screenshotData, language, devicePixelRatio=1.0):
+    def painter(self, metadata, screenshotData, language):
 
         """
         Paint annotations on the image based on metadata and screenshot data.
@@ -528,7 +528,6 @@ class ImageDrawer:
             - metadata (dict): Metadata containing annotations information.
             - screenshotData (list): List of dictionaries containing widget information.
             - language (str): Language used for annotations (not used in the method).
-            - devicePixelRatio (float): Device pixel ratio from the screenshot capture (default 1.0).
 
         Outputs:
             None
@@ -538,7 +537,7 @@ class ImageDrawer:
             arrows, or click marks on the image based on the annotation type. It uses
             screenshot data to determine positions and sizes of widgets. The annotations
             are drawn with specified colors, text, font sizes, and pen widths.
-            The devicePixelRatio parameter ensures correct scaling on Retina/HiDPI displays.
+            Device pixel ratio is handled by QPixmap.setDevicePixelRatio for proper scaling.
         """
 
          # Find corresponding widget data in screenshotData
@@ -551,12 +550,10 @@ class ImageDrawer:
 
             for widget in screenshotData:
                 if widget["path"] == item["path"]:
-                    # Apply device pixel ratio correction for proper scaling on Retina/HiDPI displays
-                    # Coordinates were multiplied by DPR during capture, so we divide here for drawing
-                    widgetPosX = widget["position"][0] / devicePixelRatio
-                    widgetPosY = widget["position"][1] / devicePixelRatio
-                    widgetSizeX = widget["size"][0] / devicePixelRatio
-                    widgetSizeY = widget["size"][1] / devicePixelRatio
+                    widgetPosX = widget["position"][0]
+                    widgetPosY = widget["position"][1]
+                    widgetSizeX = widget["size"][0]
+                    widgetSizeY = widget["size"][1]
                     text_ann = item["labelText"]
 
             if item['type'] == 'rectangle':
@@ -572,11 +569,10 @@ class ImageDrawer:
                                     pen_style=qt.Qt.SolidLine)
 
             elif item['type'] == 'arrow':
-                # Apply device pixel ratio correction to arrow coordinates
-                self.draw_arrow(start_x= item["direction_draw"][0] / devicePixelRatio,
-                                start_y= item["direction_draw"][1] / devicePixelRatio,
-                                end_x= item["direction_draw"][2] / devicePixelRatio,
-                                end_y= item["direction_draw"][3] / devicePixelRatio,
+                self.draw_arrow(start_x= item["direction_draw"][0],
+                                start_y= item["direction_draw"][1],
+                                end_x= item["direction_draw"][2],
+                                end_y= item["direction_draw"][3],
                                 color=tuple(map(int, item["color"].split(', '))),
                                 pen_width=6,
                                 text=text_ann,
@@ -584,9 +580,8 @@ class ImageDrawer:
                                 text_color=qt.Qt.black)
 
             elif item['type'] == 'clickMark':
-                # Apply device pixel ratio correction to click mark position
-                self.draw_click(x=(widgetPosX + (widgetSizeX / 2)),
-                                y=(widgetPosY + (widgetSizeY / 2)),
+                self.draw_click(x=widgetPosX + (widgetSizeX / 2),
+                                y=widgetPosY + (widgetSizeY / 2),
                                 text=text_ann,
                                 font_size=int(item['fontSize']),
                                 text_color=qt.Qt.black)
@@ -628,11 +623,10 @@ class ImageDrawer:
                 tutorialStep = tutorial.steps[ListoTotalImages[i]]
                 screenshot = tutorialStep.getImage()
                 screenshotData = tutorialStep.getWidgets()
-                devicePixelRatio = tutorialStep.getDevicePixelRatio()
                 
-                # Load the image
+                # Load the image (devicePixelRatio is already set on the pixmap)
                 image_drawer.load_image(screenshot)
-                image_drawer.painter(OutputAnnotator[annotateSteps], screenshotData, 'es', devicePixelRatio)
+                image_drawer.painter(OutputAnnotator[annotateSteps], screenshotData, 'es')
 
                 # Save the view to a PNG file with a dynamic path
                 image_drawer.save_to_png(TutorialUtils.get_module_basepath("TutorialMaker") + '/Outputs/Translation/output_image_' + str(i) + '.png')

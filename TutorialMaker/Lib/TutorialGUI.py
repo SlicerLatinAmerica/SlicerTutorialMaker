@@ -457,8 +457,7 @@ class TutorialGUI(qt.QMainWindow):
             #Main window
             try:
                 annotatorSlide = AnnotatorSlide(screenshots[0].getImage(), screenshots[0].getWidgets())
-                # Set device pixel ratio for proper scaling on Retina/HiDPI displays
-                annotatorSlide.devicePixelRatio = screenshots[0].getDevicePixelRatio()
+                # Device pixel ratio is already set on the pixmap by getImage()
                 stepWidget.AddStepWindows(annotatorSlide)
             except Exception:
                 print(f"ERROR: Annotator Failed to add top level window in step:{stepIndex}, loadImagesAndMetadata")
@@ -470,8 +469,7 @@ class TutorialGUI(qt.QMainWindow):
                     annotatorSlide = AnnotatorSlide(screenshot.getImage(),
                                                     screenshot.getWidgets(),
                                                     WindowOffset=screenshot.getWidgets()[0]["position"])
-                    # Set device pixel ratio for proper scaling on Retina/HiDPI displays
-                    annotatorSlide.devicePixelRatio = screenshot.getDevicePixelRatio()
+                    # Device pixel ratio is already set on the pixmap by getImage()
                     stepWidget.AddStepWindows(annotatorSlide)  # noqa: F821
                 except Exception:
                     print(f"ERROR: Annotator Failed to add window in step:{stepIndex}, loadImagesAndMetadata")
