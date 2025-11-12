@@ -263,6 +263,12 @@ class TutorialGUI(qt.QMainWindow):
         self.tutorialInfo = {"name": "", "author" : "", "date": "", "desc": ""}
         self.outputName = ""
 
+        self.coverStepIndex = None
+        self.coverSlideIndex = 0
+        self.ackStepIndex = None
+        self._bindsCover = False
+        self._bindsAck = False  
+
     def setupGUI(self):
         # TODO: A lot of the steps called from here could be remade in the qt designer to clean this up
 
@@ -364,6 +370,26 @@ class TutorialGUI(qt.QMainWindow):
             stepWidget.ToggleExtended() # noqa: F821
         self.tutorialInfo = tInfo
         
+        
+        
+        self.coverStepIndex = self._findStepIndexByLayout("CoverPage")
+        self.ackStepIndex   = self._findStepIndexByLayout("Acknowledgment")
+        
+         # Ensure Cover exists
+        if self.coverStepIndex is None:
+            pm = self.make_cover_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+            self.addBlankPage(False, 0, "", type_="CoverPage", pixmap=pm)
+            self.coverStepIndex = 0
+
+        # Ensure Acknowledgment exists ALWAYS (even if empty)
+        if self.ackStepIndex is None:
+            pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+            self.addBlankPage(False, 1, "", type_="Acknowledgment", pixmap=pm)
+            self.ackStepIndex = 1
+
+        self._regenerateCoverPixmap()
+        self._regenerateAcknowledgmentPixmap()
+
 
 
     def saveAnnotationsAsJSON(self):
@@ -469,15 +495,16 @@ class TutorialGUI(qt.QMainWindow):
             stepWidget.CreateMergedWindow() # noqa: F821
             stepWidget.ToggleExtended() # noqa: F821
 
-        #TODO: use widget annotation infrastructure to make these pages more on the fly interactable
-        # Insert Dummy Pages for Title, Acknowledgements
-        #self.addBlankPage(False, 0, self.dir_path + '/../Resources/NewSlide/cover_page.png', type_="CoverPage")
+         # Cover page (always)
         cover_pm = self.make_cover_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
         self.addBlankPage(False, 0, "", type_="CoverPage", pixmap=cover_pm)
-        acknowledgments_pm= self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
-        if acknowledgments_pm is not None:
-            self.addBlankPage(False, stepIndex + 2, type_="Acknowledgment", pixmap = acknowledgments_pm)
+        self.coverStepIndex = 0
 
+        # Acknowledgments page (always, even if empty)
+        acknowledgments_pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+        if acknowledgments_pm is not None:
+            self.addBlankPage(False, len(self.steps), "", type_="Acknowledgment", pixmap=acknowledgments_pm)
+            self.ackStepIndex = len(self.steps) - 1
         pass
 
     def swapStepPosition(self, index, swapTo):
@@ -512,6 +539,20 @@ class TutorialGUI(qt.QMainWindow):
         # Load text from slideAnnotator
         self.slideTitleWidget.setText(self.selectedAnnotator.SlideTitle)
         self.slideBodyWidget.setText(self.selectedAnnotator.SlideBody)
+
+         # Bind editors depending on layout
+        layout = getattr(selectedScreenshot, "SlideLayout", "")
+        if layout == "CoverPage":
+            self._bindEditorsToCover()
+            self._unbindEditorsFromAcknowledgment()
+        elif layout == "Acknowledgment":
+            self._bindEditorsToAcknowledgment()
+            self._unbindEditorsFromCover()
+        else:
+            self._unbindEditorsFromCover()
+            self._unbindEditorsFromAcknowledgment()
+            self.slideTitleWidget.setText(self.selectedAnnotator.SlideTitle)
+            self.slideBodyWidget.setText(self.selectedAnnotator.SlideBody)
 
 
     def cancelCurrentAnnotation(self):
@@ -1338,10 +1379,9 @@ class TutorialGUI(qt.QMainWindow):
             p.end()
         return pm
     
-    def make_acknowledments_pixmap(self, info: dict, size=(900, 530,)) -> qt.QPixmap: #Create an image with the tutorial information
+    def make_acknowledments_pixmap(self, info: dict, size=(900, 530,)) -> qt.QPixmap:
+    
         text = info.get("acknowledgments", "")
-        if not text:
-            return None
 
         W, H = size
         pm = qt.QPixmap(W, H)
@@ -1352,13 +1392,183 @@ class TutorialGUI(qt.QMainWindow):
         p.setRenderHint(qt.QPainter.TextAntialiasing, True)
         
         try:
+            # Header
+            f_header = qt.QFont()
+            f_header.setPointSize(22)
+            f_header.setBold(True)
+            p.setFont(f_header)
+            p.setPen(qt.QPen(qt.QColor(0, 0, 0)))
+            p.drawText(qt.QRect(40, 40, W-80, 60),
+                    qt.Qt.AlignCenter,
+                    _("Acknowledgments"))
+
+            # Body
             f_ack = qt.QFont()
             f_ack.setPointSize(16)
             p.setFont(f_ack)
-            p.drawText(qt.QRect(40, 200, W-80, 80),
-                    qt.Qt.AlignCenter | qt.Qt.TextWordWrap, 
-                    info.get("acknowledgments", ""))
 
+            # Place text block
+            p.drawText(qt.QRect(60, 120, W-120, H-160),
+                    qt.Qt.AlignTop | qt.Qt.TextWordWrap, 
+                    text if text else "")
         finally:
             p.end()
         return pm
+
+    def _findStepIndexByLayout(self, layoutName: str):
+        for i, st in enumerate(self.steps):
+            if st.Slides and getattr(st.Slides[0], "SlideLayout", "") == layoutName:
+                return i
+        return None
+
+    def _regenerateAcknowledgmentPixmap(self):
+        # Always regenerate (even when empty) so changes reflect instantly
+        if self.ackStepIndex is None:
+            pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+            self.addBlankPage(False, 1, "", type_="Acknowledgment", pixmap=pm)
+            self.ackStepIndex = 1
+            return
+        stepW = self.steps[self.ackStepIndex]
+        slide = stepW.Slides[0]
+        new_pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+        slide.image = new_pm
+        stepW.SlideWidgets[0].setPixmap(slide.GetResized(*self.thumbnailSize))
+        if self.selectedIndexes == [self.ackStepIndex, 0]:
+            self.selectedSlide.setPixmap(slide.GetResized(*self.selectedSlideSize, keepAspectRatio=True))
+
+
+    def set_meta(self, **kwargs):
+        prev_ack = self.tutorialInfo.get("acknowledgments", "")
+        self.tutorialInfo.update(kwargs)
+        self._regenerateCoverPixmap()
+        if "acknowledgments" in kwargs:
+            # Ensure page exists and then refresh drawing
+            if self.ackStepIndex is None:
+                pm = self.make_acknowledments_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+                self.addBlankPage(False, 1, "", type_="Acknowledgment", pixmap=pm)
+                self.ackStepIndex = 1
+            self._regenerateAcknowledgmentPixmap()
+
+
+    def _bindEditorsToCover(self):
+        if self._bindsCover:
+            return
+        try:
+            self.slideTitleWidget.textEdited.disconnect()
+        except:
+            pass
+        try:
+            self.slideBodyWidget.textChanged.disconnect()
+        except:
+            pass
+        self.slideTitleWidget.setText(self.tutorialInfo.get("title", ""))
+        self.slideBodyWidget.setText(self.tutorialInfo.get("desc", ""))
+        self.slideTitleWidget.textEdited.connect(self._onCoverTitleEdited)
+        self.slideBodyWidget.textChanged.connect(self._onCoverDescChanged)
+        self._bindsCover = True
+
+    def _unbindEditorsFromCover(self):
+        if not self._bindsCover:
+            return
+        try:
+            self.slideTitleWidget.textEdited.disconnect(self._onCoverTitleEdited)
+        except:
+            pass
+        try:
+            self.slideBodyWidget.textChanged.disconnect(self._onCoverDescChanged)
+        except:
+            pass
+        self._bindsCover = False
+
+    # Bind/unbind editors to Acknowledgments
+    def _bindEditorsToAcknowledgment(self):
+        if self._bindsAck:
+            return
+        try:
+            self.slideTitleWidget.textEdited.disconnect()
+        except:
+            pass
+        try:
+            self.slideBodyWidget.textChanged.disconnect()
+        except:
+            pass
+        # Title widget is not used for ack page; keep it blank/read-only-ish
+        self.slideTitleWidget.setText(_("Acknowledgments"))
+        # Keep title enabled to avoid UI inconsistency, but text changes won't be used.
+        self.slideBodyWidget.setText(self.tutorialInfo.get("acknowledgments", ""))
+        self.slideBodyWidget.textChanged.connect(self._onAckTextChanged)
+        self._bindsAck = True
+
+    def _unbindEditorsFromAcknowledgment(self):
+        if not self._bindsAck:
+            return
+        try:
+            self.slideBodyWidget.textChanged.disconnect(self._onAckTextChanged)
+        except:
+            pass
+        self._bindsAck = False
+
+    def _onCoverTitleEdited(self, newText):
+        self.tutorialInfo["title"] = newText
+        self._regenerateCoverPixmap()
+
+    def _onCoverDescChanged(self):
+        self.tutorialInfo["desc"] = self.slideBodyWidget.toPlainText()
+        self._regenerateCoverPixmap()
+
+    # Update for acknowledgments body
+    def _onAckTextChanged(self):
+        self.tutorialInfo["acknowledgments"] = self.slideBodyWidget.toPlainText()
+        self._regenerateAcknowledgmentPixmap()
+
+    def _regenerateCoverPixmap(self):
+        if self.coverStepIndex is None:
+            return
+        stepW = self.steps[self.coverStepIndex]
+        slide = stepW.Slides[self.coverSlideIndex]
+        new_pm = self.make_cover_pixmap(self.tutorialInfo, tuple(self.selectedSlideSize))
+        slide.image = new_pm
+        stepW.SlideWidgets[self.coverSlideIndex].setPixmap(slide.GetResized(*self.thumbnailSize))
+        if self.selectedIndexes == [self.coverStepIndex, self.coverSlideIndex]:
+            self.selectedSlide.setPixmap(slide.GetResized(*self.selectedSlideSize, keepAspectRatio=True))
+
+def _bindEditorsToAcknowledgment(self):
+    if self._bindsAck:
+        return
+    try:
+        self.slideTitleWidget.textEdited.disconnect()
+    except:
+        pass
+    try:
+        self.slideBodyWidget.textChanged.disconnect()
+    except:
+        pass
+
+    self.slideTitleWidget.setText(self.tutorialInfo.get("ack_title", "Acknowledgments"))
+    self.slideBodyWidget.setText(self.tutorialInfo.get("ack_desc", ""))
+    self.slideTitleWidget.textEdited.connect(self._onAckTitleEdited)
+    self.slideBodyWidget.textChanged.connect(self._onAckDescChanged)
+
+    self._bindsAck = True
+
+def _unbindEditorsFromAcknowledgment(self):
+    if not self._bindsAck:
+        return
+    try:
+        self.slideTitleWidget.textEdited.disconnect(self._onAckTitleEdited)
+    except:
+        pass
+    try:
+        self.slideBodyWidget.textChanged.disconnect(self._onAckDescChanged)
+    except:
+        pass
+    self._bindsAck = False
+
+def _onAckTitleEdited(self, newText):
+    self.tutorialInfo["ack_title"] = newText
+    self._regenerateAcknowledgmentPixmap()
+
+def _onAckDescChanged(self):
+
+    self.tutorialInfo["ack_desc"] = self.slideBodyWidget.toPlainText()
+    self._regenerateAcknowledgmentPixmap()
