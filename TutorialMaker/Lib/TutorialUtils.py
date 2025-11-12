@@ -727,7 +727,6 @@ class ScreenshotTools():
 
     def saveAllWidgetsData(self, filename, window):
         data = {}
-        # Save the device pixel ratio for proper scaling on different platforms
         data["_devicePixelRatio"] = slicer.app.desktop().devicePixelRatioF()
         widgets = Util.getOnScreenWidgets(window)
         for index in range(len(widgets)):
@@ -820,16 +819,20 @@ class TutorialScreenshot():
     def getImage(self):
         image = qt.QImage(self.screenshot)
         pixmap = qt.QPixmap.fromImage(image)
-        # Set the device pixel ratio so Qt scales the pixmap correctly on HiDPI displays
-        # This ensures coordinates and image are in the same coordinate system
+        
         dpr = self.getDevicePixelRatio()
-        pixmap.setDevicePixelRatio(dpr)
+        if dpr > 1.0:
+            logicalWidth = int(pixmap.width() / dpr)
+            logicalHeight = int(pixmap.height() / dpr)
+            pixmap = pixmap.scaled(logicalWidth, logicalHeight, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+        
+        pixmap.setDevicePixelRatio(1.0)
         return pixmap
     def getWidgets(self):
         widgets = []
         nWidgets = JSONHandler.parseJSON(self.metadata)
+        
         for keys in nWidgets:
-            # Skip metadata keys that start with underscore
             if isinstance(keys, str) and keys.startswith("_"):
                 continue
             widgets.append(nWidgets[keys])

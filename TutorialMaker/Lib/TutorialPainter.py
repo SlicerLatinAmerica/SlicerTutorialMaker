@@ -517,8 +517,6 @@ class ImageDrawer:
         else:
             print("Error: No view to save.")
 
-    # TODO: In that moment we will remove the translation and only show in English
-    # after define the infrastructre with Weblate or GitHub we will use community translation
     def painter(self, metadata, screenshotData, language):
 
         """
@@ -537,7 +535,6 @@ class ImageDrawer:
             arrows, or click marks on the image based on the annotation type. It uses
             screenshot data to determine positions and sizes of widgets. The annotations
             are drawn with specified colors, text, font sizes, and pen widths.
-            Device pixel ratio is handled by QPixmap.setDevicePixelRatio for proper scaling.
         """
 
          # Find corresponding widget data in screenshotData
@@ -624,11 +621,9 @@ class ImageDrawer:
                 screenshot = tutorialStep.getImage()
                 screenshotData = tutorialStep.getWidgets()
                 
-                # Load the image (devicePixelRatio is already set on the pixmap)
                 image_drawer.load_image(screenshot)
                 image_drawer.painter(OutputAnnotator[annotateSteps], screenshotData, 'es')
 
-                # Save the view to a PNG file with a dynamic path
                 image_drawer.save_to_png(TutorialUtils.get_module_basepath("TutorialMaker") + '/Outputs/Translation/output_image_' + str(i) + '.png')
 
                 imgSS = imgSS + 1

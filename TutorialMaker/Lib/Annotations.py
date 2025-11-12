@@ -113,12 +113,9 @@ class Annotation:
         pass
 
     def draw(self, painter : qt.QPainter = None, pen : qt.QPen = None, brush :qt.QBrush = None):
-        #Maybe we can organize this better
-        # Device pixel ratio is handled by QPixmap.setDevicePixelRatio, no manual scaling needed
         targetPos = [self.target["position"][0] - self.annotationOffset[0] + self.offsetX,
                      self.target["position"][1] - self.annotationOffset[1] + self.offsetY]
 
-        #Might as well do this then
         targetSize = self.target["size"]
 
 
@@ -408,8 +405,6 @@ class AnnotatorSlide:
         self.SlideTitle = ""
         self.SlideBody = ""
         
-        # Store device pixel ratio for proper scaling on Retina/HiDPI displays
-        # Default to 1.0 for backward compatibility
         self.devicePixelRatio = 1.0
         pass
 
@@ -425,7 +420,6 @@ class AnnotatorSlide:
         posY += self.windowOffset[1]
 
         for widget in self.metadata:
-            # Device pixel ratio is handled by QPixmap.setDevicePixelRatio
             rectX, rectY = widget["position"]
             rectWidth, rectHeight = widget["size"]
             if rectX <= posX <= rectX + rectWidth and rectY <= posY <= rectY + rectHeight:
@@ -578,12 +572,15 @@ class AnnotatedTutorial:
                 annotation.PERSISTENT = True
                 annotations.append(annotation)
             
-            # Create pixmap and set device pixel ratio for proper scaling
             pixmap = qt.QPixmap.fromImage(slideImage)
-            pixmap.setDevicePixelRatio(devicePixelRatio)
+            if devicePixelRatio > 1.0:
+                logicalWidth = int(pixmap.width() / devicePixelRatio)
+                logicalHeight = int(pixmap.height() / devicePixelRatio)
+                pixmap = pixmap.scaled(logicalWidth, logicalHeight, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+            pixmap.setDevicePixelRatio(1.0)
             
             annotatedSlide = AnnotatorSlide(pixmap, slideMetadata, annotations)
-            annotatedSlide.devicePixelRatio = devicePixelRatio  # Store for reference
+            annotatedSlide.devicePixelRatio = 1.0
             annotatedSlide.SlideTitle = textDict.get(slideData["SlideTitle"], "")
             annotatedSlide.SlideBody = textDict.get(slideData["SlideDesc"], "")
             annotatedSlide.SlideLayout = slideData["SlideLayout"]
