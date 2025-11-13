@@ -517,8 +517,6 @@ class ImageDrawer:
         else:
             print("Error: No view to save.")
 
-    # TODO: In that moment we will remove the translation and only show in English
-    # after define the infrastructre with Weblate or GitHub we will use community translation
     def painter(self, metadata, screenshotData, language):
 
         """
@@ -619,13 +617,13 @@ class ImageDrawer:
                 if(cont < len(ListPositionWhite)-1):
                     cont = cont + 1
             else:
-                screenshot = tutorial.steps[ListoTotalImages[i]].getImage()
-                screenshotData = tutorial.steps[ListoTotalImages[i]].getWidgets()
-                # Load the image
+                tutorialStep = tutorial.steps[ListoTotalImages[i]]
+                screenshot = tutorialStep.getImage()
+                screenshotData = tutorialStep.getWidgets()
+                
                 image_drawer.load_image(screenshot)
                 image_drawer.painter(OutputAnnotator[annotateSteps], screenshotData, 'es')
 
-                # Save the view to a PNG file with a dynamic path
                 image_drawer.save_to_png(TutorialUtils.get_module_basepath("TutorialMaker") + '/Outputs/Translation/output_image_' + str(i) + '.png')
 
                 imgSS = imgSS + 1

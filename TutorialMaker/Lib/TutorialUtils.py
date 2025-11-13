@@ -727,6 +727,7 @@ class ScreenshotTools():
 
     def saveAllWidgetsData(self, filename, window):
         data = {}
+        data["_devicePixelRatio"] = slicer.app.desktop().devicePixelRatioF()
         widgets = Util.getOnScreenWidgets(window)
         for index in range(len(widgets)):
             try:
@@ -817,13 +818,38 @@ class TutorialScreenshot():
 
     def getImage(self):
         image = qt.QImage(self.screenshot)
-        return qt.QPixmap.fromImage(image)
+        pixmap = qt.QPixmap.fromImage(image)
+        
+        dpr = self.getDevicePixelRatio()
+        if dpr > 1.0:
+            logicalWidth = int(pixmap.width() / dpr)
+            logicalHeight = int(pixmap.height() / dpr)
+            pixmap = pixmap.scaled(logicalWidth, logicalHeight, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+        
+        pixmap.setDevicePixelRatio(1.0)
+        return pixmap
     def getWidgets(self):
         widgets = []
         nWidgets = JSONHandler.parseJSON(self.metadata)
+        dpr = self.getDevicePixelRatio()
+        
         for keys in nWidgets:
-            widgets.append(nWidgets[keys])
+            if isinstance(keys, str) and keys.startswith("_"):
+                continue
+            
+            widget = nWidgets[keys].copy() if hasattr(nWidgets[keys], 'copy') else dict(nWidgets[keys])
+            
+            if dpr > 1.0:
+                widget["position"] = [widget["position"][0] / dpr, widget["position"][1] / dpr]
+                widget["size"] = [widget["size"][0] / dpr, widget["size"][1] / dpr]
+            
+            widgets.append(widget)
         return widgets
+    
+    def getDevicePixelRatio(self):
+        """Get the device pixel ratio saved with this screenshot, defaults to 1.0"""
+        nWidgets = JSONHandler.parseJSON(self.metadata)
+        return nWidgets.get("_devicePixelRatio", 1.0)
 
 # TODO: REMOVE THIS, DEPRECATED
 class JSONHandler:
